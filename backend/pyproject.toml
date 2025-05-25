@@ -1,0 +1,32 @@
+[project]
+name = "chat-with-docs-backend"
+version = "1.0.0"
+description = "RAG-powered document Q&A API"
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.109.0",
+  "uvicorn[standard]>=0.27.0",
+  "pydantic>=2.5.3",
+  "pydantic-settings>=2.1.0",
+  "python-jose[cryptography]>=3.3.0",
+  "passlib[bcrypt]>=1.7.4",
+  "python-multipart>=0.0.6",
+  "sqlalchemy>=2.0.25",
+  "psycopg2-binary>=2.9.9",
+  "pgvector>=0.2.4",
+  "openai>=1.9.0",
+  "langchain>=0.1.0",
+  "langchain-openai>=0.0.3",
+  "pypdf>=3.17.4",
+  "python-docx>=1.1.0",
+  # dev & test
+  "pytest>=7.4.4",
+  "httpx>=0.26.0"
+]
+
+[tool.uv]
+# optional uv configuration
+
+# Lockfile is uv.lock
