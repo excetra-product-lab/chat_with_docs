@@ -28,7 +28,7 @@ Performance and scalability: On the backend, FastAPI will serve a REST (or Graph
 A well-organized codebase will accelerate development. Below are the recommended file structures for the FastAPI backend and Next.js frontend, organized for clarity and future growth:
 
 Backend (FastAPI) – A Python package app with clear submodules for routers, services, and models:
-
+```
 backend/
 ├── app/
 │   ├── main.py               # FastAPI app initialization, route inclusion, CORS, etc.
@@ -55,10 +55,10 @@ backend/
 ├── Dockerfile                # Container configuration for Fly.io deployment
 ├── requirements.txt          # Python dependencies (FastAPI, langchain, openai, etc.)
 └── README.md                 # Developer setup and run instructions
-
+```
 
 Frontend (Next.js) – A TypeScript project bootstrapped with create-next-app, structured into pages and reusable components:
-
+```
 frontend/
 ├── pages/ or app/            # Next.js routes (using `pages` directory or `app` directory)
 │   ├── index.tsx             # Landing page / login (if not authenticated, or intro)
@@ -83,6 +83,6 @@ frontend/
 ├── next.config.js            # Next.js configuration (set API URLs, etc.)
 ├── package.json
 └── README.md
-
+```
 
 Notes: We will use Next.js’s built-in routing for simplicity; the chat and upload pages will be behind authentication. After login, the user lands on upload (to add/view documents) and can navigate to chat to query their documents. We separate UI concerns: the chat interface is isolated in ChatWindow and can manage the conversational state (messages array). The CitationViewer might be a popover or modal that, given a citation reference (like a doc ID and page), fetches and displays the corresponding snippet or highlights it – this can be implemented in Week 3 or 4 once basic chat is working. Styling can use a component library or custom CSS; given the timeline, we might opt for a simple design or Tailwind CSS for speed.
