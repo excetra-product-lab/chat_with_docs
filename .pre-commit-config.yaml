@@ -81,6 +81,12 @@ repos:
     hooks:
       - id: detect-secrets
         args: ['--baseline', '.secrets.baseline']
+        exclude: |
+          (?x)^(
+            .*\.tsbuildinfo$|
+            .*\.lock$|
+            .*\.log$
+          )$
 
   # Markdown
   - repo: https://github.com/igorshubovych/markdownlint-cli
