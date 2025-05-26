@@ -1,7 +1,8 @@
+from fastapi import APIRouter, Depends
+
 from app.api.dependencies import get_current_user
 from app.core.qna import answer_question
 from app.models.schemas import Answer, Query
-from fastapi import APIRouter, Depends
 
 router = APIRouter()
 

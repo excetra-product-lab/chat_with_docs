@@ -1,8 +1,9 @@
 from typing import List
 
+from fastapi import APIRouter, Depends, File, UploadFile
+
 from app.api.dependencies import get_current_user
 from app.models.schemas import Document
-from fastapi import APIRouter, Depends, File, UploadFile
 
 router = APIRouter()
 

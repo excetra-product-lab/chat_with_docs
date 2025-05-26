@@ -1,10 +1,11 @@
 from datetime import timedelta
 
+from fastapi import APIRouter, Depends
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+
 from app.core.settings import settings
 from app.models.schemas import Token, User, UserCreate
 from app.utils.security import create_access_token
-from fastapi import APIRouter, Depends
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")

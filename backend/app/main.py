@@ -1,7 +1,8 @@
-from app.api.routes import auth, chat, documents
-from app.core.settings import settings
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+from app.api.routes import auth, chat, documents
+from app.core.settings import settings
 
 app = FastAPI(
     title="Chat With Docs API",
