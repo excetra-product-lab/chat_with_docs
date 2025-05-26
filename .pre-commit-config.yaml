@@ -1,0 +1,102 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+  # General hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-toml
+      - id: debug-statements
+      - id: mixed-line-ending
+
+  # Python specific hooks
+  - repo: https://github.com/psf/black
+    rev: 25.1.0
+    hooks:
+      - id: black
+        files: ^backend/
+        args: ['--line-length=100']
+
+  - repo: https://github.com/pycqa/isort
+    rev: 6.0.1
+    hooks:
+      - id: isort
+        files: ^backend/
+        args: ['--profile', 'black', '--line-length', '100']
+
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.2.0
+    hooks:
+      - id: flake8
+        files: ^backend/
+        args: ['--max-line-length=100', '--extend-ignore=E203,W503']
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.15.0
+    hooks:
+      - id: mypy
+        files: ^backend/
+        args: ['--ignore-missing-imports']
+        additional_dependencies:
+          - 'pydantic>=2.0'
+          - 'fastapi>=0.100.0'
+          - 'sqlalchemy>=2.0'
+
+  # JavaScript/TypeScript specific hooks
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v9.27.0
+    hooks:
+      - id: eslint
+        files: ^frontend/.*\.[jt]sx?$
+        types: [file]
+        additional_dependencies:
+          - eslint@8.56.0
+          - eslint-config-next@14.0.4
+          - '@typescript-eslint/parser@6.21.0'
+          - typescript@5.3.3
+
+  # Security checks
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+
+  # Markdown
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.45.0
+    hooks:
+      - id: markdownlint
+        args: ['--fix', '--config', '.markdownlint.yaml']
+
+  # Dockerfile linting (disabled - requires Docker daemon)
+  # - repo: https://github.com/hadolint/hadolint
+  #   rev: v2.13.1-beta
+  #   hooks:
+  #     - id: hadolint-docker
+  #       files: Dockerfile$
+
+# Local hooks
+  - repo: local
+    hooks:
+      - id: pytest
+        name: pytest
+        entry: bash -c 'cd backend && if [ -f "pyproject.toml" ]; then PYTHONPATH=. uv run pytest; else PYTHONPATH=. python -m pytest; fi'
+        language: system
+        pass_filenames: false
+        files: ^backend/.*\.py$
+
+      - id: npm-test
+        name: npm test
+        entry: bash -c 'cd frontend && npm test'
+        language: system
+        pass_filenames: false
+        files: ^frontend/
+        stages: [pre-push]

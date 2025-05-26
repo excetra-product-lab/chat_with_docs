@@ -1,0 +1,108 @@
+name: Frontend CI
+
+on:
+  pull_request:
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-ci.yml'
+      - 'package-lock.json'
+      - 'yarn.lock'
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-ci.yml'
+      - 'package-lock.json'
+      - 'yarn.lock'
+
+jobs:
+  test-and-lint:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    env:
+      # These are set from GitHub secrets
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY }}
+      CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_CLERK_SIGN_IN_URL: /sign-in
+      NEXT_PUBLIC_CLERK_SIGN_UP_URL: /sign-up
+      NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL: /upload
+      NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL: /upload
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run ESLint
+      run: npm run lint
+      continue-on-error: true
+
+    - name: TypeScript type checking
+      run: npx tsc --noEmit
+      continue-on-error: true
+
+    - name: Build application
+      run: npm run build
+
+    # Run tests if test script exists, otherwise create a placeholder
+    - name: Run tests
+      run: |
+        if npm run | grep -q "test"; then
+          npm test
+        else
+          echo "No test script found. Skipping tests."
+          echo "Consider adding tests with: npm install --save-dev jest @testing-library/react @testing-library/jest-dom jest-environment-jsdom"
+        fi
+
+    # Check for common security issues
+    - name: Security audit
+      run: npm audit --production
+      continue-on-error: true
+
+    # Linting and Build Summary
+    - name: CI Summary
+      if: always()
+      run: |
+        echo "## Frontend CI Summary (Node ${{ matrix.node-version }})" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        echo "### ESLint" >> $GITHUB_STEP_SUMMARY
+        if npm run lint 2>/dev/null; then
+          echo "✅ No linting issues found" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ Linting issues found. Run \`npm run lint\` locally to see details." >> $GITHUB_STEP_SUMMARY
+        fi
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        echo "### TypeScript" >> $GITHUB_STEP_SUMMARY
+        if npx tsc --noEmit 2>/dev/null; then
+          echo "✅ No TypeScript errors found" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ TypeScript errors found. Run \`npx tsc --noEmit\` locally to see details." >> $GITHUB_STEP_SUMMARY
+        fi
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        echo "### Build Status" >> $GITHUB_STEP_SUMMARY
+        if [ -d ".next" ]; then
+          echo "✅ Build completed successfully" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ Build failed" >> $GITHUB_STEP_SUMMARY
+        fi

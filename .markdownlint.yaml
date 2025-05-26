@@ -1,0 +1,20 @@
+# Markdownlint configuration
+# See https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
+
+# Line length
+MD013:
+  # Disable line length check for code blocks and tables
+  code_blocks: false
+  tables: false
+  headings: false
+
+# Ordered list item prefix
+MD029:
+  # Use consistent numbering style
+  style: "ordered"
+
+# Allow HTML in markdown (for mermaid diagrams)
+MD033: false
+
+# Allow bare URLs
+MD034: false

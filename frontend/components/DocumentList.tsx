@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { api } from '@/lib/api'
 import { Trash2, FileText } from 'lucide-react'
@@ -17,11 +17,7 @@ export default function DocumentList() {
   const [loading, setLoading] = useState(true)
   const { getToken } = useAuth()
 
-  useEffect(() => {
-    fetchDocuments()
-  }, [])
-
-  const fetchDocuments = async () => {
+  const fetchDocuments = useCallback(async () => {
     try {
       const token = await getToken()
       const response = await api.getDocuments(token!)
@@ -31,11 +27,15 @@ export default function DocumentList() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [getToken])
+
+  useEffect(() => {
+    fetchDocuments()
+  }, [fetchDocuments])
 
   const handleDelete = async (id: number) => {
     if (!confirm('Are you sure you want to delete this document?')) return
-    
+
     try {
       const token = await getToken()
       await api.deleteDocument(id, token!)

@@ -24,9 +24,15 @@ dependencies = [
   # dev & test
   "pytest>=7.4.4",
   "httpx>=0.26.0",
+  "pre-commit>=4.2.0",
 ]
 
 [tool.uv]
 # optional uv configuration
 
 # Lockfile is uv.lock
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+pythonpath = ["."]

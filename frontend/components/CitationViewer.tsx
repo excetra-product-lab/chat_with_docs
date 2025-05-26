@@ -26,7 +26,7 @@ export default function CitationViewer({ citation }: { citation: Citation }) {
         </div>
         {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
       </button>
-      
+
       {expanded && (
         <div className="mt-2 p-2 bg-black/10 rounded text-xs">
           {citation.snippet}

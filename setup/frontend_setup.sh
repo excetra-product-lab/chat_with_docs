@@ -192,7 +192,7 @@ export default function Home() {
           <p className="m-0 max-w-[30ch] text-sm opacity-50">
             Upload your legal documents and ask questions. Get accurate answers with citations.
           </p>
-          
+
           <div className="mt-6">
             <SignedOut>
               <SignInButton mode="modal">
@@ -371,7 +371,7 @@ export default function DocumentList() {
 
   const handleDelete = async (id: number) => {
     if (!confirm('Are you sure you want to delete this document?')) return
-    
+
     try {
       const token = await getToken()
       await api.deleteDocument(id, token!)
@@ -444,10 +444,10 @@ export default function UploadForm() {
     try {
       const token = await getToken()
       const file = acceptedFiles[0]
-      
+
       await api.uploadDocument(file, token!)
       setMessage('Document uploaded successfully!')
-      
+
       // Refresh document list (you might want to use a global state or callback here)
       window.location.reload()
     } catch (error) {
@@ -490,11 +490,11 @@ export default function UploadForm() {
           </div>
         )}
       </div>
-      
+
       {uploading && (
         <p className="mt-4 text-blue-600">Uploading...</p>
       )}
-      
+
       {message && (
         <p className={`mt-4 ${message.includes('Error') ? 'text-red-600' : 'text-green-600'}`}>
           {message}
@@ -561,7 +561,7 @@ export default function ChatWindow() {
     try {
       const token = await getToken()
       const response = await api.sendQuery(input, token!)
-      
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'assistant',
@@ -607,7 +607,7 @@ export default function ChatWindow() {
         )}
         <div ref={messagesEndRef} />
       </div>
-      
+
       <form onSubmit={handleSubmit} className="border-t p-4">
         <div className="flex gap-2">
           <input
@@ -665,7 +665,7 @@ export default function MessageBubble({ message }: { message: Message }) {
         }`}
       >
         <p className="whitespace-pre-wrap">{message.content}</p>
-        
+
         {message.citations && message.citations.length > 0 && (
           <div className="mt-3 space-y-2">
             <p className="text-sm font-semibold">Sources:</p>
@@ -710,7 +710,7 @@ export default function CitationViewer({ citation }: { citation: Citation }) {
         </div>
         {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
       </button>
-      
+
       {expanded && (
         <div className="mt-2 p-2 bg-black/10 rounded text-xs">
           {citation.snippet}
@@ -741,7 +741,7 @@ export const api = {
   uploadDocument: async (file: File, token: string) => {
     const formData = new FormData()
     formData.append('file', file)
-    
+
     return apiClient.post('/api/documents/upload', formData, {
       headers: {
         Authorization: `Bearer ${token}`,

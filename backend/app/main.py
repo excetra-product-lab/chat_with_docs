@@ -1,12 +1,12 @@
+from app.api.routes import auth, chat, documents
+from app.core.settings import settings
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.routes import auth, documents, chat
-from app.core.settings import settings
 
 app = FastAPI(
     title="Chat With Docs API",
     description="RAG-powered document Q&A system",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 # Configure CORS
@@ -22,6 +22,7 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api/auth", tags=["authentication"])
 app.include_router(documents.router, prefix="/api/documents", tags=["documents"])
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
+
 
 @app.get("/")
 async def read_root():
