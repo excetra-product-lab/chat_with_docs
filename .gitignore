@@ -87,7 +87,7 @@ ipython_config.py
 Pipfile.lock
 
 # UV
-uv.lock
+# uv.lock should be committed for reproducible builds
 
 # poetry
 poetry.lock
