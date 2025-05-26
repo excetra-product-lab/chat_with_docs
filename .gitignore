@@ -155,6 +155,7 @@ node_modules/
 # Next.js
 .next/
 out/
+tsconfig.tsbuildinfo
 
 # Environment variables
 .env.local

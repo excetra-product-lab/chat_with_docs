@@ -55,6 +55,7 @@ jobs:
       run: |
         rm -rf .next
         rm -rf node_modules/.cache
+        rm -f tsconfig.tsbuildinfo
 
     - name: Verify project structure
       continue-on-error: true
