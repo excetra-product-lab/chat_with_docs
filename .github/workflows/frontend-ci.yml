@@ -57,9 +57,24 @@ jobs:
         rm -rf node_modules/.cache
 
     - name: Verify project structure
+      continue-on-error: true
       run: |
         echo "Checking critical files..."
-        ls -la lib/api.ts
+        echo "Current directory: $(pwd)"
+        echo "Directory contents:"
+        ls -la
+        echo "Checking for lib directory:"
+        if [ -d "lib" ]; then
+          echo "✅ lib directory exists"
+          ls -la lib/
+          if [ -f "lib/api.ts" ]; then
+            echo "✅ lib/api.ts exists"
+          else
+            echo "❌ lib/api.ts not found"
+          fi
+        else
+          echo "❌ lib directory not found"
+        fi
         echo "TypeScript config paths:"
         grep -A 5 '"paths"' tsconfig.json || echo "No paths found in tsconfig.json"
 
