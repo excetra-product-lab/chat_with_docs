@@ -45,7 +45,7 @@ jobs:
         uv run black --check app tests
         uv run isort --check-only app tests
         uv run flake8 app tests --max-line-length=100 --extend-ignore=E203,W503
-        uv run mypy app --ignore-missing-imports
+        uv run mypy app --ignore-missing-imports --explicit-package-bases
         uv run pytest -v
 
     - name: Upload backend test results
