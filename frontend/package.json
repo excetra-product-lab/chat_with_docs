@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "type-check": "tsc --noEmit",
+    "debug-config": "tsc --showConfig"
   },
   "dependencies": {
     "@clerk/nextjs": "^5.7.1",

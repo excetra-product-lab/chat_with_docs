@@ -85,22 +85,29 @@ jobs:
           frontend/tsconfig.tsbuildinfo
         key: ${{ runner.os }}-typescript-${{ hashFiles('frontend/package-lock.json') }}
 
-    - name: Debug TypeScript Resolution
+    - name: Frontend CI with TypeScript Debug
       working-directory: frontend
       run: |
-        echo "=== TypeScript Config ==="
-        cat tsconfig.json
-        echo "=== File Structure ==="
-        find . -name "*.ts" -o -name "*.tsx" | head -20
-        echo "=== Module Resolution Test ==="
-        npx tsc --showConfig
-
-    - name: Frontend CI
-      working-directory: frontend
-      run: |
+        echo "=== Installing Dependencies ==="
         npm ci
+
+        echo "=== TypeScript Debug Info ==="
+        echo "TypeScript Config:"
+        cat tsconfig.json || echo "❌ tsconfig.json not found"
+        echo ""
+        echo "File Structure (TypeScript files):"
+        find . -name "*.ts" -o -name "*.tsx" | head -20
+        echo ""
+        echo "Module Resolution Configuration:"
+        npm run debug-config || echo "❌ Failed to get TypeScript config"
+        echo ""
+
+        echo "=== Running Frontend Checks ==="
+        echo "Running ESLint..."
         npm run lint
-        npx tsc --noEmit --skipLibCheck
+        echo "Running TypeScript type checking..."
+        npm run type-check -- --skipLibCheck
+        echo "Building application..."
         npm run build
 
     - name: Upload build artifacts

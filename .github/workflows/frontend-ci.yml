@@ -59,13 +59,14 @@ jobs:
         # Clear any potential TypeScript cache
         npx tsc --build --clean || true
 
-    - name: Verify project structure
+    - name: Verify project structure and TypeScript config
       continue-on-error: true
       run: |
-        echo "Checking critical files..."
+        echo "=== Project Structure Check ==="
         echo "Current directory: $(pwd)"
         echo "Directory contents:"
         ls -la
+        echo ""
         echo "Checking for lib directory:"
         if [ -d "lib" ]; then
           echo "✅ lib directory exists"
@@ -78,15 +79,23 @@ jobs:
         else
           echo "❌ lib directory not found"
         fi
+        echo ""
+        echo "=== TypeScript Configuration Debug ==="
         echo "TypeScript config paths:"
-        grep -A 5 '"paths"' tsconfig.json || echo "No paths found in tsconfig.json"
+        grep -A 10 '"paths"' tsconfig.json || echo "No paths found in tsconfig.json"
+        echo ""
+        echo "TypeScript files found:"
+        find . -name "*.ts" -o -name "*.tsx" | head -15
+        echo ""
+        echo "Module resolution configuration:"
+        npm run debug-config || echo "❌ Failed to get TypeScript config"
 
     - name: Run ESLint
       run: npm run lint
       continue-on-error: true
 
     - name: TypeScript type checking
-      run: npx tsc --noEmit
+      run: npm run type-check
       continue-on-error: true
 
     - name: Build application
@@ -127,10 +136,10 @@ jobs:
         echo "" >> $GITHUB_STEP_SUMMARY
 
         echo "### TypeScript" >> $GITHUB_STEP_SUMMARY
-        if npx tsc --noEmit 2>/dev/null; then
+        if npm run type-check 2>/dev/null; then
           echo "✅ No TypeScript errors found" >> $GITHUB_STEP_SUMMARY
         else
-          echo "❌ TypeScript errors found. Run \`npx tsc --noEmit\` locally to see details." >> $GITHUB_STEP_SUMMARY
+          echo "❌ TypeScript errors found. Run \`npm run type-check\` locally to see details." >> $GITHUB_STEP_SUMMARY
         fi
         echo "" >> $GITHUB_STEP_SUMMARY
 
