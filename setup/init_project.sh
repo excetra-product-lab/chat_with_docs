@@ -178,9 +178,6 @@ ipython_config.py
 # pipenv
 Pipfile.lock
 
-# UV
-uv.lock
-
 # poetry
 poetry.lock
 
@@ -277,17 +274,27 @@ coverage/
 .nyc_output/
 EOF
 
+# Create .env.example for docker-compose
+cat > .env.example << 'EOF'
+# Database Configuration for Docker Compose
+POSTGRES_USER=chatwithdocs
+POSTGRES_PASSWORD=your_secure_password_here
+POSTGRES_DB=chatwithdocs
+EOF
+
 # Create docker-compose.yml for local development
 cat > docker-compose.yml << 'EOF'
 version: '3.8'
 
+# Load environment variables from .env file
+# Copy .env.example to .env and customize your values
 services:
   postgres:
     image: pgvector/pgvector:pg16
     environment:
-      POSTGRES_USER: chatwithdocs
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: chatwithdocs
+      POSTGRES_USER: ${POSTGRES_USER:-chatwithdocs}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-your_secure_password_here}
+      POSTGRES_DB: ${POSTGRES_DB:-chatwithdocs}
     ports:
       - "5432:5432"
     volumes:
@@ -300,7 +307,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql://chatwithdocs:password@postgres:5432/chatwithdocs
+      DATABASE_URL: postgresql://${POSTGRES_USER:-chatwithdocs}:${POSTGRES_PASSWORD:-your_secure_password_here}@postgres:5432/${POSTGRES_DB:-chatwithdocs}
     depends_on:
       - postgres
     volumes:
@@ -479,11 +486,12 @@ echo ""
 echo "✅ Project structure created successfully!"
 echo ""
 echo "Next steps:"
-echo "1. Run './setup.sh' to install dependencies"
-echo "2. Configure your environment variables"
-echo "3. Set up your Supabase database with pgvector"
-echo "4. Create a Clerk.dev application"
-echo "5. Run 'make dev' to start development"
+echo "1. Copy .env.example to .env and set your database credentials"
+echo "2. Run './setup.sh' to install dependencies"
+echo "3. Configure your environment variables"
+echo "4. Set up your Supabase database with pgvector"
+echo "5. Create a Clerk.dev application"
+echo "6. Run 'make dev' to start development"
 echo ""
 echo "Project structure:"
 echo "- Backend: FastAPI with Python"

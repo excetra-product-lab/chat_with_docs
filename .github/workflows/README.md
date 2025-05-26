@@ -116,7 +116,7 @@ configured.
 
 ### Common Issues
 
-1. **uv sync fails**: Ensure `uv.lock` is committed and up to date
+1. **uv sync fails**: Ensure `backend/uv.lock` is committed and up to date
 2. **Database connection errors**: Check PostgreSQL service is healthy
 3. **ESLint errors**: Run `npm run lint -- --fix` locally to auto-fix
 4. **Type errors**: Ensure all TypeScript types are properly defined
