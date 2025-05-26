@@ -1,0 +1,77 @@
+name: Auto-fix Code Issues
+
+on:
+  workflow_dispatch:  # Manual trigger
+  schedule:
+    - cron: '0 2 * * 1'  # Weekly on Monday at 2 AM
+
+jobs:
+  auto-fix:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+      with:
+        enable-cache: true
+        cache-dependency-glob: "uv.lock"
+
+    - name: Install dependencies
+      run: |
+        uv sync --frozen
+
+    - name: Run auto-fixes
+      run: |
+        # Remove unused imports and variables
+        uv run autoflake --remove-all-unused-imports --remove-unused-variables --in-place --recursive app tests
+
+        # Fix PEP 8 issues
+        uv run autopep8 --in-place --aggressive --aggressive --max-line-length=100 --recursive app tests
+
+        # Format code with black
+        uv run black app tests
+
+        # Sort imports
+        uv run isort app tests
+
+    - name: Check for changes
+      id: verify-changed-files
+      run: |
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "changed=true" >> $GITHUB_OUTPUT
+        else
+          echo "changed=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Create Pull Request
+      if: steps.verify-changed-files.outputs.changed == 'true'
+      uses: peter-evans/create-pull-request@v6
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: "🤖 Auto-fix: Format code and fix linting issues"
+        title: "🤖 Auto-fix: Code formatting and linting"
+        body: |
+          ## Auto-generated fixes
+
+          This PR contains automatic fixes for:
+          - ✅ Removed unused imports and variables (autoflake)
+          - ✅ Fixed PEP 8 style issues (autopep8)
+          - ✅ Applied consistent code formatting (black)
+          - ✅ Sorted imports (isort)
+
+          Please review the changes before merging.
+        branch: auto-fix/formatting
+        delete-branch: true

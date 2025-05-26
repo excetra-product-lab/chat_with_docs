@@ -67,7 +67,7 @@ jobs:
 
     - name: Run MyPy type checker
       run: |
-        uv run mypy app --ignore-missing-imports
+        uv run mypy app --ignore-missing-imports --explicit-package-bases
       continue-on-error: true
 
     - name: Run tests with pytest
@@ -114,7 +114,7 @@ jobs:
         echo "" >> $GITHUB_STEP_SUMMARY
 
         echo "### MyPy (Type Checking)" >> $GITHUB_STEP_SUMMARY
-        if uv run mypy app --ignore-missing-imports 2>/dev/null; then
+        if uv run mypy app --ignore-missing-imports --explicit-package-bases 2>/dev/null; then
           echo "✅ No type checking issues found" >> $GITHUB_STEP_SUMMARY
         else
           echo "❌ Type checking issues found. Run \`mypy app\` locally to see details." >> $GITHUB_STEP_SUMMARY

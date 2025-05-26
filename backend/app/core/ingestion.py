@@ -41,4 +41,3 @@ async def generate_embeddings(chunks: List[str]) -> List[List[float]]:
 async def store_embeddings(chunks: List[str], embeddings: List[List[float]], user_id: int):
     """Store chunks and embeddings in pgvector"""
     # TODO: Store in database
-    pass
