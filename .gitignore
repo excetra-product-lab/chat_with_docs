@@ -189,3 +189,4 @@ coverage/
 
 .secrets
 .actrc
+frontend/tsconfig.tsbuildinfo

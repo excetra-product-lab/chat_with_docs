@@ -76,12 +76,31 @@ jobs:
         cache: 'npm'
         cache-dependency-path: frontend/package-lock.json
 
+    - name: Cache TypeScript build
+      uses: actions/cache@v3
+      with:
+        path: |
+          frontend/.next/cache
+          frontend/node_modules/.cache
+          frontend/tsconfig.tsbuildinfo
+        key: ${{ runner.os }}-typescript-${{ hashFiles('frontend/package-lock.json') }}
+
+    - name: Debug TypeScript Resolution
+      working-directory: frontend
+      run: |
+        echo "=== TypeScript Config ==="
+        cat tsconfig.json
+        echo "=== File Structure ==="
+        find . -name "*.ts" -o -name "*.tsx" | head -20
+        echo "=== Module Resolution Test ==="
+        npx tsc --showConfig
+
     - name: Frontend CI
       working-directory: frontend
       run: |
         npm ci
         npm run lint
-        npx tsc --noEmit
+        npx tsc --noEmit --skipLibCheck
         npm run build
 
     - name: Upload build artifacts

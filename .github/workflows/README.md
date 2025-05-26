@@ -37,15 +37,6 @@ This directory contains the CI/CD workflows for the Chat With Docs project.
   - Provides a unified CI status check
   - Uploads test artifacts
 
-### 4. Dependency Review (`dependency-review.yml`)
-
-- **Triggers**: Pull requests that modify dependency files
-- **Actions**:
-  - Reviews dependency changes for security vulnerabilities
-  - Runs Python Safety check
-  - Performs npm audit for frontend dependencies
-  - Generates vulnerability reports
-
 ## Local Development
 
 ### Pre-commit Hooks
