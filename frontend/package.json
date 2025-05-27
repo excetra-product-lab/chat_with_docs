@@ -4,7 +4,6 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "echo 'Preparing build environment...'",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

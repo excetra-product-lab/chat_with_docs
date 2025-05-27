@@ -49,12 +49,7 @@ jobs:
         cache-dependency-path: frontend/package-lock.json
 
     - name: Install dependencies
-      run: |
-        echo "Current directory: $(pwd)"
-        echo "Package.json exists: $(test -f package.json && echo 'yes' || echo 'no')"
-        echo "Package-lock.json exists: $(test -f package-lock.json && echo 'yes' || echo 'no')"
-        rm -rf node_modules
-        npm ci --prefer-offline --no-audit
+      run: npm ci
 
     - name: Clear build caches
       run: |
@@ -63,60 +58,6 @@ jobs:
         rm -f tsconfig.tsbuildinfo
         # Clear any potential TypeScript cache
         npx tsc --build --clean || true
-
-    - name: Verify project structure and TypeScript config
-      continue-on-error: true
-      run: |
-        echo "=== Project Structure Check ==="
-        echo "Current directory: $(pwd)"
-        echo "Directory contents:"
-        ls -la
-        echo ""
-        echo "Checking for lib directory:"
-        if [ -d "lib" ]; then
-          echo "✅ lib directory exists"
-          ls -la lib/
-          if [ -f "lib/api.ts" ]; then
-            echo "✅ lib/api.ts exists"
-            echo "First few lines of lib/api.ts:"
-            head -5 lib/api.ts
-          else
-            echo "❌ lib/api.ts not found"
-          fi
-        else
-          echo "❌ lib directory not found"
-        fi
-        echo ""
-        echo "=== Node.js and npm versions ==="
-        node --version
-        npm --version
-        echo ""
-        echo "=== TypeScript Configuration Debug ==="
-        echo "TypeScript config paths:"
-        grep -A 10 '"paths"' tsconfig.json || echo "No paths found in tsconfig.json"
-        echo ""
-        echo "Full tsconfig.json:"
-        cat tsconfig.json
-        echo ""
-        echo "=== Next.js Configuration ==="
-        echo "next.config.js content:"
-        cat next.config.js
-        echo ""
-        echo "TypeScript files found:"
-        find . -name "*.ts" -o -name "*.tsx" | head -15
-        echo ""
-        echo "Module resolution configuration:"
-        npm run debug-config || echo "❌ Failed to get TypeScript config"
-        echo ""
-        echo "=== Import statements in failing files ==="
-        echo "ChatWindow.tsx imports:"
-        grep -E "^import|^export" components/ChatWindow.tsx || true
-        echo ""
-        echo "DocumentList.tsx imports:"
-        grep -E "^import|^export" components/DocumentList.tsx || true
-        echo ""
-        echo "UploadForm.tsx imports:"
-        grep -E "^import|^export" components/UploadForm.tsx || true
 
     - name: Run ESLint
       run: npm run lint
