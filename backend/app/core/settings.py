@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # Database
-    DATABASE_URL: str = "sqlite:///./test.db"  # Default for testing
+    DATABASE_URL: str = "postgresql://localhost/chatwithdocs"  # Default for testing
 
     # Azure OpenAI - Optional for testing
     AZURE_OPENAI_API_KEY: Optional[str] = None
@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     AZURE_OPENAI_EMBEDDING_DEPLOYMENT: Optional[str] = None
 
     # Authentication
-    SECRET_KEY: str = "your-secret-key-here-change-in-production"  # Default for testing
+    SECRET_KEY: str = "dev-secret-key-change-in-production"  # pragma: allowlist secret
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
