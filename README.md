@@ -1,3 +1,5 @@
+[![Backend CI](https://github.com/excetra-product-lab/chat_with_docs/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/excetra-product-lab/chat_with_docs/actions/workflows/backend-ci.yml)
+[![Frontend CI](https://github.com/excetra-product-lab/chat_with_docs/actions/workflows/frontend-ci.yml/badge.svg)](https://github.com/excetra-product-lab/chat_with_docs/actions/workflows/frontend-ci.yml)
 # Chat With Docs (RAG)
 ## Tech Stack
 | Layer             | Choice                          | Rationale                           |
