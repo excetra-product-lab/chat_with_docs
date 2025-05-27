@@ -1,20 +1,20 @@
-from typing import List
+from typing import List, Optional
 
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
     # Database
-    DATABASE_URL: str = "postgresql://user:password@localhost/chatwithdocs"
+    DATABASE_URL: str
 
-    # Azure OpenAI
-    AZURE_OPENAI_API_KEY: str = ""
-    AZURE_OPENAI_ENDPOINT: str = ""
-    AZURE_OPENAI_DEPLOYMENT_NAME: str = "gpt-4o"
-    AZURE_OPENAI_EMBEDDING_DEPLOYMENT: str = "text-embedding-ada-002"
+    # Azure OpenAI - Optional for testing
+    AZURE_OPENAI_API_KEY: Optional[str] = None
+    AZURE_OPENAI_ENDPOINT: Optional[str] = None
+    AZURE_OPENAI_DEPLOYMENT_NAME: Optional[str] = None
+    AZURE_OPENAI_EMBEDDING_DEPLOYMENT: Optional[str] = None
 
     # Authentication
-    SECRET_KEY: str = "your-secret-key-here"
+    SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
@@ -27,6 +27,7 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ".env"
+        extra = "ignore"
 
 
 settings = Settings()

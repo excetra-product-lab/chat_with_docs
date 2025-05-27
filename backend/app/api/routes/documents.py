@@ -1,11 +1,68 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
 from app.api.dependencies import get_current_user
-from app.models.schemas import Document
+from app.models.schemas import Document, DocumentProcessingResult, ProcessingConfig
+from app.services.document_processor import DocumentProcessor
 
 router = APIRouter()
+
+# Initialize document processor
+document_processor = DocumentProcessor()
+
+
+@router.post("/process", response_model=DocumentProcessingResult)
+async def process_document(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Process an uploaded document: parse text and create chunks.
+    This endpoint handles the document parsing and text extraction.
+    """
+    try:
+        # Process the document
+        result = await document_processor.process_document(file)
+
+        # Validate the processing result
+        if not document_processor.validate_processing_result(result):
+            raise HTTPException(status_code=500, detail="Document processing validation failed")
+
+        # Convert to response format
+        return DocumentProcessingResult(
+            success=True,
+            message=f"Successfully processed document: {file.filename}",
+            document_metadata=result.parsed_content.metadata.__dict__,
+            chunks=[
+                {
+                    "text": chunk.text,
+                    "chunk_index": chunk.chunk_index,
+                    "document_filename": chunk.document_filename,
+                    "page_number": chunk.page_number,
+                    "section_title": chunk.section_title,
+                    "start_char": chunk.start_char,
+                    "end_char": chunk.end_char,
+                    "char_count": chunk.char_count,
+                    "metadata": chunk.metadata,
+                }
+                for chunk in result.chunks
+            ],
+            processing_stats=result.processing_stats,
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Unexpected error processing document: {str(e)}"
+        )
+
+
+@router.get("/processing-config", response_model=ProcessingConfig)
+async def get_processing_config():
+    """Get the current document processing configuration."""
+    return document_processor.get_processing_config()
 
 
 @router.post("/upload", response_model=Document)
