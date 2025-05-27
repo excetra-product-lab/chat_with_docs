@@ -52,7 +52,7 @@ export default function ChatWindow() {
     try {
       const token = await getToken()
       const response = await api.sendQuery(input, token!)
-      
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'assistant',
@@ -98,7 +98,7 @@ export default function ChatWindow() {
         )}
         <div ref={messagesEndRef} />
       </div>
-      
+
       <form onSubmit={handleSubmit} className="border-t p-4">
         <div className="flex gap-2">
           <input

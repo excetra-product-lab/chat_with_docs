@@ -16,7 +16,7 @@ export default function Home() {
           <p className="m-0 max-w-[30ch] text-sm opacity-50">
             Upload your legal documents and ask questions. Get accurate answers with citations.
           </p>
-          
+
           <div className="mt-6">
             <SignedOut>
               <SignInButton mode="modal">

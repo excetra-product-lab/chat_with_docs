@@ -26,6 +26,9 @@ share/python-wheels/
 *.egg
 MANIFEST
 
+# Exception for frontend lib directory
+!frontend/lib/
+
 # PyInstaller
 *.manifest
 *.spec
@@ -87,7 +90,7 @@ ipython_config.py
 Pipfile.lock
 
 # UV
-uv.lock
+# uv.lock should be committed for reproducible builds
 
 # poetry
 poetry.lock
@@ -155,12 +158,14 @@ node_modules/
 # Next.js
 .next/
 out/
+tsconfig.tsbuildinfo
 
 # Environment variables
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+.env.test
 
 # Logs
 logs
@@ -183,3 +188,8 @@ Thumbs.db
 # Testing
 coverage/
 .nyc_output/
+
+
+.secrets
+.actrc
+frontend/tsconfig.tsbuildinfo

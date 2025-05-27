@@ -1,7 +1,9 @@
 [![Backend CI](https://github.com/excetra-product-lab/chat_with_docs/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/excetra-product-lab/chat_with_docs/actions/workflows/backend-ci.yml)
 [![Frontend CI](https://github.com/excetra-product-lab/chat_with_docs/actions/workflows/frontend-ci.yml/badge.svg)](https://github.com/excetra-product-lab/chat_with_docs/actions/workflows/frontend-ci.yml)
 # Chat With Docs (RAG)
+
 ## Tech Stack
+
 | Layer             | Choice                          | Rationale                           |
 | ----------------- | ------------------------------- | ----------------------------------- |
 | Vector store      | **pgvector (managed Supabase)** | 1-click, UK region, SQL familiarity |
@@ -14,6 +16,7 @@
 ## Quick Start
 
 ### Prerequisites
+
 - Python 3.11+
 - Node.js 18+
 - PostgreSQL with pgvector extension (or Supabase account)
@@ -21,29 +24,36 @@
 - Clerk.dev account
 
 ## Backend Setup
+
 1. (Optional) Create & activate a venv:
+
    ```bash
    python -m venv venv
    source venv/bin/activate   # Windows: venv\Scripts\activate
    ```
+
 2. Sync all dependencies using uv
+
    ```bash
    cd backend
    uv sync
    ```
+
 3. Copy and customize the env files
+
    ```bash
    cp .env.example .env
    # Edit .env with database, Azure OpenAI, etc.
    ```
+
 4. Start the dev server
+
    ```bash
    uv run "uvicorn app.main:app --reload"
    ```
 
-
-
 ### Frontend Setup
+
 ```bash
 cd frontend
 npm install
@@ -53,12 +63,15 @@ npm run dev
 ```
 
 ### Development
+
 Both servers should now be running:
-- Backend API: http://localhost:8000
-- Frontend: http://localhost:3000
-- API docs: http://localhost:8000/docs
+
+- Backend API: <http://localhost:8000>
+- Frontend: <http://localhost:3000>
+- API docs: <http://localhost:8000/docs>
 
 ## Architecture
+
 ```mermaid
 graph TB
     %% Styling
@@ -67,42 +80,42 @@ graph TB
     classDef database fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff
     classDef external fill:#f39c12,stroke:#e67e22,stroke-width:2px,color:#fff
     classDef auth fill:#9b59b6,stroke:#8e44ad,stroke-width:2px,color:#fff
-    
+
     %% User Layer
     User[👤 Legal Team<br/>Users]:::frontend
-    
+
     %% Frontend Layer
     subgraph "Frontend (Next.js)"
         UI[🖥️ Next.js + shadcn/ui<br/>Chat Interface<br/>Document Upload]:::frontend
         Auth[🔐 Clerk.dev<br/>Authentication<br/>JWT Management]:::auth
     end
-    
-    %% Backend Layer  
+
+    %% Backend Layer
     subgraph "Backend Services (FastAPI)"
         API[🚀 FastAPI Backend<br/>• Document Routes<br/>• Chat Routes<br/>• Auth Routes]:::backend
-        
+
         subgraph "Core Services"
             Ingestion[📄 Document Processing<br/>• Parse PDFs<br/>• Text Chunking<br/>• Metadata Extraction]:::backend
             QnA[🤖 QnA Service<br/>• Query Processing<br/>• RAG Pipeline<br/>• Response Generation]:::backend
             Vector[🔍 Vector Store Utils<br/>• Similarity Search<br/>• Embedding Management]:::backend
         end
     end
-    
+
     %% Database Layer
     subgraph "Data Storage (Supabase)"
         DB[(🗄️ PostgreSQL + pgvector<br/>• Documents Table<br/>• Chunks Table<br/>• Embeddings Table<br/>• Users Table<br/>• Vector Similarity Search)]:::database
     end
-    
+
     %% External Services
     subgraph "AI Services (Azure OpenAI)"
         Embeddings[🧠 Text Embeddings<br/>Ada-002]:::external
         LLM[💬 GPT-4o<br/>Chat Completion<br/>Citation Generation]:::external
     end
-    
+
     %% Additional Services
     Verification[✅ Claims Verification<br/>Fact Checking<br/>Source Validation]:::backend
     Hosting[☁️ Fly.io Hosting<br/>UK/EU Region<br/>GDPR Compliant]:::external
-    
+
     %% Offline Indexing Pipeline
     User -->|Upload Documents| UI
     UI --> Auth
@@ -111,7 +124,7 @@ graph TB
     Ingestion -->|Generate Embeddings| Embeddings
     Embeddings -->|Store Vectors| DB
     Ingestion -->|Store Metadata| DB
-    
+
     %% Online Query Pipeline
     User -->|Ask Questions| UI
     UI -->|Authenticated Requests| API
@@ -125,7 +138,7 @@ graph TB
     QnA --> API
     API --> UI
     UI -->|Display Answer + Citations| User
-    
+
     %% Infrastructure
     API -.->|Deployed on| Hosting
     DB -.->|Hosted in| Hosting
@@ -134,6 +147,7 @@ graph TB
 ## Deployment
 
 ### Backend (Fly.io)
+
 ```bash
 cd backend
 fly launch
@@ -141,12 +155,14 @@ fly deploy
 ```
 
 ### Frontend (Vercel)
+
 ```bash
 cd frontend
 vercel
 ```
 
 ## Features
+
 - 🔒 Secure authentication with Clerk
 - 📄 Multi-format document upload (PDF, DOCX, TXT)
 - 🔍 Semantic search with pgvector

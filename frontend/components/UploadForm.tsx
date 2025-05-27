@@ -20,10 +20,10 @@ export default function UploadForm() {
     try {
       const token = await getToken()
       const file = acceptedFiles[0]
-      
+
       await api.uploadDocument(file, token!)
       setMessage('Document uploaded successfully!')
-      
+
       // Refresh document list (you might want to use a global state or callback here)
       window.location.reload()
     } catch (error) {
@@ -66,11 +66,11 @@ export default function UploadForm() {
           </div>
         )}
       </div>
-      
+
       {uploading && (
         <p className="mt-4 text-blue-600">Uploading...</p>
       )}
-      
+
       {message && (
         <p className={`mt-4 ${message.includes('Error') ? 'text-red-600' : 'text-green-600'}`}>
           {message}

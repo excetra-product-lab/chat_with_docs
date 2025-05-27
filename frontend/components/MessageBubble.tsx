@@ -29,7 +29,7 @@ export default function MessageBubble({ message }: { message: Message }) {
         }`}
       >
         <p className="whitespace-pre-wrap">{message.content}</p>
-        
+
         {message.citations && message.citations.length > 0 && (
           <div className="mt-3 space-y-2">
             <p className="text-sm font-semibold">Sources:</p>

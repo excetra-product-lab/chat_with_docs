@@ -23,10 +23,47 @@ dependencies = [
   "python-docx>=1.1.0",
   # dev & test
   "pytest>=7.4.4",
+  "pytest-cov>=4.1.0",
   "httpx>=0.26.0",
+  "pre-commit>=4.2.0",
+  "black>=25.1.0",
+  "isort>=6.0.1",
+  "flake8>=7.2.0",
+  "mypy>=1.15.0",
+  "autoflake>=2.3.1",
+  "autopep8>=2.3.1",
 ]
 
 [tool.uv]
 # optional uv configuration
 
 # Lockfile is uv.lock
+
+[tool.black]
+line-length = 100
+target-version = ['py311']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+pythonpath = ["."]

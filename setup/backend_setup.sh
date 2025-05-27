@@ -48,25 +48,25 @@ from typing import List
 class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "postgresql://user:password@localhost/chatwithdocs"
-    
+
     # Azure OpenAI
     AZURE_OPENAI_API_KEY: str = ""
     AZURE_OPENAI_ENDPOINT: str = ""
     AZURE_OPENAI_DEPLOYMENT_NAME: str = "gpt-4o"
     AZURE_OPENAI_EMBEDDING_DEPLOYMENT: str = "text-embedding-ada-002"
-    
+
     # Authentication
     SECRET_KEY: str = "your-secret-key-here"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-    
+
     # CORS
     ALLOWED_ORIGINS: List[str] = ["http://localhost:3000"]
-    
+
     # Vector store
     CHUNK_SIZE: int = 1000
     CHUNK_OVERLAP: int = 200
-    
+
     class Config:
         env_file = ".env"
 
@@ -178,11 +178,11 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    
+
     payload = decode_access_token(token)
     if payload is None:
         raise credentials_exception
-    
+
     # TODO: Fetch user from database
     return {"id": 1, "email": payload.get("sub")}
 EOF
@@ -199,16 +199,16 @@ async def process_document(file_path: str, user_id: int) -> Dict:
     """
     # TODO: Parse document (PDF, DOCX, etc.)
     text = await parse_document(file_path)
-    
+
     # TODO: Split into chunks
     chunks = chunk_text(text)
-    
+
     # TODO: Generate embeddings
     embeddings = await generate_embeddings(chunks)
-    
+
     # TODO: Store in vector database
     await store_embeddings(chunks, embeddings, user_id)
-    
+
     return {"status": "success", "chunks": len(chunks)}
 
 async def parse_document(file_path: str) -> str:
@@ -244,16 +244,16 @@ async def answer_question(question: str, user_id: int) -> Answer:
     """
     # TODO: Search for relevant chunks
     relevant_chunks = await similarity_search(question, user_id)
-    
+
     # TODO: Build context from chunks
     context = build_context(relevant_chunks)
-    
+
     # TODO: Generate answer using LLM
     answer_text = await generate_answer(question, context)
-    
+
     # TODO: Extract citations
     citations = extract_citations(answer_text, relevant_chunks)
-    
+
     return Answer(
         answer=answer_text,
         citations=citations,
@@ -287,10 +287,10 @@ async def similarity_search(query: str, user_id: int, k: int = 5) -> List[Dict]:
     """
     # TODO: Generate embedding for query
     query_embedding = await generate_query_embedding(query)
-    
+
     # TODO: Search in pgvector
     results = await search_vectors(query_embedding, user_id, k)
-    
+
     return results
 
 async def generate_query_embedding(query: str) -> List[float]:
@@ -364,36 +364,36 @@ Base = declarative_base()
 
 class User(Base):
     __tablename__ = "users"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
-    
+
     documents = relationship("Document", back_populates="user")
 
 class Document(Base):
     __tablename__ = "documents"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     filename = Column(String)
     user_id = Column(Integer, ForeignKey("users.id"))
     status = Column(String, default="processing")
     created_at = Column(DateTime, default=datetime.utcnow)
-    
+
     user = relationship("User", back_populates="documents")
     chunks = relationship("Chunk", back_populates="document")
 
 class Chunk(Base):
     __tablename__ = "chunks"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     document_id = Column(Integer, ForeignKey("documents.id"))
     content = Column(Text)
     embedding = Column(VECTOR(1536))
     page = Column(Integer, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
-    
+
     document = relationship("Document", back_populates="chunks")
 EOF
 
