@@ -26,6 +26,9 @@ share/python-wheels/
 *.egg
 MANIFEST
 
+# Exception for frontend lib directory
+!frontend/lib/
+
 # PyInstaller
 *.manifest
 *.spec

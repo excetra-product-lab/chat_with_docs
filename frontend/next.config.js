@@ -9,10 +9,21 @@ const nextConfig = {
     typedRoutes: true,
   },
   webpack: (config) => {
+    // Add comprehensive path aliases
     config.resolve.alias = {
       ...config.resolve.alias,
       '@': path.resolve(__dirname, '.'),
+      '@/lib': path.resolve(__dirname, 'lib'),
+      '@/components': path.resolve(__dirname, 'components'),
+      '@/app': path.resolve(__dirname, 'app'),
+      '@/styles': path.resolve(__dirname, 'styles'),
+      '@/context': path.resolve(__dirname, 'context'),
+      '@/public': path.resolve(__dirname, 'public'),
     };
+
+    // Ensure TypeScript paths are resolved
+    config.resolve.extensions = ['.ts', '.tsx', '.js', '.jsx', '.json'];
+
     return config;
   },
 };
