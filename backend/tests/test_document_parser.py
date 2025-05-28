@@ -138,7 +138,33 @@ class TestDocumentParser:
         assert result.text == content
         assert result.metadata.filename == "test.txt"
         assert result.metadata.file_type == "txt"
+        assert result.metadata.total_chars == len(content)
+        assert result.metadata.total_tokens > 0  # Should have token count
+        assert isinstance(result.metadata.total_tokens, int)
+        # Token count should be reasonable for this text (roughly 10-15 tokens)
+        assert 5 <= result.metadata.total_tokens <= 20
         assert len(result.structured_content) > 0
+
+    @pytest.mark.asyncio
+    async def test_token_counting_consistency(self):
+        """Test that token counting is consistent and reasonable."""
+        content = "Hello world! This is a test document with multiple sentences."
+        file = self.create_upload_file(content.encode("utf-8"), "test.txt", "text/plain")
+
+        result = await self.parser.parse_document(file)
+
+        # Verify token count is present and reasonable
+        assert result.metadata.total_tokens > 0
+        assert isinstance(result.metadata.total_tokens, int)
+        # Should be more than 1 token but less than character count
+        assert 1 < result.metadata.total_tokens < len(content)
+
+        # Parse the same content again to ensure consistency
+        file2 = self.create_upload_file(content.encode("utf-8"), "test2.txt", "text/plain")
+        result2 = await self.parser.parse_document(file2)
+
+        # Token counts should be identical for identical content
+        assert result.metadata.total_tokens == result2.metadata.total_tokens
 
     @pytest.mark.asyncio
     async def test_parse_document_unsupported_format(self):
@@ -175,6 +201,7 @@ class TestDocumentMetadata:
             file_type="pdf",
             total_pages=5,
             total_chars=1000,
+            total_tokens=250,
             sections=["Introduction", "Conclusion"],
         )
 
@@ -182,6 +209,7 @@ class TestDocumentMetadata:
         assert metadata.file_type == "pdf"
         assert metadata.total_pages == 5
         assert metadata.total_chars == 1000
+        assert metadata.total_tokens == 250
         assert metadata.sections == ["Introduction", "Conclusion"]
 
     def test_document_metadata_defaults(self):
@@ -192,6 +220,7 @@ class TestDocumentMetadata:
         assert metadata.file_type == "txt"
         assert metadata.total_pages is None
         assert metadata.total_chars == 0
+        assert metadata.total_tokens == 0
         assert metadata.sections == []
 
 

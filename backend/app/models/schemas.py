@@ -39,6 +39,7 @@ class DocumentMetadata(BaseModel):
     file_type: str
     total_pages: Optional[int] = None
     total_chars: int
+    total_tokens: int = 0
     sections: List[str] = []
 
 

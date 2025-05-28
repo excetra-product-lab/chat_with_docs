@@ -106,6 +106,7 @@ class DocumentProcessor:
                 "file_type": parsed_content.metadata.file_type,
                 "total_pages": parsed_content.metadata.total_pages,
                 "total_characters": parsed_content.metadata.total_chars,
+                "total_tokens": parsed_content.metadata.total_tokens,
                 "sections_detected": len(parsed_content.metadata.sections),
             },
             "parsing": {

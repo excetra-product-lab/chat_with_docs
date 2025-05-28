@@ -9,6 +9,8 @@ import pypdf
 from docx import Document as DocxDocument
 from fastapi import HTTPException, UploadFile
 
+from app.utils.token_counter import TokenCounter
+
 logger = logging.getLogger(__name__)
 
 
@@ -21,12 +23,14 @@ class DocumentMetadata:
         file_type: str,
         total_pages: Optional[int] = None,
         total_chars: int = 0,
+        total_tokens: int = 0,
         sections: Optional[List[str]] = None,
     ):
         self.filename = filename
         self.file_type = file_type
         self.total_pages = total_pages
         self.total_chars = total_chars
+        self.total_tokens = total_tokens
         self.sections = sections or []
 
 
@@ -58,8 +62,9 @@ class DocumentParser:
 
     MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 
-    def __init__(self):
+    def __init__(self, encoding_name: str = "cl100k_base"):
         self.logger = logging.getLogger(__name__)
+        self.token_counter = TokenCounter(encoding_name)
 
     async def parse_document(self, file: UploadFile) -> ParsedContent:
         """
@@ -157,11 +162,11 @@ class DocumentParser:
                 raise HTTPException(status_code=400, detail="No text content found in PDF")
 
             # Create metadata
-            metadata = DocumentMetadata(
+            metadata = self._create_metadata_with_tokens(
                 filename=filename,
                 file_type="pdf",
+                full_text=full_text,
                 total_pages=len(reader.pages),
-                total_chars=len(full_text),
             )
 
             # Create structured content for each page
@@ -216,10 +221,10 @@ class DocumentParser:
                 raise HTTPException(status_code=400, detail="No text content found in document")
 
             # Create metadata
-            metadata = DocumentMetadata(
+            metadata = self._create_metadata_with_tokens(
                 filename=filename,
                 file_type="docx",
-                total_chars=len(full_text),
+                full_text=full_text,
                 sections=sections,
             )
 
@@ -278,10 +283,10 @@ class DocumentParser:
             paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
 
             # Create metadata
-            metadata = DocumentMetadata(
+            metadata = self._create_metadata_with_tokens(
                 filename=filename,
                 file_type="txt",
-                total_chars=len(text),
+                full_text=text,
             )
 
             # Create structured content
@@ -305,3 +310,24 @@ class DocumentParser:
             raise
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to parse text file: {str(e)}")
+
+    def _create_metadata_with_tokens(
+        self,
+        filename: str,
+        file_type: str,
+        full_text: str,
+        total_pages: Optional[int] = None,
+        sections: Optional[List[str]] = None,
+    ) -> DocumentMetadata:
+        """Create metadata with token count included."""
+        total_chars = len(full_text)
+        total_tokens = self.token_counter.count_tokens(full_text)
+
+        return DocumentMetadata(
+            filename=filename,
+            file_type=file_type,
+            total_pages=total_pages,
+            total_chars=total_chars,
+            total_tokens=total_tokens,
+            sections=sections or [],
+        )

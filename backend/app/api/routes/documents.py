@@ -42,6 +42,7 @@ async def process_document(
             file_type=result.parsed_content.metadata.file_type,
             total_pages=result.parsed_content.metadata.total_pages,
             total_chars=result.parsed_content.metadata.total_chars,
+            total_tokens=result.parsed_content.metadata.total_tokens,
             sections=result.parsed_content.metadata.sections,
         )
 
