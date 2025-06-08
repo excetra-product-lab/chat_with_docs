@@ -59,11 +59,11 @@ class DocumentProcessor:
         self, file: UploadFile, prefer_langchain: Optional[bool] = None
     ) -> ProcessingResult:
         """
-        Process an uploaded document: parse and chunk it.
+        Process a document using standard or Langchain processors.
 
         Args:
             file: The uploaded file to process
-            prefer_langchain: Override instance setting for using Langchain
+            prefer_langchain: Override the default Langchain usage behavior
 
         Returns:
             ProcessingResult: Complete processing results
@@ -73,6 +73,10 @@ class DocumentProcessor:
         """
         try:
             self.logger.info(f"Starting processing of document: {file.filename}")
+
+            # Step 0: Validate file before processing
+            self.parser._validate_file(file)
+            await file.seek(0)  # Reset file pointer after validation
 
             # Determine processing method
             use_langchain_for_this = (
