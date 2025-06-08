@@ -73,15 +73,21 @@ def sample_documents() -> List[Document]:
     """
     return [
         Document(
-            page_content="This is the first document about artificial intelligence and machine learning.",
+            page_content=(
+                "This is the first document about artificial intelligence and machine learning."
+            ),
             metadata={"source": "doc1.txt", "page": 1, "chunk_id": 0},
         ),
         Document(
-            page_content="This is the second document discussing natural language processing techniques.",
+            page_content=(
+                "This is the second document discussing natural language processing techniques."
+            ),
             metadata={"source": "doc2.txt", "page": 1, "chunk_id": 1},
         ),
         Document(
-            page_content="The third document covers deep learning architectures and neural networks.",
+            page_content=(
+                "The third document covers deep learning architectures and neural networks."
+            ),
             metadata={"source": "doc3.txt", "page": 2, "chunk_id": 2},
         ),
     ]
@@ -113,7 +119,7 @@ def mock_azure_credentials():
     with patch.dict(
         "os.environ",
         {
-            "AZURE_OPENAI_API_KEY": "test-api-key",
+            "AZURE_OPENAI_API_KEY": "test-api-key",  # pragma: allowlist secret
             "AZURE_OPENAI_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_DEPLOYMENT_NAME": "test-deployment",
             "AZURE_OPENAI_EMBEDDING_DEPLOYMENT": "test-embedding-deployment",

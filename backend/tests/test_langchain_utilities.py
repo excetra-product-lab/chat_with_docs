@@ -309,7 +309,10 @@ class TestLangchainTestingPatterns:
         langchain_helper.mock_llm_response(
             fake_llm,
             [
-                "Based on the documents, artificial intelligence is a field that focuses on creating intelligent systems."
+                (
+                    "Based on the documents, artificial intelligence is a field that focuses on "
+                    "creating intelligent systems."
+                )
             ],
         )
 
