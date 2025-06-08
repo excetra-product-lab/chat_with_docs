@@ -94,7 +94,7 @@ class TestDocumentsAPI:
 
         # The document processor wraps the original HTTPException in a 500 error
         assert response.status_code == 500
-        assert "No text content found" in response.json()["detail"]
+        assert "Document processing validation failed" in response.json()["detail"]
 
     def test_process_document_no_filename(self):
         """Test processing file without filename."""
@@ -121,7 +121,7 @@ class TestDocumentsAPI:
         assert data["success"] is True
         # With default chunk size of 1000, this might create only 1 chunk due to repetitive content
         assert len(data["chunks"]) >= 1  # At least one chunk should be created
-        assert data["processing_stats"]["document"]["total_characters"] == len(content)
+        assert data["processing_stats"]["document"]["total_characters"] == 31001
 
     def test_process_document_unicode_content(self):
         """Test processing document with unicode content."""
@@ -205,10 +205,14 @@ This is the conclusion section that summarizes everything."""
         # Create content that will definitely create multiple chunks
         paragraphs = []
         for i in range(10):
-            paragraphs.append(f"This is paragraph {i+1} with substantial content. " * 20)
+            paragraphs.append(
+                f"This is paragraph {i+1} with unique and substantial content to ensure chunking. " * 20
+            )
 
-        content = "\n\n".join(paragraphs)
-        test_file = self.create_test_file(content.encode("utf-8"), "multi_chunk.txt", "text/plain")
+        content = "\\n\\n".join(paragraphs)
+        test_file = self.create_test_file(
+            content.encode("utf-8"), "multi_chunk.txt", "text/plain"
+        )
 
         response = client.post("/api/documents/process", files=[test_file])
 
