@@ -242,6 +242,7 @@ class LangchainDocumentProcessor:
         chunk_size = chunk_size or self.chunk_config["chunk_size"]
         chunk_overlap = chunk_overlap or self.chunk_config["chunk_overlap"]
 
+        splitter: Union[RecursiveCharacterTextSplitter, CharacterTextSplitter]
         if use_recursive:
             splitter = RecursiveCharacterTextSplitter(
                 chunk_size=chunk_size,

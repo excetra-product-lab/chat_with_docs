@@ -7,11 +7,12 @@ including LLM setup, embedding models, and tracing configuration.
 
 import logging
 import os
-from typing import Optional
+from typing import Optional, Union
 
 from langchain_community.embeddings import FakeEmbeddings
 from langchain_community.llms import FakeListLLM
 from langchain_openai import AzureChatOpenAI, AzureOpenAIEmbeddings
+from pydantic import SecretStr
 
 from .settings import settings
 
@@ -21,12 +22,12 @@ logger = logging.getLogger(__name__)
 class LangchainConfig:
     """Centralized Langchain configuration class."""
 
-    def __init__(self):
-        self._llm: Optional[AzureChatOpenAI] = None
-        self._embeddings: Optional[AzureOpenAIEmbeddings] = None
+    def __init__(self) -> None:
+        self._llm: Optional[Union[AzureChatOpenAI, FakeListLLM]] = None
+        self._embeddings: Optional[Union[AzureOpenAIEmbeddings, FakeEmbeddings]] = None
         self._setup_langchain_environment()
 
-    def _setup_langchain_environment(self):
+    def _setup_langchain_environment(self) -> None:
         """Set up Langchain environment variables and logging."""
         # Configure LangSmith tracing if enabled
         if settings.LANGCHAIN_TRACING_V2:
@@ -45,14 +46,19 @@ class LangchainConfig:
             logging.getLogger("langchain.chains").setLevel(logging.DEBUG)
 
     @property
-    def llm(self) -> AzureChatOpenAI:
+    def llm(self) -> Union[AzureChatOpenAI, FakeListLLM]:
         """Get configured Azure LLM instance."""
         if self._llm is None:
             if settings.AZURE_OPENAI_API_KEY and settings.AZURE_OPENAI_ENDPOINT:
+                api_key = (
+                    SecretStr(settings.AZURE_OPENAI_API_KEY)
+                    if settings.AZURE_OPENAI_API_KEY
+                    else None
+                )
                 self._llm = AzureChatOpenAI(
-                    api_key=settings.AZURE_OPENAI_API_KEY,
+                    api_key=api_key,
                     azure_endpoint=settings.AZURE_OPENAI_ENDPOINT,
-                    deployment_name=(
+                    azure_deployment=(
                         settings.AZURE_OPENAI_DEPLOYMENT_NAME or settings.OPENAI_MODEL
                     ),
                     api_version="2024-02-01",
@@ -70,14 +76,19 @@ class LangchainConfig:
         return self._llm
 
     @property
-    def embeddings(self) -> AzureOpenAIEmbeddings:
+    def embeddings(self) -> Union[AzureOpenAIEmbeddings, FakeEmbeddings]:
         """Get configured Azure embeddings instance."""
         if self._embeddings is None:
             if settings.AZURE_OPENAI_API_KEY and settings.AZURE_OPENAI_ENDPOINT:
+                api_key = (
+                    SecretStr(settings.AZURE_OPENAI_API_KEY)
+                    if settings.AZURE_OPENAI_API_KEY
+                    else None
+                )
                 self._embeddings = AzureOpenAIEmbeddings(
-                    api_key=settings.AZURE_OPENAI_API_KEY,
+                    api_key=api_key,
                     azure_endpoint=settings.AZURE_OPENAI_ENDPOINT,
-                    deployment=(
+                    azure_deployment=(
                         settings.AZURE_OPENAI_EMBEDDING_DEPLOYMENT or settings.EMBEDDING_MODEL
                     ),
                     api_version="2024-02-01",
