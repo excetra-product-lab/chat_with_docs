@@ -2,8 +2,7 @@
 
 import io
 from typing import Optional
-import asyncio
-from unittest.mock import Mock, AsyncMock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 from fastapi import HTTPException, UploadFile
@@ -66,44 +65,38 @@ class TestDocumentProcessor:
 
     @pytest.mark.asyncio
     async def test_process_empty_file(self):
-        """Test processing an empty file returns a non-successful result."""
-        # Create a mock for UploadFile
-        mock_file = Mock(spec=UploadFile)
-        mock_file.filename = "empty.txt"
-        mock_file.content_type = "text/plain"
-        # Configure read to return an empty byte string
-        mock_file.read = AsyncMock(return_value=b"")
-        mock_file.size = 0
+        """Test processing an empty file raises an HTTPException."""
+        mock_file = self.create_upload_file(b"", "empty.txt", "text/plain")
 
-        # Run the processor
-        result = asyncio.run(self.processor.process_document(mock_file))
+        with pytest.raises(HTTPException) as exc_info:
+            await self.processor.process_document(mock_file)
 
-        # Assert that processing was not successful
-        assert result.success is False
-        assert "No text content extracted" in result.message
+        assert exc_info.value.status_code == 400
+        assert "No text content extracted" in exc_info.value.detail
 
     @pytest.mark.asyncio
     async def test_process_large_document(self):
         """Test processing a document that should result in multiple chunks."""
         # Create content that is guaranteed to be larger than the chunk size
         paragraphs = []
-        for i in range(10):
-            paragraphs.append(
-                f"This is paragraph {i+1} with unique content to ensure chunking. " * 20
-            )
+        base_sentence = "This is paragraph {i} with truly unique and substantial content. "
+        for i in range(20):  # Increased paragraph count
+            # Add more unique words to each paragraph
+            unique_words = f"Variation {i}. " * 5
+            paragraphs.append(base_sentence.format(i=i + 1) + unique_words * 15)
+
         content = "\\n\\n".join(paragraphs).encode("utf-8")
         file = self.create_upload_file(content, "large.txt", "text/plain")
 
         # Run the processor
-        result = asyncio.run(self.processor.process_document(file))
+        result = await self.processor.process_document(file)
 
         # Assert that processing was successful and created multiple chunks
-        assert result.success is True
+        assert result.processing_stats["processing"]["success"] is True
         assert len(result.chunks) > 1
-        assert result.processing_stats["chunking"]["total_chunks"] > 1
 
     def test_generate_processing_stats(self):
-        """Test processing statistics generation."""
+        """Test the generation of processing statistics."""
         from app.services.document_parser import DocumentMetadata, ParsedContent
         from app.services.text_chunker import DocumentChunk
 

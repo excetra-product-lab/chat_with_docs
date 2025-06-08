@@ -1,0 +1,213 @@
+{
+  "meta": {
+    "generatedAt": "2025-06-01T12:46:09.165Z",
+    "tasksAnalyzed": 25,
+    "totalTasks": 25,
+    "analysisCount": 25,
+    "thresholdScore": 5,
+    "projectName": "Taskmaster",
+    "usedResearch": true
+  },
+  "complexityAnalysis": [
+    {
+      "taskId": 1,
+      "taskTitle": "Setup Project Repository and Environment",
+      "complexityScore": 3,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Break down the environment setup into subtasks such as repository creation, Python environment setup, dependency installation, project structure creation, and pre-commit configuration.",
+      "reasoning": "This task is foundational but follows standard procedures with minimal decision points and low algorithmic complexity. However, it involves several discrete steps that benefit from clear separation for tracking and parallelization."
+    },
+    {
+      "taskId": 2,
+      "taskTitle": "Implement PDF and Word Document Text Extraction",
+      "complexityScore": 6,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Expand into subtasks for PDF extraction, Word extraction, layout preservation, encoding handling, error handling, and unit test creation.",
+      "reasoning": "This task involves integrating third-party libraries, handling multiple file formats, preserving layout, and robust error handling, which increases complexity and warrants decomposition into focused subtasks."
+    },
+    {
+      "taskId": 3,
+      "taskTitle": "Develop Document Structure Detection Module",
+      "complexityScore": 6,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Divide into subtasks for class design, regex pattern development, numbering system handling, heading detection, and test creation.",
+      "reasoning": "Parsing legal document structures with regex and handling format variations introduces moderate complexity, especially in ensuring accuracy and extensibility."
+    },
+    {
+      "taskId": 4,
+      "taskTitle": "Build Layout Tree Generation System",
+      "complexityScore": 7,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Break down into subtasks for tree class implementation, node metadata handling, tree building logic, traversal methods, manipulation methods, and testing.",
+      "reasoning": "Designing and implementing a hierarchical tree structure with metadata and manipulation methods is moderately complex, requiring careful planning and testing."
+    },
+    {
+      "taskId": 5,
+      "taskTitle": "Implement Token Counting Functionality",
+      "complexityScore": 5,
+      "recommendedSubtasks": 4,
+      "expansionPrompt": "Expand into subtasks for tokenizer integration, legal-specific token handling, section-wise counting, and test development.",
+      "reasoning": "Token counting is conceptually straightforward but requires attention to legal-specific edge cases and integration with NLP libraries."
+    },
+    {
+      "taskId": 6,
+      "taskTitle": "Design and Implement Data Models",
+      "complexityScore": 6,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Divide into subtasks for each model (Document, Chunk, Hierarchy, Relationship, Citation), validation logic, and testing.",
+      "reasoning": "Defining multiple interrelated data models with validation and serialization logic adds moderate complexity, especially for future extensibility."
+    },
+    {
+      "taskId": 7,
+      "taskTitle": "Develop Hierarchical Chunking Algorithm",
+      "complexityScore": 8,
+      "recommendedSubtasks": 7,
+      "expansionPrompt": "Expand into subtasks for class design, hierarchy-based chunking, sentence tokenization, boundary enforcement, chunk size logic, TokenCounter integration, and comprehensive testing.",
+      "reasoning": "This is a core algorithmic task involving multiple layers of logic, integration with other modules, and strict requirements for legal and semantic integrity."
+    },
+    {
+      "taskId": 8,
+      "taskTitle": "Implement Recursive Sentence-Aware Splitter",
+      "complexityScore": 6,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Break down into subtasks for class implementation, sentence tokenization, recursive splitting logic, edge case handling, and testing.",
+      "reasoning": "Recursive splitting with sentence awareness requires careful handling of edge cases and recursion, but is less complex than full hierarchical chunking."
+    },
+    {
+      "taskId": 9,
+      "taskTitle": "Develop Overlap Calculation and Application System",
+      "complexityScore": 5,
+      "recommendedSubtasks": 4,
+      "expansionPrompt": "Expand into subtasks for overlap calculation, application logic, sentence integrity enforcement, and testing.",
+      "reasoning": "Overlap logic is algorithmic but bounded in scope, with the main challenge being preservation of context and sentence boundaries."
+    },
+    {
+      "taskId": 10,
+      "taskTitle": "Implement Basic Metadata Extraction and Storage",
+      "complexityScore": 5,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Divide into subtasks for metadata extraction, association with chunks, storage implementation, integration with data models, and testing.",
+      "reasoning": "Extracting and storing metadata is a standard task, but integration with models and storage adds moderate complexity."
+    },
+    {
+      "taskId": 11,
+      "taskTitle": "Develop Legal Pattern Recognition Module",
+      "complexityScore": 7,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Break down into subtasks for pattern research, regex development, class enhancement, categorization logic, formatting variation handling, and integration testing.",
+      "reasoning": "Advanced legal pattern recognition requires deep domain knowledge, complex regex, and integration with other modules, increasing complexity."
+    },
+    {
+      "taskId": 12,
+      "taskTitle": "Implement Cross-Reference Detection and Preservation",
+      "complexityScore": 7,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Expand into subtasks for cross-reference detection, storage, preservation logic, integration with chunking, resolution methods, and testing.",
+      "reasoning": "Detecting, tracking, and preserving cross-references across chunks is non-trivial and critical for legal document fidelity."
+    },
+    {
+      "taskId": 13,
+      "taskTitle": "Create Definition Section Integrity Protection",
+      "complexityScore": 7,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Divide into subtasks for definition section detection, DefinitionManager implementation, chunking logic adaptation, oversize handling, and integration testing.",
+      "reasoning": "Ensuring definition sections remain intact during chunking, especially when oversized, requires careful coordination with chunking logic."
+    },
+    {
+      "taskId": 14,
+      "taskTitle": "Implement Negation and Qualifier Preservation Logic",
+      "complexityScore": 7,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Break down into subtasks for negation/qualifier detection, preservation logic, chunking integration, edge case handling, and testing.",
+      "reasoning": "Preserving semantic integrity for negations and qualifiers is subtle and critical, requiring advanced NLP and integration with chunking."
+    },
+    {
+      "taskId": 15,
+      "taskTitle": "Build Citation Tracking and Provenance System",
+      "complexityScore": 6,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Expand into subtasks for citation detection, storage, linking with chunks, provenance tracking, and integration testing.",
+      "reasoning": "Citation tracking involves regex, data linking, and provenance management, which are moderately complex but well-scoped."
+    },
+    {
+      "taskId": 16,
+      "taskTitle": "Implement Comprehensive Validation System",
+      "complexityScore": 9,
+      "recommendedSubtasks": 8,
+      "expansionPrompt": "Divide into subtasks for base class implementation, chunk size validation, sentence/clause integrity checks, cross-reference validation, definition checks, negation/qualifier validation, document-level validation, and comprehensive testing.",
+      "reasoning": "This is a highly complex, cross-cutting concern requiring validation logic for multiple aspects of the system, integration with many modules, and extensive testing."
+    },
+    {
+      "taskId": 17,
+      "taskTitle": "Develop Quality Metrics and Reporting System",
+      "complexityScore": 6,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Break down into subtasks for metric definition, calculation methods, aggregation logic, reporting system, and visualization.",
+      "reasoning": "Defining, calculating, and reporting quality metrics involves data analysis and visualization, which are moderately complex."
+    },
+    {
+      "taskId": 18,
+      "taskTitle": "Optimize Chunking for 512-1024 Token Sweet Spot",
+      "complexityScore": 7,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Expand into subtasks for algorithm enhancement, adaptive logic implementation, chunk combining/splitting strategies, parameter configuration, and testing.",
+      "reasoning": "Optimizing chunking algorithms for a specific token range while maintaining integrity requires algorithmic tuning and careful testing."
+    },
+    {
+      "taskId": 19,
+      "taskTitle": "Implement Performance Benchmarking System",
+      "complexityScore": 5,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Divide into subtasks for benchmark class implementation, time/memory measurement, benchmark scenario development, cProfile integration, logging/reporting, and visualization.",
+      "reasoning": "Benchmarking is a standard engineering task, but requires attention to detail for accurate measurement and reporting."
+    },
+    {
+      "taskId": 20,
+      "taskTitle": "Develop Error Handling and Edge Case Management",
+      "complexityScore": 8,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Break down into subtasks for exception hierarchy design, error handling integration, edge case strategy development, graceful degradation logic, error logging, and comprehensive testing.",
+      "reasoning": "Robust error and edge case handling is critical and complex, especially in a system with many interacting modules and legal-specific requirements."
+    },
+    {
+      "taskId": 21,
+      "taskTitle": "Create API Endpoints for External Consumption",
+      "complexityScore": 7,
+      "recommendedSubtasks": 7,
+      "expansionPrompt": "Expand into subtasks for API design, endpoint implementation, request validation, error handling, response modeling, versioning, and documentation.",
+      "reasoning": "Developing a robust, well-documented API with validation, error handling, and versioning is moderately complex and essential for external integration."
+    },
+    {
+      "taskId": 22,
+      "taskTitle": "Implement Integration with Existing Document Systems",
+      "complexityScore": 7,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Break down into subtasks for system research, base integration class, specific adapter implementations, document retrieval/storage methods, authentication/security, and configuration system.",
+      "reasoning": "Integration with external systems involves research, abstraction, security, and handling diverse APIs, making it moderately complex."
+    },
+    {
+      "taskId": 23,
+      "taskTitle": "Develop Comprehensive Unit Tests",
+      "complexityScore": 9,
+      "recommendedSubtasks": 8,
+      "expansionPrompt": "Divide into subtasks for environment setup, class/method test cases, legal document sample tests, error/edge case tests, property-based testing, coverage analysis, test parameterization, and regression testing.",
+      "reasoning": "Comprehensive unit testing for a large, complex system is itself a complex task, requiring coverage of all modules, edge cases, and integration points."
+    },
+    {
+      "taskId": 24,
+      "taskTitle": "Create Documentation and Usage Examples",
+      "complexityScore": 6,
+      "recommendedSubtasks": 7,
+      "expansionPrompt": "Expand into subtasks for Sphinx setup, API documentation, user guide writing, tutorial development, code example creation, doctest implementation, and multi-format generation.",
+      "reasoning": "Comprehensive documentation with runnable examples and multiple formats is moderately complex and essential for usability."
+    },
+    {
+      "taskId": 25,
+      "taskTitle": "Perform End-to-End Testing with Real Legal Documents",
+      "complexityScore": 9,
+      "recommendedSubtasks": 7,
+      "expansionPrompt": "Break down into subtasks for document collection/analysis, test plan creation, test case design, automated test implementation, manual testing, result analysis, and report generation/system refinement.",
+      "reasoning": "End-to-end testing with real documents is highly complex, requiring coordination of automated and manual efforts, comprehensive coverage, and iterative refinement."
+    }
+  ]
+}
