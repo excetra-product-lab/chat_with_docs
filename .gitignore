@@ -209,3 +209,6 @@ dev-debug.log
 # Task files
 tasks.json
 tasks/
+
+# Scripts directory (contains local development files)
+scripts/
