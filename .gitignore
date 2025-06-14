@@ -189,6 +189,8 @@ Thumbs.db
 coverage/
 .nyc_output/
 
+# Ignore metadata store JSON artifacts
+metadata_store/
 
 .secrets
 .actrc
