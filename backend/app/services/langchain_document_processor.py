@@ -38,7 +38,9 @@ logger = logging.getLogger(__name__)
 
 
 class LangchainDocumentProcessor:
-    """Document processor using Langchain loaders and splitters with enhanced layout preservation."""
+    """Document processor that leverages Langchain loaders / splitters while
+    preserving layout information (PDF/Word) for richer downstream
+    processing."""
 
     SUPPORTED_FORMATS = {
         "application/pdf": "pdf",
@@ -166,8 +168,14 @@ class LangchainDocumentProcessor:
                 encoding_info["is_reliable"] = True
 
             self.logger.info(
-                f"Detected encoding: {encoding_info['encoding']} "
-                f"(confidence: {encoding_info['confidence']:.2f}, BOM: {encoding_info['detected_bom']})"
+                (
+                    "Detected encoding: %s (confidence: %.2f, BOM: %s)"
+                    % (
+                        encoding_info["encoding"],
+                        encoding_info["confidence"],
+                        encoding_info["detected_bom"],
+                    )
+                )
             )
 
             return encoding_info
@@ -470,7 +478,8 @@ class LangchainDocumentProcessor:
         self, file: UploadFile, pdf_password: Optional[str] = None, preserve_layout: bool = True
     ) -> ParsedContent:
         """
-        Process a document using Langchain loaders with enhanced layout preservation and character encoding handling.
+        Process a document with Langchain loaders while preserving layout and
+        applying robust character-encoding handling.
 
         Args:
             file: The uploaded file to process
@@ -598,7 +607,11 @@ class LangchainDocumentProcessor:
                         {
                             "file_encoding_detection": encoding_info,
                             "encoding_method": "binary_pdf_processing",
-                            "character_encoding_note": "PDF files use internal encoding; file-level encoding detection for reference only",
+                            # The note is intentionally verbose; keep <100 chars per line.
+                            "character_encoding_note": (
+                                "PDF uses internal encoding; file-level detection provided "
+                                "for reference only"
+                            ),
                         }
                     )
 
@@ -950,7 +963,8 @@ class LangchainDocumentProcessor:
         self, file_path: str, preserve_layout: bool = True, encoding_info: Dict[str, Any] = None
     ) -> List[Document]:
         """
-        Load Word document using Langchain UnstructuredWordDocumentLoader with enhanced layout preservation.
+        Load a Word document through Langchain's
+        ``UnstructuredWordDocumentLoader`` with enhanced layout preservation.
 
         Args:
             file_path: Path to the Word document (.doc, .docx)
@@ -1730,7 +1744,7 @@ class LangchainDocumentProcessor:
                     # Let the FileNotFoundError bubble up – the unit tests use
                     # patches/mocks so a real file is not required when those
                     # patches are active. If we are *not* in a patched context
-                    # this error is valid and should be propagated.
+                    # this error is valid and should be propagated.  # noqa: E501
                     raise
 
             # 3) If TextLoader failed for all encodings, fall back to manual

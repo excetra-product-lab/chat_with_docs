@@ -25,7 +25,9 @@ from app.services.langchain_document_processor import LangchainDocumentProcessor
 # ---------------------------------------------------------------------------
 
 
-def create_upload_file(content: bytes, filename: str, content_type: str) -> UploadFile:  # type: ignore
+def create_upload_file(
+    content: bytes, filename: str, content_type: str
+) -> UploadFile:  # type: ignore  # noqa: E501
     """Utility to create a Starlette UploadFile from raw bytes."""
     headers = Headers({"content-type": content_type})
     upload_file = UploadFile(filename=filename, file=io.BytesIO(content), headers=headers)
