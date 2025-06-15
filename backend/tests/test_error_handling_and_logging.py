@@ -111,7 +111,8 @@ async def test_layout_preservation_flag_present_for_pdf():
     # Minimal PDF binary (empty page) generated on-the-fly via tempfile to satisfy suffix logic.
     with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_pdf:
         tmp_pdf.write(
-            b"%PDF-1.4\n1 0 obj<>stream\nendstream\nendobj\nxref\n0 2\n0000000000 65535 f\n0000000010 00000 n\ntrailer<</Size 2>>\nstartxref\n55\n%%EOF"
+            b"%PDF-1.4\n1 0 obj<>stream\nendstream\nendobj\nxref\n0 2\n0000000000 65535 f\n"  # noqa: E501
+            b"0000000010 00000 n\ntrailer<</Size 2>>\nstartxref\n55\n%%EOF"
         )
         tmp_pdf.name
 

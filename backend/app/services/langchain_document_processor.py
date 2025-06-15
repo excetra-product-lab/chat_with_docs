@@ -727,7 +727,7 @@ class LangchainDocumentProcessor:
                     if password:
                         decrypt_success = reader.decrypt(password)
                         if not decrypt_success:
-                            raise ValueError(f"Failed to decrypt PDF with provided password")
+                            raise ValueError("Failed to decrypt PDF with provided password")
                         self.logger.info("Successfully decrypted password-protected PDF")
                     else:
                         raise ValueError("PDF is encrypted but no password provided")
@@ -2002,7 +2002,8 @@ class LangchainDocumentProcessor:
             )
             is_table_marker = line_stripped.startswith("[TABLE_")
             is_list_item = any(
-                l.get("line_number", l.get("position", -1)) == line_idx for l in lists
+                list_item.get("line_number", list_item.get("position", -1)) == line_idx
+                for list_item in lists
             )
 
             # Determine if we should start a new chunk
@@ -2208,7 +2209,7 @@ class LangchainDocumentProcessor:
         for password in password_candidates:
             try:
                 documents = await self._load_pdf_with_langchain(file_path, password)
-                self.logger.info(f"Successfully loaded PDF with password attempt")
+                self.logger.info("Successfully loaded PDF with password attempt")
                 return documents
             except ValueError as e:
                 last_error = e
