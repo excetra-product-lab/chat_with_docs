@@ -156,7 +156,9 @@ class LangchainDocumentProcessor:
         """
         try:
             # Detect encoding using chardet
-            detection_result: Dict[str, Any] = chardet.detect(file_content)  # type: ignore[assignment]
+            detection_result: Dict[str, Any] = chardet.detect(
+                file_content
+            )  # type: ignore[assignment]
 
             # Check for BOM (Byte Order Mark)
             bom_info = self._detect_bom(file_content)
