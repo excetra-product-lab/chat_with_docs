@@ -987,7 +987,10 @@ class LangchainDocumentProcessor:
                     if not documents or all(not doc.page_content.strip() for doc in documents):
                         # Fallback to python-docx if no content extracted
                         self.logger.info(
-                            "UnstructuredWordDocumentLoader returned empty content, using python-docx fallback"
+                            (
+                                "UnstructuredWordDocumentLoader returned empty content; "
+                                "using python-docx fallback"
+                            )
                         )
                         documents = await self._load_word_with_python_docx(file_path)
                 except Exception as e:
@@ -1006,7 +1009,10 @@ class LangchainDocumentProcessor:
                         {
                             "file_encoding_detection": encoding_info,
                             "encoding_method": "structured_document_processing",
-                            "character_encoding_note": "Word documents use internal Unicode; file-level encoding detection for reference only",
+                            "character_encoding_note": (
+                                "Word docs store text in Unicode internally; "
+                                "file-level encoding detection is informational only"
+                            ),
                         }
                     )
 
@@ -1667,7 +1673,9 @@ class LangchainDocumentProcessor:
 
         successful_count = sum(1 for r in processed_results if r)
         self.logger.info(
-            f"Batch processing completed: {successful_count}/{len(file_paths)} files processed successfully"
+            "Batch processing completed: %s/%s files processed successfully",
+            successful_count,
+            len(file_paths),
         )
 
         return processed_results
@@ -1752,7 +1760,8 @@ class LangchainDocumentProcessor:
             if documents is None:
                 if not Path(file_path).exists():
                     raise ValueError(
-                        "Could not decode text file: file not found and all TextLoader attempts failed"
+                        "Could not decode text file: file not found and all "
+                        "TextLoader attempts failed"
                     )
 
                 with open(file_path, "rb") as fh:
@@ -1760,9 +1769,8 @@ class LangchainDocumentProcessor:
 
                 decode_result = await self.try_decode_with_fallback(file_content)
                 if not decode_result["success"]:
-                    raise ValueError(
-                        f"Could not decode text file: {decode_result.get('error', 'Unknown encoding error')}",
-                    )
+                    error_msg = decode_result.get("error", "Unknown encoding error")
+                    raise ValueError(f"Could not decode text file: {error_msg}")
 
                 documents = [
                     Document(
