@@ -1,4 +1,6 @@
 from typing import List
+from datetime import datetime
+import uuid
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
@@ -12,11 +14,19 @@ from app.models.schemas import (
     ProcessingStats,
 )
 from app.services.document_processor import DocumentProcessor
+from app.services.supabase_file_service import SupabaseFileService
 
 router = APIRouter()
 
 # Initialize document processor
 document_processor = DocumentProcessor()
+
+# Initialize storage service instance (shared across requests)
+storage_service_instance = SupabaseFileService()
+
+def get_storage_service() -> SupabaseFileService:
+    """Dependency to provide storage service. Returns shared instance."""
+    return storage_service_instance
 
 
 @router.post("/process", response_model=DocumentProcessingResult)
@@ -94,17 +104,40 @@ async def get_processing_config():
 async def upload_document(
     file: UploadFile = File(...),
     current_user: dict = Depends(get_current_user),
+    storage_service: SupabaseFileService = Depends(get_storage_service),
 ):
-    # TODO: Save file to storage
-    # TODO: Process document (parse, chunk, embed)
-    # TODO: Store in database
-    return {
-        "id": 1,
-        "filename": file.filename,
-        "user_id": current_user["id"],
-        "status": "processing",
-        "created_at": "2024-01-01T00:00:00",
-    }
+    """
+    Upload and save a document file using the configured storage service.
+    This endpoint automatically uses Supabase if configured, otherwise falls back to local storage.
+    """
+    try:
+        user_id = current_user["id"]
+        
+        # Generate document ID first
+        document_id = str(uuid.uuid4())
+        
+        # Upload the file using the injected storage service
+        storage_key = await storage_service.upload_file(file, document_id)
+        
+        # Create document record (in a real app, this would save to database)
+        document = Document(
+            id=document_id,
+            filename=file.filename,
+            user_id=user_id,
+            status="uploaded",
+            storage_key=storage_key,
+            created_at=datetime.now(),
+        )
+        
+        return document
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Failed to upload file: {str(e)}"
+        )
 
 
 @router.get("/", response_model=List[Document])

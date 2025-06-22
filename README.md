@@ -42,14 +42,14 @@
 3. Copy and customize the env files
 
    ```bash
-   cp .env.example .env
+   cp .env.test .env
    # Edit .env with database, Azure OpenAI, etc.
    ```
 
 4. Start the dev server
 
    ```bash
-   uv run "uvicorn app.main:app --reload"
+   uv run uvicorn app.main:app --reload
    ```
 
 ### Frontend Setup

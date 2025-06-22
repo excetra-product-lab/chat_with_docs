@@ -25,6 +25,15 @@ class Settings(BaseSettings):
     CHUNK_SIZE: int = 1000
     CHUNK_OVERLAP: int = 200
 
+    # File upload settings
+    MAX_FILE_SIZE_MB: int = 10
+    ALLOWED_FILE_EXTENSIONS: List[str] = [".pdf", ".docx", ".txt", ".md"]
+
+    # Supabase settings
+    SUPABASE_URL: Optional[str] = None
+    SUPABASE_KEY: Optional[str] = None
+    SUPABASE_BUCKET_NAME: str = "documents"
+
     class Config:
         env_file = ".env"
         extra = "ignore"

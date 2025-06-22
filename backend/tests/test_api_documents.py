@@ -1,10 +1,13 @@
 """Integration tests for documents API endpoints."""
 
 import io
+from unittest.mock import patch, MagicMock
+from datetime import datetime
 
 from fastapi.testclient import TestClient
 
 from app.api.dependencies import get_current_user
+from app.api.routes.documents import get_storage_service
 from app.main import app
 
 # Mock user for testing
@@ -14,8 +17,27 @@ def mock_get_current_user():
     return {"id": 1, "email": "test@example.com"}
 
 
-# Override the dependency
+# Mock storage service for testing
+class MockStorageService:
+    """Mock implementation of SupabaseFileService for testing."""
+    
+    async def upload_file(self, file, document_id: str) -> str:
+        """Mock file upload that returns a fake storage key."""
+        # Return a fake storage key based on document ID and file extension
+        file_extension = file.filename.split('.')[-1] if '.' in file.filename else 'txt'
+        return f"test-bucket/{document_id}.{file_extension}"
+
+
+# Create mock instances
+mock_storage = MockStorageService()
+
+def mock_get_storage_service():
+    return mock_storage
+
+
+# Override the dependencies
 app.dependency_overrides[get_current_user] = mock_get_current_user
+app.dependency_overrides[get_storage_service] = mock_get_storage_service
 
 client = TestClient(app)
 
@@ -274,3 +296,56 @@ This is the conclusion section that summarizes everything."""
         stats_sections = ["document", "parsing", "chunking", "processing"]
         for section in stats_sections:
             assert section in stats
+
+    # Upload endpoint tests
+    @patch('app.api.routes.documents.datetime')
+    @patch('app.api.routes.documents.uuid.uuid4')
+    def test_upload_document_success(self, mock_uuid4, mock_datetime):
+        """Test successful document upload with mocked UUID and datetime."""
+        
+        # Mock UUID generation
+        mock_uuid4.return_value = "test-doc-id-123"
+        
+        # Mock datetime
+        fixed_datetime = datetime(2024, 1, 15, 10, 30, 0)
+        mock_datetime.now.return_value = fixed_datetime
+        
+        # Create test file
+        test_content = b"Test document content for upload"
+        test_file = self.create_test_file(test_content, "test.txt", "text/plain")
+        
+        # Make request
+        response = client.post("/api/documents/upload", files=[test_file])
+        
+        # Test the API response
+        assert response.status_code == 200
+        data = response.json()
+        
+        assert data["id"] == "test-doc-id-123"
+        assert data["filename"] == "test.txt"
+        assert data["user_id"] == 1
+        assert data["status"] == "uploaded"
+        assert data["storage_key"] == "test-bucket/test-doc-id-123.txt"
+        assert data["created_at"] == "2024-01-15T10:30:00"
+
+    def test_upload_storage_service_error(self):
+        """Test handling of storage service errors."""
+        # Create a mock that raises an exception
+        error_storage = MagicMock()
+        error_storage.upload_file.side_effect = Exception("Storage service error")
+        
+        # Temporarily override the storage service
+        original_override = app.dependency_overrides.get(get_storage_service)
+        app.dependency_overrides[get_storage_service] = lambda: error_storage
+        
+        try:
+            test_file = self.create_test_file(b"Test content", "test.txt")
+            response = client.post("/api/documents/upload", files=[test_file])
+            
+            assert response.status_code == 500
+            assert "Failed to upload file" in response.json()["detail"]
+            
+        finally:
+            # Restore the original override
+            if original_override:
+                app.dependency_overrides[get_storage_service] = original_override

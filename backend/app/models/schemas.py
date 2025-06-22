@@ -27,10 +27,11 @@ class DocumentCreate(BaseModel):
 
 
 class Document(BaseModel):
-    id: int
+    id: str
     filename: str
     user_id: int
     status: str
+    storage_key: Optional[str] = None
     created_at: datetime
 
 
@@ -84,7 +85,7 @@ class Query(BaseModel):
 
 
 class Citation(BaseModel):
-    document_id: int
+    document_id: str
     document_name: str
     page: Optional[int]
     snippet: str
