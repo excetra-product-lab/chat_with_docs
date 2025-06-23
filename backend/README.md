@@ -21,8 +21,17 @@ cp .env.example .env
 uv run uvicorn app.main:app --reload
 ```
 
-The API will be available at <http://localhost:8000>
-API documentation at <http://localhost:8000/docs>
+## API Testing & Documentation
+
+Once your backend server is running, you can view and test the API endpoints:
+
+1. **Interactive API Documentation**: Visit <http://localhost:8000/docs> to access the automatically generated Swagger UI documentation
+2. **Test API Endpoints**: The Swagger UI allows you to test all API endpoints directly from your browser:
+   - Click on any endpoint to expand its details
+   - Use the "Try it out" button to make actual API calls
+   - View request/response schemas and examples
+   - Test authentication flows and data operations
+3. **Alternative Documentation**: Visit <http://localhost:8000/redoc> for ReDoc-style documentation (read-only)
 
 ## Testing
 

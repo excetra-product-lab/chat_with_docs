@@ -3,7 +3,6 @@
 import io
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional
 
 import pypdf
 from docx import Document as DocxDocument
@@ -21,10 +20,10 @@ class DocumentMetadata:
         self,
         filename: str,
         file_type: str,
-        total_pages: Optional[int] = None,
+        total_pages: int | None = None,
         total_chars: int = 0,
         total_tokens: int = 0,
-        sections: Optional[List[str]] = None,
+        sections: list[str] | None = None,
     ):
         self.filename = filename
         self.file_type = file_type
@@ -41,8 +40,8 @@ class ParsedContent:
         self,
         text: str,
         metadata: DocumentMetadata,
-        page_texts: Optional[List[str]] = None,
-        structured_content: Optional[List[Dict]] = None,
+        page_texts: list[str] | None = None,
+        structured_content: list[dict] | None = None,
     ):
         self.text = text
         self.metadata = metadata
@@ -98,11 +97,14 @@ class DocumentParser:
                 return await self._parse_text(content, file.filename or "")
             else:
                 raise HTTPException(
-                    status_code=400, detail=f"Unsupported file format: {file.content_type}"
+                    status_code=400,
+                    detail=f"Unsupported file format: {file.content_type}",
                 )
         except Exception as e:
             self.logger.error(f"Error parsing document {file.filename}: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Failed to parse document: {str(e)}")
+            raise HTTPException(
+                status_code=500, detail=f"Failed to parse document: {str(e)}"
+            ) from e
 
     def _validate_file(self, file: UploadFile) -> None:
         """Validate uploaded file."""
@@ -115,7 +117,7 @@ class DocumentParser:
                 detail=f"File too large. Maximum size: {self.MAX_FILE_SIZE / 1024 / 1024}MB",
             )
 
-    def _get_file_type(self, content_type: Optional[str], filename: str) -> str:
+    def _get_file_type(self, content_type: str | None, filename: str) -> str:
         """Determine file type from content type or filename extension."""
         if content_type and content_type in self.SUPPORTED_FORMATS:
             return self.SUPPORTED_FORMATS[content_type]
@@ -133,7 +135,8 @@ class DocumentParser:
             return extension_map[extension]
 
         raise HTTPException(
-            status_code=400, detail=f"Unsupported file format: {content_type or extension}"
+            status_code=400,
+            detail=f"Unsupported file format: {content_type or extension}",
         )
 
     async def _parse_pdf(self, content: bytes, filename: str) -> ParsedContent:
@@ -143,7 +146,9 @@ class DocumentParser:
             reader = pypdf.PdfReader(pdf_file)
 
             if reader.is_encrypted:
-                raise HTTPException(status_code=400, detail="Encrypted PDFs are not supported")
+                raise HTTPException(
+                    status_code=400, detail="Encrypted PDFs are not supported"
+                )
 
             page_texts = []
             full_text = ""
@@ -155,11 +160,15 @@ class DocumentParser:
                         page_texts.append(page_text)
                         full_text += f"\n--- Page {page_num + 1} ---\n{page_text}\n"
                 except Exception as e:
-                    self.logger.warning(f"Failed to extract text from page {page_num + 1}: {e}")
+                    self.logger.warning(
+                        f"Failed to extract text from page {page_num + 1}: {e}"
+                    )
                     continue
 
             if not full_text.strip():
-                raise HTTPException(status_code=400, detail="No text content found in PDF")
+                raise HTTPException(
+                    status_code=400, detail="No text content found in PDF"
+                )
 
             # Create metadata
             metadata = self._create_metadata_with_tokens(
@@ -190,7 +199,9 @@ class DocumentParser:
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to parse PDF: {str(e)}")
+            raise HTTPException(
+                status_code=500, detail=f"Failed to parse PDF: {str(e)}"
+            ) from e
 
     async def _parse_docx(self, content: bytes, filename: str) -> ParsedContent:
         """Parse DOCX document."""
@@ -212,13 +223,16 @@ class DocumentParser:
                     if len(text) < 100 and (
                         text.isupper()
                         or any(
-                            text.startswith(prefix) for prefix in ["Chapter", "Section", "Article"]
+                            text.startswith(prefix)
+                            for prefix in ["Chapter", "Section", "Article"]
                         )
                     ):
                         sections.append(text)
 
             if not full_text.strip():
-                raise HTTPException(status_code=400, detail="No text content found in document")
+                raise HTTPException(
+                    status_code=400, detail="No text content found in document"
+                )
 
             # Create metadata
             metadata = self._create_metadata_with_tokens(
@@ -239,7 +253,8 @@ class DocumentParser:
                     and (
                         text.isupper()
                         or any(
-                            text.startswith(prefix) for prefix in ["Chapter", "Section", "Article"]
+                            text.startswith(prefix)
+                            for prefix in ["Chapter", "Section", "Article"]
                         )
                     ),
                 }
@@ -255,7 +270,9 @@ class DocumentParser:
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to parse DOCX: {str(e)}")
+            raise HTTPException(
+                status_code=500, detail=f"Failed to parse DOCX: {str(e)}"
+            ) from e
 
     async def _parse_text(self, content: bytes, filename: str) -> ParsedContent:
         """Parse plain text document."""
@@ -273,11 +290,14 @@ class DocumentParser:
 
             if text is None:
                 raise HTTPException(
-                    status_code=400, detail="Unable to decode text file with supported encodings"
+                    status_code=400,
+                    detail="Unable to decode text file with supported encodings",
                 )
 
             if not text.strip():
-                raise HTTPException(status_code=400, detail="No text content found in file")
+                raise HTTPException(
+                    status_code=400, detail="No text content found in file"
+                )
 
             # Split into paragraphs
             paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
@@ -309,15 +329,17 @@ class DocumentParser:
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to parse text file: {str(e)}")
+            raise HTTPException(
+                status_code=500, detail=f"Failed to parse text file: {str(e)}"
+            ) from e
 
     def _create_metadata_with_tokens(
         self,
         filename: str,
         file_type: str,
         full_text: str,
-        total_pages: Optional[int] = None,
-        sections: Optional[List[str]] = None,
+        total_pages: int | None = None,
+        sections: list[str] | None = None,
     ) -> DocumentMetadata:
         """Create metadata with token count included."""
         total_chars = len(full_text)

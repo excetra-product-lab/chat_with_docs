@@ -1,7 +1,6 @@
 """Tests for document processor service."""
 
 import io
-from typing import Optional
 from unittest.mock import patch
 
 import pytest
@@ -24,7 +23,8 @@ class TestDocumentProcessor:
         )
         # Patch the internal validation method to isolate processor logic
         self.validate_patcher = patch(
-            "app.services.document_parser.DocumentParser._validate_file", return_value=None
+            "app.services.document_parser.DocumentParser._validate_file",
+            return_value=None,
         )
         self.mock_validate = self.validate_patcher.start()
 
@@ -32,7 +32,9 @@ class TestDocumentProcessor:
         """Tear down the test environment after each test method."""
         self.validate_patcher.stop()
 
-    def create_upload_file(self, content: bytes, filename: str, content_type: Optional[str] = None):
+    def create_upload_file(
+        self, content: bytes, filename: str, content_type: str | None = None
+    ):
         """Helper to create a mock UploadFile."""
         headers = Headers({"content-type": content_type} if content_type else {})
         return UploadFile(filename=filename, file=io.BytesIO(content), headers=headers)
@@ -85,7 +87,9 @@ class TestDocumentProcessor:
         """Test processing a document that should result in multiple chunks."""
         # Create content that is guaranteed to be larger than the chunk size
         paragraphs = []
-        base_sentence = "This is paragraph {i} with truly unique and substantial content. "
+        base_sentence = (
+            "This is paragraph {i} with truly unique and substantial content. "
+        )
         for i in range(100):  # Increased paragraph count
             # Add more unique words to each paragraph
             unique_words = f"Variation {i}. " * 20
@@ -177,7 +181,9 @@ class TestDocumentProcessor:
         metadata = DocumentMetadata("test.txt", "txt")
         parsed_content = ParsedContent("Valid text content", metadata)
         chunks = [DocumentChunk("", 0, "test.txt")]  # Empty chunk text
-        result = ProcessingResult(parsed_content, chunks, {"processing": {"success": True}})
+        result = ProcessingResult(
+            parsed_content, chunks, {"processing": {"success": True}}
+        )
 
         is_valid = self.processor.validate_processing_result(result)
         assert is_valid is False
@@ -190,7 +196,9 @@ class TestDocumentProcessor:
         metadata = DocumentMetadata("test.txt", "txt")
         parsed_content = ParsedContent("Valid text content", metadata)
         chunks = [DocumentChunk("Valid text", 0, "")]  # Empty filename
-        result = ProcessingResult(parsed_content, chunks, {"processing": {"success": True}})
+        result = ProcessingResult(
+            parsed_content, chunks, {"processing": {"success": True}}
+        )
 
         is_valid = self.processor.validate_processing_result(result)
         assert is_valid is False
@@ -203,7 +211,9 @@ class TestDocumentProcessor:
         metadata = DocumentMetadata("test.txt", "txt")
         parsed_content = ParsedContent("Valid text content", metadata)
         chunks = [DocumentChunk("Valid text", 0, "test.txt")]
-        result = ProcessingResult(parsed_content, chunks, {"processing": {"success": False}})
+        result = ProcessingResult(
+            parsed_content, chunks, {"processing": {"success": False}}
+        )
 
         is_valid = self.processor.validate_processing_result(result)
         assert is_valid is False
@@ -214,7 +224,10 @@ class TestDocumentProcessor:
 
         assert isinstance(formats, list)
         assert "application/pdf" in formats
-        assert "application/vnd.openxmlformats-officedocument.wordprocessingml.document" in formats
+        assert (
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            in formats
+        )
         assert "text/plain" in formats
 
     def test_get_processing_config(self):
@@ -232,7 +245,9 @@ class TestDocumentProcessor:
     async def test_process_document_with_unicode(self):
         """Test processing document with unicode characters."""
         content = "Document with unicode: café, naïve, résumé, 中文, العربية"
-        file = self.create_upload_file(content.encode("utf-8"), "unicode.txt", "text/plain")
+        file = self.create_upload_file(
+            content.encode("utf-8"), "unicode.txt", "text/plain"
+        )
 
         result = await self.processor.process_document(file)
 
@@ -252,7 +267,9 @@ class TestDocumentProcessor:
     async def test_process_document_preserves_structure(self):
         """Test that document processing preserves structure information."""
         content = "TITLE\n\nThis is paragraph one.\n\nThis is paragraph two."
-        file = self.create_upload_file(content.encode("utf-8"), "structured.txt", "text/plain")
+        file = self.create_upload_file(
+            content.encode("utf-8"), "structured.txt", "text/plain"
+        )
 
         result = await self.processor.process_document(file)
 
@@ -260,7 +277,9 @@ class TestDocumentProcessor:
         assert len(result.parsed_content.structured_content) > 0
 
         # Check that chunks preserve document filename
-        assert all(chunk.document_filename == "structured.txt" for chunk in result.chunks)
+        assert all(
+            chunk.document_filename == "structured.txt" for chunk in result.chunks
+        )
 
         # Check that chunk indices are sequential
         assert all(result.chunks[i].chunk_index == i for i in range(len(result.chunks)))

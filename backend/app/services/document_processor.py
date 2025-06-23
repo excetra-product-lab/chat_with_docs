@@ -1,7 +1,6 @@
 """Document processing service that orchestrates parsing and chunking."""
 
 import logging
-from typing import Dict, List, Optional
 
 from fastapi import HTTPException, UploadFile
 
@@ -18,8 +17,8 @@ class ProcessingResult:
     def __init__(
         self,
         parsed_content: ParsedContent,
-        chunks: List[DocumentChunk],
-        processing_stats: Dict,
+        chunks: list[DocumentChunk],
+        processing_stats: dict,
     ):
         self.parsed_content = parsed_content
         self.chunks = chunks
@@ -52,11 +51,13 @@ class DocumentProcessor:
             min_chunk_size=min_chunk_size,
         )
         self.use_langchain = use_langchain
-        self.langchain_processor = LangchainDocumentProcessor() if use_langchain else None
+        self.langchain_processor = (
+            LangchainDocumentProcessor() if use_langchain else None
+        )
         self.logger = logging.getLogger(__name__)
 
     async def process_document(
-        self, file: UploadFile, prefer_langchain: Optional[bool] = None
+        self, file: UploadFile, prefer_langchain: bool | None = None
     ) -> ProcessingResult:
         """
         Process a document using standard or Langchain processors.
@@ -87,8 +88,10 @@ class DocumentProcessor:
             if use_langchain_for_this and self.langchain_processor:
                 self.logger.info("Parsing document with Langchain...")
                 try:
-                    parsed_content = await self.langchain_processor.process_document_with_langchain(
-                        file
+                    parsed_content = (
+                        await self.langchain_processor.process_document_with_langchain(
+                            file
+                        )
                     )
                     self.logger.info("Successfully parsed document with Langchain")
                 except Exception as e:
@@ -110,9 +113,12 @@ class DocumentProcessor:
             processing_stats = self._generate_processing_stats(parsed_content, chunks)
 
             # Add Langchain processing information to stats
-            processing_stats["processing"]["langchain_used"] = use_langchain_for_this and any(
-                content.get("langchain_source", False)
-                for content in parsed_content.structured_content
+            processing_stats["processing"]["langchain_used"] = (
+                use_langchain_for_this
+                and any(
+                    content.get("langchain_source", False)
+                    for content in parsed_content.structured_content
+                )
             )
 
             self.logger.info(
@@ -131,8 +137,12 @@ class DocumentProcessor:
             # Re-raise HTTP exceptions (validation errors, etc.)
             raise
         except Exception as e:
-            self.logger.error(f"Unexpected error processing document {file.filename}: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Failed to process document: {str(e)}")
+            self.logger.error(
+                f"Unexpected error processing document {file.filename}: {str(e)}"
+            )
+            raise HTTPException(
+                status_code=500, detail=f"Failed to process document: {str(e)}"
+            ) from e
 
     async def process_with_langchain_only(self, file: UploadFile) -> ProcessingResult:
         """
@@ -148,19 +158,22 @@ class DocumentProcessor:
             HTTPException: If Langchain processing fails or is not available
         """
         if not self.langchain_processor:
-            raise HTTPException(status_code=500, detail="Langchain processor not available")
+            raise HTTPException(
+                status_code=500, detail="Langchain processor not available"
+            )
 
         return await self.process_document(file, prefer_langchain=True)
 
     def _generate_processing_stats(
-        self, parsed_content: ParsedContent, chunks: List[DocumentChunk]
-    ) -> Dict:
+        self, parsed_content: ParsedContent, chunks: list[DocumentChunk]
+    ) -> dict:
         """Generate comprehensive processing statistics."""
         chunk_stats = self.chunker.get_chunk_summary(chunks)
 
         # Check if Langchain was used
         langchain_used = any(
-            content.get("langchain_source", False) for content in parsed_content.structured_content
+            content.get("langchain_source", False)
+            for content in parsed_content.structured_content
         )
 
         return {
@@ -229,11 +242,11 @@ class DocumentProcessor:
             self.logger.error(f"Error validating processing result: {str(e)}")
             return False
 
-    def get_supported_formats(self) -> List[str]:
+    def get_supported_formats(self) -> list[str]:
         """Get list of supported file formats."""
         return list(self.parser.SUPPORTED_FORMATS.keys())
 
-    def get_processing_config(self) -> Dict:
+    def get_processing_config(self) -> dict:
         """Get current processing configuration."""
         config = {
             "chunk_size": self.chunker.chunk_size,
@@ -262,8 +275,10 @@ class DocumentProcessor:
         if use_langchain and self.langchain_processor is None:
             self.langchain_processor = LangchainDocumentProcessor()
 
-        self.logger.info(f"Langchain usage {'enabled' if use_langchain else 'disabled'}")
+        self.logger.info(
+            f"Langchain usage {'enabled' if use_langchain else 'disabled'}"
+        )
 
-    def get_langchain_processor(self) -> Optional[LangchainDocumentProcessor]:
+    def get_langchain_processor(self) -> LangchainDocumentProcessor | None:
         """Get the Langchain processor instance if available."""
         return self.langchain_processor

@@ -1,4 +1,6 @@
-from typing import List
+import threading
+import uuid
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
@@ -12,11 +14,37 @@ from app.models.schemas import (
     ProcessingStats,
 )
 from app.services.document_processor import DocumentProcessor
+from app.services.supabase_file_service import SupabaseFileService
 
 router = APIRouter()
 
 # Initialize document processor
 document_processor = DocumentProcessor()
+
+# Storage service instance (lazily initialized with thread safety)
+_storage_service_instance: SupabaseFileService | None = None
+_storage_service_lock = threading.Lock()
+
+
+def get_storage_service() -> SupabaseFileService:
+    """
+    Dependency to provide storage service with thread-safe lazy initialization.
+    Creates the instance on first access and reuses it for subsequent calls.
+    Uses double-checked locking pattern to avoid race conditions.
+    """
+    global _storage_service_instance
+
+    # First check without lock (optimization for already initialized case)
+    if _storage_service_instance is not None:
+        return _storage_service_instance
+
+    # Acquire lock for initialization
+    with _storage_service_lock:
+        # Second check with lock to handle race conditions
+        if _storage_service_instance is None:
+            _storage_service_instance = SupabaseFileService()
+
+    return _storage_service_instance
 
 
 @router.post("/process", response_model=DocumentProcessingResult)
@@ -34,7 +62,9 @@ async def process_document(
 
         # Validate the processing result
         if not document_processor.validate_processing_result(result):
-            raise HTTPException(status_code=500, detail="Document processing validation failed")
+            raise HTTPException(
+                status_code=500, detail="Document processing validation failed"
+            )
 
         # Convert to response format with proper Pydantic models
         document_metadata = DocumentMetadata(
@@ -81,7 +111,7 @@ async def process_document(
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Unexpected error processing document: {str(e)}"
-        )
+        ) from e
 
 
 @router.get("/processing-config", response_model=ProcessingConfig)
@@ -94,26 +124,55 @@ async def get_processing_config():
 async def upload_document(
     file: UploadFile = File(...),
     current_user: dict = Depends(get_current_user),
+    storage_service: SupabaseFileService = Depends(get_storage_service),
 ):
-    # TODO: Save file to storage
-    # TODO: Process document (parse, chunk, embed)
-    # TODO: Store in database
-    return {
-        "id": 1,
-        "filename": file.filename,
-        "user_id": current_user["id"],
-        "status": "processing",
-        "created_at": "2024-01-01T00:00:00",
-    }
+    """
+    Upload and save a document file using the configured storage service.
+    This endpoint automatically uses Supabase if configured, otherwise falls back to local storage.
+    """
+    try:
+        user_id = current_user["id"]
+
+        # Generate document ID first
+        document_id = str(uuid.uuid4())
+
+        # Upload the file using the injected storage service
+        storage_key = await storage_service.upload_file(file, document_id)
+
+        if not file.filename:
+            raise HTTPException(
+                status_code=400, detail="Uploaded file must have a filename"
+            )
+
+        # Create document record (in a real app, this would save to database)
+        document = Document(
+            id=document_id,
+            filename=file.filename,
+            user_id=user_id,
+            status="uploaded",
+            storage_key=storage_key,
+            created_at=datetime.now(),
+        )
+
+        return document
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to upload file: {str(e)}"
+        ) from e
 
 
-@router.get("/", response_model=List[Document])
+@router.get("/", response_model=list[Document])
 async def list_documents(current_user: dict = Depends(get_current_user)):
     # TODO: Fetch user's documents from database
     return []
 
 
 @router.delete("/{document_id}")
-async def delete_document(document_id: int, current_user: dict = Depends(get_current_user)):
+async def delete_document(
+    document_id: int, current_user: dict = Depends(get_current_user)
+):
     # TODO: Verify ownership and delete document
     return {"message": "Document deleted successfully"}

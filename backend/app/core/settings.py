@@ -1,5 +1,3 @@
-from typing import List, Optional
-
 from pydantic_settings import BaseSettings
 
 
@@ -8,10 +6,10 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql://localhost/chatwithdocs"  # Default for testing
 
     # Azure OpenAI - Required for production use
-    AZURE_OPENAI_API_KEY: Optional[str] = None
-    AZURE_OPENAI_ENDPOINT: Optional[str] = None
-    AZURE_OPENAI_DEPLOYMENT_NAME: Optional[str] = None
-    AZURE_OPENAI_EMBEDDING_DEPLOYMENT: Optional[str] = None
+    AZURE_OPENAI_API_KEY: str | None = None
+    AZURE_OPENAI_ENDPOINT: str | None = None
+    AZURE_OPENAI_DEPLOYMENT_NAME: str | None = None
+    AZURE_OPENAI_EMBEDDING_DEPLOYMENT: str | None = None
 
     # Azure OpenAI Model Configuration
     OPENAI_MODEL: str = "gpt-4o-mini"  # Default deployment name
@@ -19,8 +17,8 @@ class Settings(BaseSettings):
 
     # Langchain Configuration
     LANGCHAIN_TRACING_V2: str = "false"  # For LangSmith tracing
-    LANGCHAIN_API_KEY: Optional[str] = None  # For LangSmith
-    LANGCHAIN_PROJECT: Optional[str] = None  # For LangSmith project
+    LANGCHAIN_API_KEY: str | None = None  # For LangSmith
+    LANGCHAIN_PROJECT: str | None = None  # For LangSmith project
     LANGCHAIN_VERBOSE: bool = False  # Enable verbose logging
 
     # Embedding Configuration
@@ -33,12 +31,21 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
     # CORS
-    ALLOWED_ORIGINS: List[str] = ["http://localhost:3000"]
+    ALLOWED_ORIGINS: list[str] = ["http://localhost:3000"]
 
     # Vector store & Document Processing
     CHUNK_SIZE: int = 1000
     CHUNK_OVERLAP: int = 200
     MAX_TOKENS_PER_CHUNK: int = 8000
+
+    # File upload settings
+    MAX_FILE_SIZE_MB: int = 10
+    ALLOWED_FILE_EXTENSIONS: list[str] = [".pdf", ".docx", ".txt", ".md"]
+
+    # Supabase settings
+    SUPABASE_URL: str | None = None
+    SUPABASE_KEY: str | None = None
+    SUPABASE_BUCKET_NAME: str = "documents"
 
     class Config:
         env_file = ".env"

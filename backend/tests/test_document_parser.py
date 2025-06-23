@@ -1,7 +1,6 @@
 """Tests for document parser service."""
 
 import io
-from typing import Optional
 
 import pytest
 from fastapi import HTTPException, UploadFile
@@ -17,11 +16,15 @@ class TestDocumentParser:
         """Set up test fixtures."""
         self.parser = DocumentParser()
 
-    def create_upload_file(self, content: bytes, filename: str, content_type: Optional[str] = None):
+    def create_upload_file(
+        self, content: bytes, filename: str, content_type: str | None = None
+    ):
         """Helper to create UploadFile for testing."""
         file_obj = io.BytesIO(content)
         headers = Headers({"content-type": content_type} if content_type else {})
-        return UploadFile(file=file_obj, filename=filename, size=len(content), headers=headers)
+        return UploadFile(
+            file=file_obj, filename=filename, size=len(content), headers=headers
+        )
 
     def test_validate_file_success(self):
         """Test successful file validation."""
@@ -76,9 +79,7 @@ class TestDocumentParser:
     @pytest.mark.asyncio
     async def test_parse_text_file_utf8(self):
         """Test parsing UTF-8 text file."""
-        content = (
-            "This is a test document.\n\nIt has multiple paragraphs.\n\nAnd some unicode: café"
-        )
+        content = "This is a test document.\n\nIt has multiple paragraphs.\n\nAnd some unicode: café"
         self.create_upload_file(content.encode("utf-8"), "test.txt", "text/plain")
 
         result = await self.parser._parse_text(content.encode("utf-8"), "test.txt")
@@ -130,7 +131,9 @@ class TestDocumentParser:
     async def test_parse_document_text_file(self):
         """Test full document parsing for text file."""
         content = "This is a test document.\n\nIt has multiple paragraphs."
-        file = self.create_upload_file(content.encode("utf-8"), "test.txt", "text/plain")
+        file = self.create_upload_file(
+            content.encode("utf-8"), "test.txt", "text/plain"
+        )
 
         result = await self.parser.parse_document(file)
 
@@ -149,7 +152,9 @@ class TestDocumentParser:
     async def test_token_counting_consistency(self):
         """Test that token counting is consistent and reasonable."""
         content = "Hello world! This is a test document with multiple sentences."
-        file = self.create_upload_file(content.encode("utf-8"), "test.txt", "text/plain")
+        file = self.create_upload_file(
+            content.encode("utf-8"), "test.txt", "text/plain"
+        )
 
         result = await self.parser.parse_document(file)
 
@@ -160,7 +165,9 @@ class TestDocumentParser:
         assert 1 < result.metadata.total_tokens < len(content)
 
         # Parse the same content again to ensure consistency
-        file2 = self.create_upload_file(content.encode("utf-8"), "test2.txt", "text/plain")
+        file2 = self.create_upload_file(
+            content.encode("utf-8"), "test2.txt", "text/plain"
+        )
         result2 = await self.parser.parse_document(file2)
 
         # Token counts should be identical for identical content
@@ -180,12 +187,17 @@ class TestDocumentParser:
         """Test that supported formats are correctly defined."""
         formats = self.parser.SUPPORTED_FORMATS
         assert "application/pdf" in formats
-        assert "application/vnd.openxmlformats-officedocument.wordprocessingml.document" in formats
+        assert (
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            in formats
+        )
         assert "text/plain" in formats
 
         assert formats["application/pdf"] == "pdf"
         assert (
-            formats["application/vnd.openxmlformats-officedocument.wordprocessingml.document"]
+            formats[
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            ]
             == "docx"
         )
         assert formats["text/plain"] == "txt"

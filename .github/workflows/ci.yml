@@ -42,10 +42,12 @@ jobs:
       working-directory: backend
       run: |
         uv sync --frozen
-        uv run black --check app tests
-        uv run isort --check-only app tests
-        uv run flake8 app tests --max-line-length=100 --extend-ignore=E203,W503
+        # Code formatting and linting with Ruff (replaces black, isort, flake8)
+        uv run ruff check app tests  # Linting
+        uv run ruff format --check app tests  # Format checking
+        # Type checking
         uv run mypy app --ignore-missing-imports --explicit-package-bases
+        # Run tests
         uv run pytest -v
 
     - name: Upload backend test results

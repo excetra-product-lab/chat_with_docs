@@ -16,51 +16,28 @@ repos:
       - id: debug-statements
       - id: mixed-line-ending
 
-  # Python specific hooks - Auto-fixing tools (run first)
-  - repo: https://github.com/pycqa/autoflake
-    rev: v2.3.1
+  # Python specific hooks - Ruff (replaces black, isort, flake8, autoflake)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.12.0
     hooks:
-      - id: autoflake
+      # Run the linter
+      - id: ruff
         files: ^backend/
-        args: ['--remove-all-unused-imports', '--remove-unused-variables', '--in-place']
-
-  - repo: https://github.com/hhatto/autopep8
-    rev: v2.3.1
-    hooks:
-      - id: autopep8
+        args: [--fix]
+      # Run the formatter
+      - id: ruff-format
         files: ^backend/
-        args: ['--in-place', '--aggressive', '--aggressive', '--max-line-length=100']
-
-  - repo: https://github.com/psf/black
-    rev: 25.1.0
-    hooks:
-      - id: black
-        files: ^backend/
-
-  - repo: https://github.com/pycqa/isort
-    rev: 6.0.1
-    hooks:
-      - id: isort
-        files: ^backend/
-
-  # Python linting (check-only, after auto-fixes)
-  - repo: https://github.com/pycqa/flake8
-    rev: 7.2.0
-    hooks:
-      - id: flake8
-        files: ^backend/
-        args: ['--max-line-length=100', '--extend-ignore=E203,W503']
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.15.0
+    rev: v1.16.1
     hooks:
       - id: mypy
         files: ^backend/
         args: ['--ignore-missing-imports', '--explicit-package-bases']
         additional_dependencies:
-          - 'pydantic>=2.0'
-          - 'fastapi>=0.100.0'
-          - 'sqlalchemy>=2.0'
+          - 'pydantic==2.11.7'
+          - 'fastapi==0.115.13'
+          - 'sqlalchemy==2.0.41'
 
   # JavaScript/TypeScript specific hooks
   - repo: https://github.com/pre-commit/mirrors-eslint
@@ -94,6 +71,13 @@ repos:
     hooks:
       - id: markdownlint
         args: ['--fix', '--config', '.markdownlint.yaml']
+        exclude: |
+          (?x)^(
+            CHANGELOG\.md|
+            .*node_modules.*|
+            .*\.next.*|
+            backend/htmlcov/.*
+          )$
 
   # Dockerfile linting (disabled - requires Docker daemon)
   # - repo: https://github.com/hadolint/hadolint

@@ -50,7 +50,9 @@ class TestLangchainDocumentProcessor:
     def test_get_processing_config(self):
         """Test getting processing configuration."""
         config = self.processor.get_processing_config()
-        assert all(k in config for k in ["chunk_size", "chunk_overlap", "max_tokens_per_chunk"])
+        assert all(
+            k in config for k in ["chunk_size", "chunk_overlap", "max_tokens_per_chunk"]
+        )
 
     def test_validate_file_success(self):
         """Test successful file validation."""
@@ -86,13 +88,17 @@ class TestLangchainDocumentProcessor:
 
     def test_create_metadata_with_tokens(self):
         """Test metadata creation with token counting."""
-        metadata = self.processor._create_metadata_with_tokens("f.txt", "txt", "text", 1, [])
+        metadata = self.processor._create_metadata_with_tokens(
+            "f.txt", "txt", "text", 1, []
+        )
         assert isinstance(metadata, DocumentMetadata)
         assert metadata.total_tokens > 0
 
     def test_create_langchain_text_splitter(self):
         """Test creating a text splitter."""
-        splitter = self.processor.create_langchain_text_splitter(chunk_size=500, chunk_overlap=50)
+        splitter = self.processor.create_langchain_text_splitter(
+            chunk_size=500, chunk_overlap=50
+        )
         assert splitter._chunk_size == 500
         assert splitter._chunk_overlap == 50
 
@@ -135,7 +141,9 @@ class TestLangchainDocumentProcessor:
     @pytest.mark.asyncio
     async def test_load_text_all_encodings_fail(self, mock_loader):
         """Test text loading failure."""
-        mock_loader.return_value.load.side_effect = UnicodeDecodeError("utf-8", b"", 0, 1, "")
+        mock_loader.return_value.load.side_effect = UnicodeDecodeError(
+            "utf-8", b"", 0, 1, ""
+        )
         with pytest.raises(ValueError, match="Could not decode text file"):
             await self.processor._load_text_with_langchain("dummy.txt")
 
@@ -162,7 +170,9 @@ class TestLangchainDocumentProcessorIntegration:
                 upload_file.size = len(content)
                 upload_file.read = AsyncMock(return_value=file_bytes_obj.read())
 
-                result = await self.processor.process_document_with_langchain(upload_file)
+                result = await self.processor.process_document_with_langchain(
+                    upload_file
+                )
                 assert content in result.text
         finally:
             os.unlink(path)
@@ -170,6 +180,8 @@ class TestLangchainDocumentProcessorIntegration:
     def test_splitter_integration(self):
         """Test splitter with real documents."""
         docs = [Document(page_content="a" * 1000)]
-        splitter = self.processor.create_langchain_text_splitter(chunk_size=100, chunk_overlap=10)
+        splitter = self.processor.create_langchain_text_splitter(
+            chunk_size=100, chunk_overlap=10
+        )
         split_docs = splitter.split_documents(docs)
         assert len(split_docs) > 9

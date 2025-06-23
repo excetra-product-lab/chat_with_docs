@@ -6,14 +6,11 @@ authors = [{ name = "Fauzi Hussein", email = "wumpini.hussein@gmail.com" }]
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-  "fastapi>=0.109.0",
   "uvicorn[standard]>=0.27.0",
-  "pydantic[email]>=2.5.3",
   "pydantic-settings>=2.1.0",
   "python-jose[cryptography]>=3.3.0",
   "passlib[bcrypt]>=1.7.4",
   "python-multipart>=0.0.6",
-  "sqlalchemy>=2.0.25",
   "psycopg2-binary>=2.9.9",
   "pgvector>=0.2.4",
   "openai>=1.9.0",
@@ -22,19 +19,21 @@ dependencies = [
   "pypdf>=3.17.4",
   "python-docx>=1.1.0",
   "tiktoken>=0.9.0",
+  "supabase>=2.0.0",
   # dev & test
   "pytest>=7.4.4",
   "pytest-cov>=4.1.0",
   "httpx>=0.26.0",
   "pre-commit>=4.2.0",
-  "black>=25.1.0",
-  "isort>=6.0.1",
-  "flake8>=7.2.0",
-  "mypy>=1.15.0",
-  "autoflake>=2.3.1",
-  "autopep8>=2.3.1",
   "email-validator>=2.2.0",
   "langchain-community>=0.3.24",
+  # Make sure you update the values of these dependencies in the .pre-commit-config.yaml file as well to the exact versions
+  "fastapi==0.115.13",
+  "pydantic[email]==2.11.7",
+  "sqlalchemy==2.0.41",
+  "ruff==0.12.0",
+  "mypy==1.16.1",
+  # end of dependencies you need to update in .pre-commit-config.yaml file
 ]
 
 [tool.uv]
@@ -42,33 +41,28 @@ dependencies = [
 
 # Lockfile is uv.lock
 
-[tool.black]
-line-length = 100
-target-version = ['py311']
-include = '\.pyi?$'
-extend-exclude = '''
-/(
-  # directories
-  \.eggs
-  | \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | _build
-  | buck-out
-  | build
-  | dist
-)/
-'''
+[tool.ruff]
+target-version = "py311"
 
-[tool.isort]
-profile = "black"
-line_length = 100
+[tool.ruff.lint]
+select = [
+  "E",   # pycodestyle errors
+  "W",   # pycodestyle warnings
+  "F",   # pyflakes
+  "I",   # isort
+  "B",   # flake8-bugbear
+  "C4",  # flake8-comprehensions
+  "UP",  # pyupgrade
+]
+ignore = [
+  "E203",  # whitespace before ':' (conflicts with black/ruff formatter)
+  "E501",  # line too long
+  "B008",  # do not perform function calls in argument defaults (FastAPI Depends)
+]
 
-[tool.flake8]
-max-line-length = 100
-extend-ignore = ["E203", "W503"]
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

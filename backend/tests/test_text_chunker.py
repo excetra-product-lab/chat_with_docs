@@ -10,12 +10,18 @@ class TestTextChunker:
     def setup_method(self):
         """Set up test fixtures."""
         self.chunker = TextChunker(
-            chunk_size=100, chunk_overlap=20, min_chunk_size=10  # Small size for testing
+            chunk_size=100,
+            chunk_overlap=20,
+            min_chunk_size=10,  # Small size for testing
         )
 
-    def create_parsed_content(self, text: str, filename: str = "test.txt", structured_content=None):
+    def create_parsed_content(
+        self, text: str, filename: str = "test.txt", structured_content=None
+    ):
         """Helper to create ParsedContent for testing."""
-        metadata = DocumentMetadata(filename=filename, file_type="txt", total_chars=len(text))
+        metadata = DocumentMetadata(
+            filename=filename, file_type="txt", total_chars=len(text)
+        )
         return ParsedContent(
             text=text, metadata=metadata, structured_content=structured_content or []
         )
@@ -40,7 +46,9 @@ class TestTextChunker:
             {"type": "paragraph", "text": "Third paragraph. " * 5},
         ]
         text = " ".join(item["text"] for item in structured_content)
-        parsed_content = self.create_parsed_content(text, structured_content=structured_content)
+        parsed_content = self.create_parsed_content(
+            text, structured_content=structured_content
+        )
 
         chunks = self.chunker.chunk_document(parsed_content)
 
@@ -57,13 +65,17 @@ class TestTextChunker:
             {"type": "page", "page_number": 2, "text": "Page 2 content. " * 10},
         ]
         text = " ".join(item["text"] for item in structured_content)
-        parsed_content = self.create_parsed_content(text, "test.pdf", structured_content)
+        parsed_content = self.create_parsed_content(
+            text, "test.pdf", structured_content
+        )
 
         chunks = self.chunker.chunk_document(parsed_content)
 
         assert len(chunks) > 0
         # Check that page numbers are preserved
-        page_numbers = [chunk.page_number for chunk in chunks if chunk.page_number is not None]
+        page_numbers = [
+            chunk.page_number for chunk in chunks if chunk.page_number is not None
+        ]
         assert len(page_numbers) > 0
 
     def test_chunk_with_section_headers(self):
@@ -75,7 +87,9 @@ class TestTextChunker:
             {"type": "paragraph", "text": "This is the conclusion content. " * 5},
         ]
         text = " ".join(item["text"] for item in structured_content)
-        parsed_content = self.create_parsed_content(text, structured_content=structured_content)
+        parsed_content = self.create_parsed_content(
+            text, structured_content=structured_content
+        )
 
         chunks = self.chunker.chunk_document(parsed_content)
 
@@ -89,7 +103,10 @@ class TestTextChunker:
 
     def test_chunk_overlap(self):
         """Test that chunks have proper overlap."""
-        text = "Sentence one. Sentence two. Sentence three. Sentence four. Sentence five. " * 3
+        text = (
+            "Sentence one. Sentence two. Sentence three. Sentence four. Sentence five. "
+            * 3
+        )
         parsed_content = self.create_parsed_content(text)
 
         chunks = self.chunker.chunk_document(parsed_content)
@@ -111,7 +128,8 @@ class TestTextChunker:
 
                 # Should have at least some overlapping words
                 assert (
-                    len(overlap_words) > 0 or len(current_chunk.text) < self.chunker.chunk_overlap
+                    len(overlap_words) > 0
+                    or len(current_chunk.text) < self.chunker.chunk_overlap
                 )
 
     def test_chunk_minimum_size_filter(self):
@@ -259,7 +277,9 @@ class TestDocumentChunk:
 
     def test_document_chunk_defaults(self):
         """Test DocumentChunk with default values."""
-        chunk = DocumentChunk(text="Test content", chunk_index=0, document_filename="test.txt")
+        chunk = DocumentChunk(
+            text="Test content", chunk_index=0, document_filename="test.txt"
+        )
 
         assert chunk.text == "Test content"
         assert chunk.chunk_index == 0

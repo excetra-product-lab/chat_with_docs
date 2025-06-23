@@ -2,7 +2,6 @@
 
 import logging
 import re
-from typing import Dict, List, Optional
 
 from app.services.document_parser import ParsedContent
 
@@ -17,11 +16,11 @@ class DocumentChunk:
         text: str,
         chunk_index: int,
         document_filename: str,
-        page_number: Optional[int] = None,
-        section_title: Optional[str] = None,
+        page_number: int | None = None,
+        section_title: str | None = None,
         start_char: int = 0,
         end_char: int = 0,
-        metadata: Optional[Dict] = None,
+        metadata: dict | None = None,
     ):
         self.text = text
         self.chunk_index = chunk_index
@@ -56,7 +55,7 @@ class TextChunker:
         self.min_chunk_size = min_chunk_size
         self.logger = logging.getLogger(__name__)
 
-    def chunk_document(self, parsed_content: ParsedContent) -> List[DocumentChunk]:
+    def chunk_document(self, parsed_content: ParsedContent) -> list[DocumentChunk]:
         """
         Chunk a parsed document into smaller pieces.
 
@@ -76,7 +75,9 @@ class TextChunker:
             chunks = self._chunk_plain_text(parsed_content)
 
         # Filter out chunks that are too small
-        valid_chunks = [chunk for chunk in chunks if len(chunk.text.strip()) >= self.min_chunk_size]
+        valid_chunks = [
+            chunk for chunk in chunks if len(chunk.text.strip()) >= self.min_chunk_size
+        ]
 
         self.logger.info(
             f"Created {len(valid_chunks)} chunks from document {parsed_content.metadata.filename}"
@@ -84,9 +85,11 @@ class TextChunker:
 
         return valid_chunks
 
-    def _chunk_structured_content(self, parsed_content: ParsedContent) -> List[DocumentChunk]:
+    def _chunk_structured_content(
+        self, parsed_content: ParsedContent
+    ) -> list[DocumentChunk]:
         """Chunk document using structured content information."""
-        chunks: List[DocumentChunk] = []
+        chunks: list[DocumentChunk] = []
         current_chunk = ""
         current_page = None
         current_section = None
@@ -121,7 +124,9 @@ class TextChunker:
                 # Start new chunk with overlap
                 overlap_text = self._get_overlap_text(current_chunk)
                 current_chunk = overlap_text + "\n\n" + item_text
-                chunk_start_char += len(current_chunk) - len(overlap_text) - len(item_text) - 2
+                chunk_start_char += (
+                    len(current_chunk) - len(overlap_text) - len(item_text) - 2
+                )
             else:
                 # Add item to current chunk
                 if current_chunk:
@@ -145,10 +150,10 @@ class TextChunker:
 
         return chunks
 
-    def _chunk_plain_text(self, parsed_content: ParsedContent) -> List[DocumentChunk]:
+    def _chunk_plain_text(self, parsed_content: ParsedContent) -> list[DocumentChunk]:
         """Chunk document using simple text splitting."""
         text = parsed_content.text
-        chunks: List[DocumentChunk] = []
+        chunks: list[DocumentChunk] = []
 
         # Split text into sentences for better chunk boundaries
         sentences = self._split_into_sentences(text)
@@ -172,7 +177,9 @@ class TextChunker:
                 # Start new chunk with overlap
                 overlap_text = self._get_overlap_text(current_chunk)
                 current_chunk = overlap_text + " " + sentence
-                current_start += len(current_chunk) - len(overlap_text) - len(sentence) - 1
+                current_start += (
+                    len(current_chunk) - len(overlap_text) - len(sentence) - 1
+                )
             else:
                 # Add sentence to current chunk
                 if current_chunk:
@@ -194,7 +201,7 @@ class TextChunker:
 
         return chunks
 
-    def _split_into_sentences(self, text: str) -> List[str]:
+    def _split_into_sentences(self, text: str) -> list[str]:
         """Split text into sentences using regex patterns."""
         # Pattern for sentence boundaries (periods, exclamation marks, question marks)
         # followed by whitespace and capital letter
@@ -221,11 +228,15 @@ class TextChunker:
         overlap_text = text[overlap_start:]
 
         # Look for sentence boundaries in the overlap
-        sentence_boundaries = [m.start() for m in re.finditer(r"[.!?]\s+", overlap_text)]
+        sentence_boundaries = [
+            m.start() for m in re.finditer(r"[.!?]\s+", overlap_text)
+        ]
 
         if sentence_boundaries:
             # Use the last sentence boundary as the start of overlap
-            last_boundary = sentence_boundaries[-1] + 2  # +2 to include the punctuation and space
+            last_boundary = (
+                sentence_boundaries[-1] + 2
+            )  # +2 to include the punctuation and space
             return overlap_text[last_boundary:]
 
         # If no sentence boundary found, use the full overlap
@@ -236,8 +247,8 @@ class TextChunker:
         text: str,
         chunk_index: int,
         filename: str,
-        page_number: Optional[int] = None,
-        section_title: Optional[str] = None,
+        page_number: int | None = None,
+        section_title: str | None = None,
         start_char: int = 0,
         end_char: int = 0,
     ) -> DocumentChunk:
@@ -257,7 +268,7 @@ class TextChunker:
             },
         )
 
-    def get_chunk_summary(self, chunks: List[DocumentChunk]) -> Dict:
+    def get_chunk_summary(self, chunks: list[DocumentChunk]) -> dict:
         """Get summary statistics about the chunks."""
         if not chunks:
             return {"total_chunks": 0}
@@ -266,7 +277,9 @@ class TextChunker:
         avg_chunk_size = total_chars / len(chunks)
 
         chunks_with_pages = sum(1 for chunk in chunks if chunk.page_number is not None)
-        chunks_with_sections = sum(1 for chunk in chunks if chunk.section_title is not None)
+        chunks_with_sections = sum(
+            1 for chunk in chunks if chunk.section_title is not None
+        )
 
         return {
             "total_chunks": len(chunks),

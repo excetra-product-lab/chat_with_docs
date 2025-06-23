@@ -7,7 +7,6 @@ including LLM setup, embedding models, and tracing configuration.
 
 import logging
 import os
-from typing import Optional, Union
 
 from langchain_community.embeddings import FakeEmbeddings
 from langchain_community.llms import FakeListLLM
@@ -23,8 +22,8 @@ class LangchainConfig:
     """Centralized Langchain configuration class."""
 
     def __init__(self) -> None:
-        self._llm: Optional[Union[AzureChatOpenAI, FakeListLLM]] = None
-        self._embeddings: Optional[Union[AzureOpenAIEmbeddings, FakeEmbeddings]] = None
+        self._llm: AzureChatOpenAI | FakeListLLM | None = None
+        self._embeddings: AzureOpenAIEmbeddings | FakeEmbeddings | None = None
         self._setup_langchain_environment()
 
     def _setup_langchain_environment(self) -> None:
@@ -46,7 +45,7 @@ class LangchainConfig:
             logging.getLogger("langchain.chains").setLevel(logging.DEBUG)
 
     @property
-    def llm(self) -> Union[AzureChatOpenAI, FakeListLLM]:
+    def llm(self) -> AzureChatOpenAI | FakeListLLM:
         """Get configured Azure LLM instance."""
         if self._llm is None:
             if settings.AZURE_OPENAI_API_KEY and settings.AZURE_OPENAI_ENDPOINT:
@@ -64,8 +63,12 @@ class LangchainConfig:
                     api_version="2024-02-01",
                     temperature=settings.OPENAI_TEMPERATURE,
                 )
-                deployment = settings.AZURE_OPENAI_DEPLOYMENT_NAME or settings.OPENAI_MODEL
-                logger.info(f"Initialized Azure OpenAI LLM with deployment: {deployment}")
+                deployment = (
+                    settings.AZURE_OPENAI_DEPLOYMENT_NAME or settings.OPENAI_MODEL
+                )
+                logger.info(
+                    f"Initialized Azure OpenAI LLM with deployment: {deployment}"
+                )
             else:
                 # Use fake LLM for testing when no Azure API key/endpoint is provided
                 self._llm = FakeListLLM(responses=["This is a test response"])
@@ -76,7 +79,7 @@ class LangchainConfig:
         return self._llm
 
     @property
-    def embeddings(self) -> Union[AzureOpenAIEmbeddings, FakeEmbeddings]:
+    def embeddings(self) -> AzureOpenAIEmbeddings | FakeEmbeddings:
         """Get configured Azure embeddings instance."""
         if self._embeddings is None:
             if settings.AZURE_OPENAI_API_KEY and settings.AZURE_OPENAI_ENDPOINT:
@@ -89,13 +92,19 @@ class LangchainConfig:
                     api_key=api_key,
                     azure_endpoint=settings.AZURE_OPENAI_ENDPOINT,
                     azure_deployment=(
-                        settings.AZURE_OPENAI_EMBEDDING_DEPLOYMENT or settings.EMBEDDING_MODEL
+                        settings.AZURE_OPENAI_EMBEDDING_DEPLOYMENT
+                        or settings.EMBEDDING_MODEL
                     ),
                     api_version="2024-02-01",
                     dimensions=settings.EMBEDDING_DIMENSION,
                 )
-                deployment = settings.AZURE_OPENAI_EMBEDDING_DEPLOYMENT or settings.EMBEDDING_MODEL
-                logger.info(f"Initialized Azure OpenAI embeddings with deployment: {deployment}")
+                deployment = (
+                    settings.AZURE_OPENAI_EMBEDDING_DEPLOYMENT
+                    or settings.EMBEDDING_MODEL
+                )
+                logger.info(
+                    f"Initialized Azure OpenAI embeddings with deployment: {deployment}"
+                )
             else:
                 # Use fake embeddings for testing when no Azure API key/endpoint is provided
                 self._embeddings = FakeEmbeddings(size=settings.EMBEDDING_DIMENSION)

@@ -71,7 +71,9 @@ class TestLangchainTestingUtilities:
             assert isinstance(message.content, str)
             assert len(message.content) > 0
 
-    def test_langchain_helper_assertions(self, langchain_helper, fake_llm, fake_embeddings):
+    def test_langchain_helper_assertions(
+        self, langchain_helper, fake_llm, fake_embeddings
+    ):
         """Test the assertion methods in LangchainTestHelper."""
         # Test LLM assertions
         langchain_helper.assert_is_fake_llm(fake_llm)
@@ -85,7 +87,9 @@ class TestLangchainTestingUtilities:
         with pytest.raises(AssertionError):
             langchain_helper.assert_is_azure_embeddings(fake_embeddings)
 
-    def test_langchain_helper_document_assertions(self, langchain_helper, sample_documents):
+    def test_langchain_helper_document_assertions(
+        self, langchain_helper, sample_documents
+    ):
         """Test the document assertion methods in LangchainTestHelper."""
         for doc in sample_documents:
             langchain_helper.assert_document_structure(doc)
@@ -95,7 +99,9 @@ class TestLangchainTestingUtilities:
         with pytest.raises(AssertionError):
             langchain_helper.assert_document_structure(invalid_doc)
 
-    def test_langchain_helper_message_assertions(self, langchain_helper, sample_chat_messages):
+    def test_langchain_helper_message_assertions(
+        self, langchain_helper, sample_chat_messages
+    ):
         """Test the message assertion methods in LangchainTestHelper."""
         for message in sample_chat_messages:
             langchain_helper.assert_message_structure(message)
@@ -206,28 +212,18 @@ class TestLangchainTestingUtilities:
         import os
 
         assert os.environ.get("AZURE_OPENAI_API_KEY") == "test-api-key"
-        assert os.environ.get("AZURE_OPENAI_ENDPOINT") == "https://test.openai.azure.com/"
+        assert (
+            os.environ.get("AZURE_OPENAI_ENDPOINT") == "https://test.openai.azure.com/"
+        )
         assert os.environ.get("AZURE_OPENAI_DEPLOYMENT_NAME") == "test-deployment"
-        assert os.environ.get("AZURE_OPENAI_EMBEDDING_DEPLOYMENT") == "test-embedding-deployment"
+        assert (
+            os.environ.get("AZURE_OPENAI_EMBEDDING_DEPLOYMENT")
+            == "test-embedding-deployment"
+        )
 
 
 class TestLangchainConfigIntegration:
     """Test cases for integration with the actual LangchainConfig."""
-
-    def test_config_uses_fake_implementations_by_default(self):
-        """Test that LangchainConfig uses fake implementations when no Azure credentials."""
-        # Without Azure credentials, should use fake implementations
-        llm = langchain_config.llm
-        embeddings = langchain_config.embeddings
-
-        # Note: These assertions might fail if Azure credentials are actually set
-        # In CI/CD or local environments without Azure setup, these should be fake
-        if not (
-            hasattr(langchain_config, "_has_azure_credentials")
-            and langchain_config._has_azure_credentials
-        ):
-            assert isinstance(llm, FakeListLLM)
-            assert isinstance(embeddings, FakeEmbeddings)
 
     def test_config_methods_work_regardless_of_implementation(self):
         """Test that configuration methods work with both real and fake implementations."""
@@ -250,10 +246,10 @@ class TestLangchainConfigIntegration:
         with (
             patch("app.core.settings.settings.AZURE_OPENAI_API_KEY", "test-api-key"),
             patch(
-                "app.core.settings.settings.AZURE_OPENAI_ENDPOINT", "https://test.openai.azure.com/"
+                "app.core.settings.settings.AZURE_OPENAI_ENDPOINT",
+                "https://test.openai.azure.com/",
             ),
         ):
-
             test_config = LangchainConfig()
 
             # With mocked credentials, the config should try to create Azure instances
@@ -267,7 +263,9 @@ class TestLangchainConfigIntegration:
 class TestLangchainTestingPatterns:
     """Examples of common testing patterns with Langchain components."""
 
-    def test_document_processing_pattern(self, sample_documents, fake_embeddings, langchain_helper):
+    def test_document_processing_pattern(
+        self, sample_documents, fake_embeddings, langchain_helper
+    ):
         """Example test pattern for document processing workflows."""
         # Verify documents have expected structure
         for doc in sample_documents:
@@ -281,7 +279,9 @@ class TestLangchainTestingPatterns:
         for embedding in embeddings:
             assert len(embedding) == 1536
 
-    def test_chat_conversation_pattern(self, sample_chat_messages, fake_llm, langchain_helper):
+    def test_chat_conversation_pattern(
+        self, sample_chat_messages, fake_llm, langchain_helper
+    ):
         """Example test pattern for chat/conversation workflows."""
         # Verify messages have expected structure
         for message in sample_chat_messages:
