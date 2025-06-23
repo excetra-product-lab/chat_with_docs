@@ -8,7 +8,6 @@ and text splitters, while maintaining compatibility with the existing document p
 import logging
 import tempfile
 from pathlib import Path
-from typing import Dict, List, Optional, Union
 
 from fastapi import HTTPException, UploadFile
 from langchain_community.document_loaders import (
@@ -90,35 +89,43 @@ class LangchainDocumentProcessor:
                     documents = await self._load_text_with_langchain(temp_file.name)
                 else:
                     raise HTTPException(
-                        status_code=400, detail=f"Unsupported file format: {file.content_type}"
+                        status_code=400,
+                        detail=f"Unsupported file format: {file.content_type}",
                     )
 
                 # Clean up temp file
                 Path(temp_file.name).unlink(missing_ok=True)
 
             # Convert Langchain documents to ParsedContent format
-            return self._convert_to_parsed_content(documents, file.filename or "", file_type)
+            return self._convert_to_parsed_content(
+                documents, file.filename or "", file_type
+            )
 
         except HTTPException:
             raise
         except Exception as e:
-            self.logger.error(f"Error processing document {file.filename} with Langchain: {str(e)}")
-            raise HTTPException(
-                status_code=500, detail=f"Failed to process document with Langchain: {str(e)}"
+            self.logger.error(
+                f"Error processing document {file.filename} with Langchain: {str(e)}"
             )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to process document with Langchain: {str(e)}",
+            ) from e
 
-    async def _load_pdf_with_langchain(self, file_path: str) -> List[Document]:
+    async def _load_pdf_with_langchain(self, file_path: str) -> list[Document]:
         """Load PDF using Langchain PyPDFLoader."""
         try:
             loader = PyPDFLoader(file_path)
             documents = loader.load()
-            self.logger.info(f"Loaded {len(documents)} pages from PDF using PyPDFLoader")
+            self.logger.info(
+                f"Loaded {len(documents)} pages from PDF using PyPDFLoader"
+            )
             return documents
         except Exception as e:
             self.logger.error(f"Error loading PDF with PyPDFLoader: {str(e)}")
             raise
 
-    async def _load_word_with_langchain(self, file_path: str) -> List[Document]:
+    async def _load_word_with_langchain(self, file_path: str) -> list[Document]:
         """Load Word document using Langchain UnstructuredWordDocumentLoader."""
         try:
             loader = UnstructuredWordDocumentLoader(file_path)
@@ -130,11 +137,12 @@ class LangchainDocumentProcessor:
             return documents
         except Exception as e:
             self.logger.error(
-                "Error loading Word document with UnstructuredWordDocumentLoader: " f"{str(e)}"
+                "Error loading Word document with UnstructuredWordDocumentLoader: "
+                f"{str(e)}"
             )
             raise
 
-    async def _load_text_with_langchain(self, file_path: str) -> List[Document]:
+    async def _load_text_with_langchain(self, file_path: str) -> list[Document]:
         """Load text file using Langchain TextLoader."""
         try:
             # Try different encodings for text files
@@ -145,13 +153,17 @@ class LangchainDocumentProcessor:
                 try:
                     loader = TextLoader(file_path, encoding=encoding)
                     documents = loader.load()
-                    self.logger.info(f"Loaded text file using TextLoader with {encoding} encoding")
+                    self.logger.info(
+                        f"Loaded text file using TextLoader with {encoding} encoding"
+                    )
                     break
                 except UnicodeDecodeError:
                     continue
 
             if documents is None:
-                raise ValueError("Could not decode text file with any supported encoding")
+                raise ValueError(
+                    "Could not decode text file with any supported encoding"
+                )
 
             return documents
         except Exception as e:
@@ -159,7 +171,7 @@ class LangchainDocumentProcessor:
             raise
 
     def _convert_to_parsed_content(
-        self, documents: List[Document], filename: str, file_type: str
+        self, documents: list[Document], filename: str, file_type: str
     ) -> ParsedContent:
         """
         Convert Langchain documents to ParsedContent format.
@@ -224,10 +236,10 @@ class LangchainDocumentProcessor:
 
     def create_langchain_text_splitter(
         self,
-        chunk_size: Optional[int] = None,
-        chunk_overlap: Optional[int] = None,
+        chunk_size: int | None = None,
+        chunk_overlap: int | None = None,
         use_recursive: bool = True,
-    ) -> Union[RecursiveCharacterTextSplitter, CharacterTextSplitter]:
+    ) -> RecursiveCharacterTextSplitter | CharacterTextSplitter:
         """
         Create a Langchain text splitter with configuration.
 
@@ -242,7 +254,7 @@ class LangchainDocumentProcessor:
         chunk_size = chunk_size or self.chunk_config["chunk_size"]
         chunk_overlap = chunk_overlap or self.chunk_config["chunk_overlap"]
 
-        splitter: Union[RecursiveCharacterTextSplitter, CharacterTextSplitter]
+        splitter: RecursiveCharacterTextSplitter | CharacterTextSplitter
         if use_recursive:
             splitter = RecursiveCharacterTextSplitter(
                 chunk_size=chunk_size,
@@ -265,11 +277,11 @@ class LangchainDocumentProcessor:
 
     def split_documents_with_langchain(
         self,
-        documents: List[Document],
-        chunk_size: Optional[int] = None,
-        chunk_overlap: Optional[int] = None,
+        documents: list[Document],
+        chunk_size: int | None = None,
+        chunk_overlap: int | None = None,
         use_recursive: bool = True,
-    ) -> List[Document]:
+    ) -> list[Document]:
         """
         Split Langchain documents using Langchain text splitters.
 
@@ -283,11 +295,15 @@ class LangchainDocumentProcessor:
             List of split document chunks
         """
         splitter = self.create_langchain_text_splitter(
-            chunk_size=chunk_size, chunk_overlap=chunk_overlap, use_recursive=use_recursive
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            use_recursive=use_recursive,
         )
 
         split_docs = splitter.split_documents(documents)
-        self.logger.info(f"Split {len(documents)} documents into {len(split_docs)} chunks")
+        self.logger.info(
+            f"Split {len(documents)} documents into {len(split_docs)} chunks"
+        )
 
         return split_docs
 
@@ -302,7 +318,7 @@ class LangchainDocumentProcessor:
                 detail=f"File too large. Maximum size: {self.MAX_FILE_SIZE / 1024 / 1024}MB",
             )
 
-    def _get_file_type(self, content_type: Optional[str], filename: str) -> str:
+    def _get_file_type(self, content_type: str | None, filename: str) -> str:
         """Determine file type from content type or filename extension."""
         if content_type and content_type in self.SUPPORTED_FORMATS:
             return self.SUPPORTED_FORMATS[content_type]
@@ -320,7 +336,8 @@ class LangchainDocumentProcessor:
             return extension_map[extension]
 
         raise HTTPException(
-            status_code=400, detail=f"Unsupported file format: {content_type or extension}"
+            status_code=400,
+            detail=f"Unsupported file format: {content_type or extension}",
         )
 
     def _create_metadata_with_tokens(
@@ -328,8 +345,8 @@ class LangchainDocumentProcessor:
         filename: str,
         file_type: str,
         full_text: str,
-        total_pages: Optional[int] = None,
-        sections: Optional[List[str]] = None,
+        total_pages: int | None = None,
+        sections: list[str] | None = None,
     ) -> DocumentMetadata:
         """Create metadata with token count included."""
         total_chars = len(full_text)
@@ -344,11 +361,11 @@ class LangchainDocumentProcessor:
             sections=sections or [],
         )
 
-    def get_supported_formats(self) -> List[str]:
+    def get_supported_formats(self) -> list[str]:
         """Get list of supported file formats."""
         return list(self.SUPPORTED_FORMATS.keys())
 
-    def get_processing_config(self) -> Dict:
+    def get_processing_config(self) -> dict:
         """Get current processing configuration."""
         return {
             "chunk_size": self.chunk_config["chunk_size"],

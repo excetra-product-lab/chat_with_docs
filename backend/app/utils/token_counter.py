@@ -1,7 +1,6 @@
 """Token counting utility using tiktoken for various text encoding models."""
 
 import logging
-from typing import Optional
 
 import tiktoken
 
@@ -81,7 +80,9 @@ class TokenCounter:
             # Fallback to default counting
             return self.count_tokens(text)
 
-    def estimate_cost(self, text: str, model_name: str, cost_per_1k_tokens: float) -> float:
+    def estimate_cost(
+        self, text: str, model_name: str, cost_per_1k_tokens: float
+    ) -> float:
         """
         Estimate the cost of processing text with a given model.
 
@@ -191,7 +192,7 @@ class TokenCounter:
 default_token_counter = TokenCounter()
 
 
-def count_tokens(text: str, encoding_name: Optional[str] = None) -> int:
+def count_tokens(text: str, encoding_name: str | None = None) -> int:
     """
     Convenience function to count tokens in text.
 
