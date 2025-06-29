@@ -1,31 +1,51 @@
 'use client'
 
-import { useAuth } from '@clerk/nextjs'
-import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
-import Layout from '@/components/Layout'
-import ChatWindow from '@/components/ChatWindow'
+import React from 'react'
+import { ChatInterface } from '../../src/components/ChatInterface'
+import { useAppContext } from '../../src/context/AppContext'
 
 export default function ChatPage() {
-  const { isLoaded, isSignedIn } = useAuth()
-  const router = useRouter()
+  const { messages, isLoading, addMessage, documents } = useAppContext()
+  
+  const hasReadyDocuments = documents.some(doc => doc.status === 'ready')
 
-  useEffect(() => {
-    if (isLoaded && !isSignedIn) {
-      router.push('/')
+  const sendMessage = async (content: string) => {
+    // Add user message
+    const userMessage = {
+      id: Date.now().toString(),
+      type: 'user' as const,
+      content,
+      timestamp: new Date(),
     }
-  }, [isLoaded, isSignedIn, router])
+    addMessage(userMessage)
 
-  if (!isLoaded || !isSignedIn) {
-    return <div>Loading...</div>
+    // Mock AI response - in real app this would call the backend API
+    setTimeout(() => {
+      const aiMessage = {
+        id: (Date.now() + 1).toString(),
+        type: 'assistant' as const,
+        content: `I understand you're asking about: "${content}". I would analyze your uploaded documents and provide relevant information with citations here.`,
+        timestamp: new Date(),
+        citations: documents.slice(0, 2).map(doc => ({
+          documentId: doc.id,
+          documentName: doc.filename,
+          page: Math.floor(Math.random() * (doc.pages || 1)) + 1,
+          excerpt: `Relevant excerpt from ${doc.filename}...`,
+          confidence: 0.9
+        }))
+      }
+      addMessage(aiMessage)
+    }, 1000)
   }
 
   return (
-    <Layout>
-      <div className="container mx-auto p-4">
-        <h1 className="text-2xl font-bold mb-4">Chat with your documents</h1>
-        <ChatWindow />
-      </div>
-    </Layout>
+    <div className="h-screen px-6">
+      <ChatInterface
+        messages={messages}
+        isLoading={isLoading}
+        onSendMessage={sendMessage}
+        hasDocuments={hasReadyDocuments}
+      />
+    </div>
   )
-}
+} 

@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { AppProvider } from '../../context/AppContext'
 import { Navigation } from './Navigation'
 

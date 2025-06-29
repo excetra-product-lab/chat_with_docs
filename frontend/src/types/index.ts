@@ -1,12 +1,13 @@
 export interface Document {
   id: string;
-  name: string;
-  type: 'pdf' | 'docx' | 'txt';
-  size: number;
-  uploadDate: Date;
-  status: 'processing' | 'ready' | 'error';
+  filename: string;
+  user_id: string;
+  status: 'processing' | 'ready' | 'failed';
+  created_at: string;
+  file_size: number;
+  file_type: string;
   pages?: number;
-  chunks?: DocumentChunk[];
+  upload_progress?: number;
 }
 
 export interface DocumentChunk {

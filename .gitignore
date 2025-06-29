@@ -189,7 +189,7 @@ Thumbs.db
 # Testing
 coverage/
 .nyc_output/
-
+.ignore/
 
 .secrets
 .actrc
