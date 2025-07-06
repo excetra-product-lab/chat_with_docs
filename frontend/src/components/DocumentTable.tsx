@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { FileText, Trash2, Clock, CheckCircle, AlertCircle } from 'lucide-react'
-import { Document } from '../hooks/useDocuments'
+import { Document } from '../types'
 
 interface DocumentTableProps {
   documents: Document[]

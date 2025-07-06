@@ -23,13 +23,12 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
   onToggleCollapse
 }) => {
   const getDocumentIcon = (type: string) => {
-    switch (type) {
-      case 'pdf':
-        return <FileText className="w-5 h-5 text-red-400" />;
-      case 'docx':
-        return <File className="w-5 h-5 text-blue-400" />;
-      default:
-        return <File className="w-5 h-5 text-slate-400" />;
+    if (type.includes('pdf')) {
+      return <FileText className="w-5 h-5 text-red-400" />;
+    } else if (type.includes('word') || type.includes('document')) {
+      return <File className="w-5 h-5 text-blue-400" />;
+    } else {
+      return <File className="w-5 h-5 text-slate-400" />;
     }
   };
 
@@ -118,16 +117,15 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-start space-x-3 flex-1 min-w-0">
-                  {getDocumentIcon(document.type)}
+                  {getDocumentIcon(document.file_type)}
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-slate-100 font-medium truncate" title={document.name}>
-                      {document.name}
+                    <h3 className="text-slate-100 font-medium truncate" title={document.filename}>
+                      {document.filename}
                     </h3>
                     <div className="flex items-center space-x-4 text-xs text-slate-400 mt-1 font-light">
-                      <span>{formatFileSize(document.size)}</span>
-                      <span>{formatDate(document.uploadDate)}</span>
+                      <span>{formatFileSize(document.file_size)}</span>
+                      <span>{formatDate(new Date(document.created_at))}</span>
                       {document.pages && <span>{document.pages} pages</span>}
-                      {document.chunks && <span>{document.chunks.length} chunks</span>}
                     </div>
                   </div>
                 </div>
