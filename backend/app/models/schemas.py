@@ -32,6 +32,7 @@ class Document(BaseModel):
     status: str
     storage_key: str | None = None
     created_at: datetime
+    chunk_count: int | None = None
 
 
 class DocumentMetadata(BaseModel):

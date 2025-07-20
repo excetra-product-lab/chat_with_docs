@@ -5,15 +5,18 @@ from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
+from app.core.settings import settings
+
+# Import pgvector properly for both type checking and runtime
 if TYPE_CHECKING:
-    from sqlalchemy.dialects.postgresql import VECTOR  # type: ignore
+    from pgvector.sqlalchemy import Vector
 else:
-    # For runtime, use a placeholder that won't cause import errors
     try:
-        from sqlalchemy.dialects.postgresql import VECTOR  # type: ignore
+        from pgvector.sqlalchemy import Vector
     except ImportError:
-        # Fallback for environments without postgresql dialect
-        def VECTOR(x):
+        # Fallback for environments without pgvector
+        def Vector(dimensions: int):  # type: ignore
+            """Fallback Vector type when pgvector is not available."""
             return Text
 
 
@@ -38,6 +41,7 @@ class Document(Base):
     filename = Column(String)
     user_id = Column(Integer, ForeignKey("users.id"))
     status = Column(String, default="processing")
+    storage_key = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="documents")
@@ -50,7 +54,9 @@ class Chunk(Base):
     id = Column(Integer, primary_key=True, index=True)
     document_id = Column(Integer, ForeignKey("documents.id"))
     content = Column(Text)
-    embedding: Any = Column(VECTOR(1536))
+    embedding: Any = Column(
+        Vector(settings.EMBEDDING_DIMENSION)
+    )  # Use pgvector's Vector type
     page = Column(Integer, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 

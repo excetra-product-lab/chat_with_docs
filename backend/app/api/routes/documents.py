@@ -1,5 +1,4 @@
 import threading
-import uuid
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
@@ -13,7 +12,7 @@ from app.models.schemas import (
     ProcessingConfig,
     ProcessingStats,
 )
-from app.services.document_processor import DocumentProcessor
+from app.services.document_processor import DocumentProcessor, ProcessingResult
 from app.services.supabase_file_service import SupabaseFileService
 
 router = APIRouter()
@@ -47,6 +46,26 @@ def get_storage_service() -> SupabaseFileService:
     return _storage_service_instance
 
 
+async def _process_document_internal(file: UploadFile) -> ProcessingResult:
+    """
+    Internal function to process document and return raw result with validation.
+    Used by both process_document endpoint and upload_document endpoint.
+
+    Returns:
+        ProcessingResult: The validated processing result
+    """
+    # Process the document
+    result = await document_processor.process_document(file)
+
+    # Validate the processing result
+    if not document_processor.validate_processing_result(result):
+        raise HTTPException(
+            status_code=500, detail="Document processing validation failed"
+        )
+
+    return result
+
+
 @router.post("/process", response_model=DocumentProcessingResult)
 async def process_document(
     file: UploadFile = File(...),
@@ -57,14 +76,8 @@ async def process_document(
     This endpoint handles the document parsing and text extraction.
     """
     try:
-        # Process the document
-        result = await document_processor.process_document(file)
-
-        # Validate the processing result
-        if not document_processor.validate_processing_result(result):
-            raise HTTPException(
-                status_code=500, detail="Document processing validation failed"
-            )
+        # Use shared processing function
+        result = await _process_document_internal(file)
 
         # Convert to response format with proper Pydantic models
         document_metadata = DocumentMetadata(
@@ -127,31 +140,95 @@ async def upload_document(
     storage_service: SupabaseFileService = Depends(get_storage_service),
 ):
     """
-    Upload and save a document file using the configured storage service.
-    This endpoint automatically uses Supabase if configured, otherwise falls back to local storage.
+    Upload and save a document file, then process it (parse and chunk).
+    This endpoint handles both file storage and document processing in one step.
     """
     try:
         user_id = current_user["id"]
-
-        # Generate document ID first
-        document_id = str(uuid.uuid4())
-
-        # Upload the file using the injected storage service
-        storage_key = await storage_service.upload_file(file, document_id)
+        # user_id = 2
 
         if not file.filename:
             raise HTTPException(
                 status_code=400, detail="Uploaded file must have a filename"
             )
 
-        # Create document record (in a real app, this would save to database)
+        # Create document record in database first to get the ID
+        from app.core.vectorstore import SessionLocal
+        from app.models.database import Document as DBDocument
+
+        db = SessionLocal()
+        try:
+            db_document = DBDocument(
+                filename=file.filename,
+                user_id=user_id,
+                status="processing",
+            )
+            db.add(db_document)
+            db.commit()
+            db.refresh(db_document)
+
+            # Use this single ID for everything
+            document_id = db_document.id
+
+        finally:
+            db.close()
+
+        # Upload the file using the same document ID
+        storage_key = await storage_service.upload_file(file, str(document_id))
+
+        # Reset file pointer for processing
+        await file.seek(0)
+
+        # Process the document and capture the results
+        processing_result = await _process_document_internal(file)
+
+        # Store chunks with embeddings using the same document ID
+        from app.core.vectorstore import store_chunks_with_embeddings
+        from app.models.schemas import DocumentChunk
+
+        # Convert text_chunker.DocumentChunk to schemas.DocumentChunk
+        schema_chunks = [
+            DocumentChunk(
+                text=chunk.text,
+                chunk_index=chunk.chunk_index,
+                document_filename=chunk.document_filename,
+                page_number=chunk.page_number,
+                section_title=chunk.section_title,
+                start_char=chunk.start_char,
+                end_char=chunk.end_char,
+                char_count=chunk.char_count,
+                metadata=chunk.metadata,
+            )
+            for chunk in processing_result.chunks
+        ]
+
+        chunk_count = await store_chunks_with_embeddings(
+            schema_chunks,
+            str(document_id),  # Same ID used everywhere
+        )
+
+        # Update document with storage key and status
+        db = SessionLocal()
+        try:
+            document_to_update: DBDocument | None = (
+                db.query(DBDocument).filter(DBDocument.id == document_id).first()
+            )
+            if document_to_update is not None:
+                document_to_update.storage_key = storage_key  # type: ignore[assignment]
+                document_to_update.status = "processed"  # type: ignore[assignment]
+                db.commit()
+        finally:
+            db.close()
+
+        # Create response document
         document = Document(
-            id=document_id,
+            id=str(document_id),  # Same ID used everywhere
             filename=file.filename,
             user_id=user_id,
-            status="uploaded",
+            status="processed",
             storage_key=storage_key,
             created_at=datetime.now(),
+            chunk_count=chunk_count,
         )
 
         return document
@@ -160,7 +237,7 @@ async def upload_document(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Failed to upload file: {str(e)}"
+            status_code=500, detail=f"Failed to upload and process document: {str(e)}"
         ) from e
 
 
