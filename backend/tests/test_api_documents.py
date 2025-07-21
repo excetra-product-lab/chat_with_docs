@@ -28,12 +28,81 @@ class MockStorageService:
         return f"test-bucket/{document_id}.{file_extension}"
 
 
+# Mock database document
+class MockDBDocument:
+    """Mock database document for testing."""
+
+    def __init__(self, id: int = 1, filename: str = "test.txt", user_id: int = 1):
+        self.id = id
+        self.filename = filename
+        self.user_id = user_id
+        self.status = "processing"
+        self.storage_key = None
+        self.created_at = datetime.now()
+
+
+# Mock database session
+class MockDBSession:
+    """Mock database session for testing."""
+
+    def __init__(self):
+        self.documents = {}
+        self.next_id = 1
+
+    def add(self, document):
+        """Mock add operation."""
+        document.id = self.next_id
+        self.documents[self.next_id] = document
+        self.next_id += 1
+
+    def commit(self):
+        """Mock commit operation."""
+        pass
+
+    def refresh(self, document):
+        """Mock refresh operation."""
+        pass
+
+    def query(self, model):
+        """Mock query operation."""
+        return MockQuery(self.documents)
+
+    def close(self):
+        """Mock close operation."""
+        pass
+
+
+class MockQuery:
+    """Mock SQLAlchemy query for testing."""
+
+    def __init__(self, documents):
+        self.documents = documents
+        self.filters = []
+
+    def filter(self, condition):
+        """Mock filter operation."""
+        # For simplicity, just return the first document
+        return self
+
+    def first(self):
+        """Mock first operation."""
+        if self.documents:
+            return list(self.documents.values())[0]
+        return None
+
+
 # Create mock instances
 mock_storage = MockStorageService()
 
 
 def mock_get_storage_service():
     return mock_storage
+
+
+# Mock the vectorstore function
+async def mock_store_chunks_with_embeddings(chunks, document_id):
+    """Mock function for storing chunks with embeddings."""
+    return len(chunks)
 
 
 # Override the dependencies
@@ -314,21 +383,23 @@ This is the conclusion section that summarizes everything."""
         for section in stats_sections:
             assert section in stats
 
-    # Upload endpoint tests
-    @patch("app.api.routes.documents.datetime")
-    @patch("app.api.routes.documents.uuid.uuid4")
-    def test_upload_document_success(self, mock_uuid4, mock_datetime):
-        """Test successful document upload with mocked UUID and datetime."""
+    # Upload endpoint tests with proper mocking
+    @patch(
+        "app.core.vectorstore.store_chunks_with_embeddings",
+        new=mock_store_chunks_with_embeddings,
+    )
+    @patch("app.core.vectorstore.SessionLocal")
+    def test_upload_document_success(self, mock_session_local):
+        """Test successful document upload with database operations."""
 
-        # Mock UUID generation
-        mock_uuid4.return_value = "test-doc-id-123"
+        # Mock the database session
+        mock_db = MockDBSession()
+        mock_session_local.return_value = mock_db
 
-        # Mock datetime
-        fixed_datetime = datetime(2024, 1, 15, 10, 30, 0)
-        mock_datetime.now.return_value = fixed_datetime
-
-        # Create test file
-        test_content = b"Test document content for upload"
+        # Create test file with substantial content to meet chunking requirements
+        test_content = (
+            b"Test document content for upload. " * 50
+        )  # About 1500 characters
         test_file = self.create_test_file(test_content, "test.txt", "text/plain")
 
         # Make request
@@ -338,15 +409,28 @@ This is the conclusion section that summarizes everything."""
         assert response.status_code == 200
         data = response.json()
 
-        assert data["id"] == "test-doc-id-123"
+        # Verify response structure matches new Document schema
+        assert "id" in data
         assert data["filename"] == "test.txt"
-        assert data["user_id"] == 1
-        assert data["status"] == "uploaded"
-        assert data["storage_key"] == "test-bucket/test-doc-id-123.txt"
-        assert data["created_at"] == "2024-01-15T10:30:00"
+        assert data["user_id"] == 1  # From mock_get_current_user
+        assert data["status"] == "processed"
+        assert "storage_key" in data
+        assert "created_at" in data
+        assert "chunk_count" in data
+        assert isinstance(data["chunk_count"], int)
 
-    def test_upload_storage_service_error(self):
+    @patch(
+        "app.core.vectorstore.store_chunks_with_embeddings",
+        new=mock_store_chunks_with_embeddings,
+    )
+    @patch("app.core.vectorstore.SessionLocal")
+    def test_upload_storage_service_error(self, mock_session_local):
         """Test handling of storage service errors."""
+
+        # Mock the database session
+        mock_db = MockDBSession()
+        mock_session_local.return_value = mock_db
+
         # Create a mock that raises an exception
         error_storage = MagicMock()
         error_storage.upload_file.side_effect = Exception("Storage service error")
@@ -356,13 +440,55 @@ This is the conclusion section that summarizes everything."""
         app.dependency_overrides[get_storage_service] = lambda: error_storage
 
         try:
-            test_file = self.create_test_file(b"Test content", "test.txt")
+            test_file = self.create_test_file(
+                b"Test content that is long enough for proper processing. " * 20,
+                "test.txt",
+            )
             response = client.post("/api/documents/upload", files=[test_file])
 
             assert response.status_code == 500
-            assert "Failed to upload file" in response.json()["detail"]
+            assert "Failed to upload and process document" in response.json()["detail"]
 
         finally:
             # Restore the original override
             if original_override:
                 app.dependency_overrides[get_storage_service] = original_override
+
+    @patch(
+        "app.core.vectorstore.store_chunks_with_embeddings",
+        new=mock_store_chunks_with_embeddings,
+    )
+    @patch("app.core.vectorstore.SessionLocal")
+    def test_upload_document_no_filename(self, mock_session_local):
+        """Test upload document without filename."""
+
+        # Mock the database session
+        mock_db = MockDBSession()
+        mock_session_local.return_value = mock_db
+
+        test_file = self.create_test_file(b"test content", "", "text/plain")
+
+        response = client.post("/api/documents/upload", files=[test_file])
+
+        # FastAPI returns 422 for validation errors
+        assert response.status_code == 422
+
+    @patch(
+        "app.core.vectorstore.store_chunks_with_embeddings",
+        new=mock_store_chunks_with_embeddings,
+    )
+    @patch("app.core.vectorstore.SessionLocal")
+    def test_upload_document_processing_error(self, mock_session_local):
+        """Test upload document when processing fails."""
+
+        # Mock the database session
+        mock_db = MockDBSession()
+        mock_session_local.return_value = mock_db
+
+        # Upload an empty file which should fail processing
+        test_file = self.create_test_file(b"", "empty.txt", "text/plain")
+
+        response = client.post("/api/documents/upload", files=[test_file])
+
+        assert response.status_code == 500
+        assert "Document processing validation failed" in response.json()["detail"]

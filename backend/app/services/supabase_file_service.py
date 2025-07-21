@@ -9,7 +9,8 @@ from app.core.settings import settings
 class SupabaseFileService:
     """Service to handle file upload to Supabase Storage."""
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialize the Supabase file service."""
         if not settings.SUPABASE_URL or not settings.SUPABASE_KEY:
             raise ValueError(
                 "SUPABASE_URL and SUPABASE_KEY must be set in environment variables"
