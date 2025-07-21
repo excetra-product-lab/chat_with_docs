@@ -411,6 +411,7 @@ requires-dist = [
     { name = "langchain-openai", extras = ["azure"], specifier = ">=0.2.0" },
     { name = "mypy", specifier = ">=1.15.0" },
     { name = "openai", specifier = ">=1.9.0" },
+    { name = "passlib", specifier = ">=1.7.4" },
     { name = "passlib", extras = ["bcrypt"], specifier = ">=1.7.4" },
     { name = "pdfplumber", specifier = ">=0.11.0" },
     { name = "pgvector", specifier = ">=0.2.4" },

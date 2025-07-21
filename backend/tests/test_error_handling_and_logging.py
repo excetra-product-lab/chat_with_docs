@@ -52,8 +52,8 @@ async def test_value_error_maps_to_http_422():
 
     # Patch *instance* method so we do not affect other tests
     with patch.object(
-        LangchainDocumentProcessor,
-        "process_document_with_langchain",
+        processor.langchain_processor,
+        "process_single_file",
         new=AsyncMock(side_effect=ValueError("Decryption failed")),
     ):
         with pytest.raises(HTTPException) as exc_info:

@@ -1,12 +1,15 @@
 """Document processing service that orchestrates parsing and chunking."""
 
 import logging
+from pathlib import Path
 from typing import Dict, List, Optional
 
 from fastapi import HTTPException, UploadFile
 
 from app.services.document_parser import DocumentParser, ParsedContent
-from app.services.langchain_document_processor import LangchainDocumentProcessor
+from app.services.langchain_document_processor_refactored import (
+    LangchainDocumentProcessorRefactored,
+)
 from app.services.text_chunker import DocumentChunk, TextChunker
 
 logger = logging.getLogger(__name__)
@@ -52,7 +55,7 @@ class DocumentProcessor:
             min_chunk_size=min_chunk_size,
         )
         self.use_langchain = use_langchain
-        self.langchain_processor = LangchainDocumentProcessor() if use_langchain else None
+        self.langchain_processor = LangchainDocumentProcessorRefactored() if use_langchain else None
         self.logger = logging.getLogger(__name__)
 
     async def process_document(
@@ -87,9 +90,7 @@ class DocumentProcessor:
             if use_langchain_for_this and self.langchain_processor:
                 self.logger.info("Parsing document with Langchain...")
                 try:
-                    parsed_content = await self.langchain_processor.process_document_with_langchain(
-                        file
-                    )
+                    parsed_content = await self._process_with_refactored_langchain(file)
                     self.logger.info("Successfully parsed document with Langchain")
                 except ValueError as e:
                     # Propagate recoverable domain errors as HTTP 422 without fallback,
@@ -282,10 +283,119 @@ class DocumentProcessor:
         """
         self.use_langchain = use_langchain
         if use_langchain and self.langchain_processor is None:
-            self.langchain_processor = LangchainDocumentProcessor()
+            self.langchain_processor = LangchainDocumentProcessorRefactored()
 
         self.logger.info(f"Langchain usage {'enabled' if use_langchain else 'disabled'}")
 
-    def get_langchain_processor(self) -> Optional[LangchainDocumentProcessor]:
+    def get_langchain_processor(self) -> Optional[LangchainDocumentProcessorRefactored]:
         """Get the Langchain processor instance if available."""
         return self.langchain_processor
+
+    async def _process_with_refactored_langchain(self, file: UploadFile) -> ParsedContent:
+        """
+        Adapter method to process UploadFile with the refactored Langchain processor.
+
+        Args:
+            file: The uploaded file to process
+
+        Returns:
+            ParsedContent: Processed content in the expected format
+
+        Raises:
+            ValueError: If processing fails
+        """
+        import tempfile
+        from pathlib import Path
+
+        # Create temporary file
+        with tempfile.NamedTemporaryFile(
+            delete=False, suffix=Path(file.filename or "").suffix
+        ) as temp_file:
+            # Write uploaded content to temp file
+            content = await file.read()
+            temp_file.write(content)
+            temp_file.flush()
+
+            try:
+                # Process with refactored processor
+                documents = await self.langchain_processor.process_single_file(
+                    temp_file.name,
+                    chunk_size=self.chunker.chunk_size,
+                    chunk_overlap=self.chunker.chunk_overlap,
+                    preserve_structure=True,
+                )
+
+                # Convert to ParsedContent format
+                return self._convert_documents_to_parsed_content(documents, file.filename or "")
+
+            finally:
+                # Clean up temp file
+                Path(temp_file.name).unlink(missing_ok=True)
+
+    def _convert_documents_to_parsed_content(self, documents: List, filename: str) -> ParsedContent:
+        """
+        Convert Langchain documents to ParsedContent format.
+
+        Args:
+            documents: List of processed documents/chunks
+            filename: Original filename
+
+        Returns:
+            ParsedContent: Converted content
+        """
+        from app.services.document_parser import DocumentMetadata
+
+        # Combine all document content
+        full_text = ""
+        page_texts = []
+        structured_content = []
+
+        for i, doc in enumerate(documents):
+            page_content = doc.page_content.strip()
+            if page_content:
+                page_texts.append(page_content)
+                full_text += page_content + "\n"
+
+                # Create structured content entry
+                entry = {
+                    "type": "chunk",
+                    "index": i,
+                    "text": page_content,
+                    "char_count": len(page_content),
+                    "metadata": doc.metadata,
+                    "langchain_source": True,  # Flag to indicate Langchain processing
+                }
+                structured_content.append(entry)
+
+        # Create metadata
+        metadata = DocumentMetadata(
+            filename=filename,
+            file_type=self._get_file_type_from_filename(filename),
+            total_pages=len(page_texts),
+            total_chars=len(full_text),
+            total_tokens=(
+                self.langchain_processor.token_counter.count_tokens(full_text)
+                if self.langchain_processor
+                else 0
+            ),
+            sections=[],
+        )
+
+        return ParsedContent(
+            text=full_text,
+            page_texts=page_texts,
+            structured_content=structured_content,
+            metadata=metadata,
+        )
+
+    def _get_file_type_from_filename(self, filename: str) -> str:
+        """Get file type from filename extension."""
+        extension = Path(filename).suffix.lower()
+        if extension == ".pdf":
+            return "pdf"
+        elif extension in [".doc", ".docx"]:
+            return "word"
+        elif extension in [".txt", ".md"]:
+            return "text"
+        else:
+            return "unknown"

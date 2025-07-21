@@ -40,6 +40,8 @@ class Settings(BaseSettings):
     CHUNK_OVERLAP: int = 200
     MAX_TOKENS_PER_CHUNK: int = 8000
 
+    USE_OPENAI_EMBEDDINGS: bool = False  # Gate expensive network calls in processing
+
     class Config:
         env_file = ".env"
         extra = "ignore"
