@@ -2,7 +2,6 @@
 
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional
 
 from fastapi import HTTPException, UploadFile
 
@@ -21,8 +20,8 @@ class ProcessingResult:
     def __init__(
         self,
         parsed_content: ParsedContent,
-        chunks: List[DocumentChunk],
-        processing_stats: Dict,
+        chunks: list[DocumentChunk],
+        processing_stats: dict,
     ):
         self.parsed_content = parsed_content
         self.chunks = chunks
@@ -55,11 +54,13 @@ class DocumentProcessor:
             min_chunk_size=min_chunk_size,
         )
         self.use_langchain = use_langchain
-        self.langchain_processor = LangchainDocumentProcessorRefactored() if use_langchain else None
+        self.langchain_processor = (
+            LangchainDocumentProcessorRefactored() if use_langchain else None
+        )
         self.logger = logging.getLogger(__name__)
 
     async def process_document(
-        self, file: UploadFile, prefer_langchain: Optional[bool] = None
+        self, file: UploadFile, prefer_langchain: bool | None = None
     ) -> ProcessingResult:
         """
         Process a document using standard or Langchain processors.
@@ -96,7 +97,7 @@ class DocumentProcessor:
                     # Propagate recoverable domain errors as HTTP 422 without fallback,
                     # matching test expectations
                     self.logger.error(f"Recoverable Langchain processing error: {e}")
-                    raise HTTPException(status_code=422, detail=str(e))
+                    raise HTTPException(status_code=422, detail=str(e)) from e
                 except Exception as e:
                     self.logger.warning(
                         f"Langchain parsing failed, falling back to standard parser: {str(e)}"
@@ -116,9 +117,12 @@ class DocumentProcessor:
             processing_stats = self._generate_processing_stats(parsed_content, chunks)
 
             # Add Langchain processing information to stats
-            processing_stats["processing"]["langchain_used"] = use_langchain_for_this and any(
-                content.get("langchain_source", False)
-                for content in parsed_content.structured_content
+            processing_stats["processing"]["langchain_used"] = (
+                use_langchain_for_this
+                and any(
+                    content.get("langchain_source", False)
+                    for content in parsed_content.structured_content
+                )
             )
 
             self.logger.info(
@@ -139,7 +143,9 @@ class DocumentProcessor:
             # validation-related 400 errors (e.g. empty files, size limits)
             # we still translate them into a 500 to maintain legacy behaviour
             # expected by certain parts of the system/test-suite.
-            if exc.status_code == 400 and "Unsupported file format" not in str(exc.detail):
+            if exc.status_code == 400 and "Unsupported file format" not in str(
+                exc.detail
+            ):
                 raise HTTPException(
                     status_code=500,
                     detail=f"Document processing validation failed: {exc.detail}",
@@ -148,14 +154,17 @@ class DocumentProcessor:
         except ValueError as e:
             # Domain-level errors raised from downstream processors (e.g., corruption,
             # decryption failures)
-            self.logger.exception(f"Recoverable document processing error for {file.filename}: {e}")
-            raise HTTPException(status_code=422, detail=str(e))
-        except Exception as e:
-            # Any other unexpected error – log stack-trace for easier debugging
             self.logger.exception(
-                f"Unexpected error while processing document {file.filename}: {e}"
+                f"Recoverable document processing error for {file.filename}: {e}"
             )
-            raise HTTPException(status_code=500, detail=f"Failed to process document: {str(e)}")
+            raise HTTPException(status_code=422, detail=str(e)) from e
+        except Exception as e:
+            self.logger.error(
+                f"Unexpected error processing document {file.filename}: {str(e)}"
+            )
+            raise HTTPException(
+                status_code=500, detail=f"Failed to process document: {str(e)}"
+            ) from e
 
     async def process_with_langchain_only(self, file: UploadFile) -> ProcessingResult:
         """
@@ -171,19 +180,22 @@ class DocumentProcessor:
             HTTPException: If Langchain processing fails or is not available
         """
         if not self.langchain_processor:
-            raise HTTPException(status_code=500, detail="Langchain processor not available")
+            raise HTTPException(
+                status_code=500, detail="Langchain processor not available"
+            )
 
         return await self.process_document(file, prefer_langchain=True)
 
     def _generate_processing_stats(
-        self, parsed_content: ParsedContent, chunks: List[DocumentChunk]
-    ) -> Dict:
+        self, parsed_content: ParsedContent, chunks: list[DocumentChunk]
+    ) -> dict:
         """Generate comprehensive processing statistics."""
         chunk_stats = self.chunker.get_chunk_summary(chunks)
 
         # Check if Langchain was used
         langchain_used = any(
-            content.get("langchain_source", False) for content in parsed_content.structured_content
+            content.get("langchain_source", False)
+            for content in parsed_content.structured_content
         )
 
         return {
@@ -252,11 +264,11 @@ class DocumentProcessor:
             self.logger.error(f"Error validating processing result: {str(e)}")
             return False
 
-    def get_supported_formats(self) -> List[str]:
+    def get_supported_formats(self) -> list[str]:
         """Get list of supported file formats."""
         return list(self.parser.SUPPORTED_FORMATS.keys())
 
-    def get_processing_config(self) -> Dict:
+    def get_processing_config(self) -> dict:
         """Get current processing configuration."""
         config = {
             "chunk_size": self.chunker.chunk_size,
@@ -285,13 +297,17 @@ class DocumentProcessor:
         if use_langchain and self.langchain_processor is None:
             self.langchain_processor = LangchainDocumentProcessorRefactored()
 
-        self.logger.info(f"Langchain usage {'enabled' if use_langchain else 'disabled'}")
+        self.logger.info(
+            f"Langchain usage {'enabled' if use_langchain else 'disabled'}"
+        )
 
-    def get_langchain_processor(self) -> Optional[LangchainDocumentProcessorRefactored]:
+    def get_langchain_processor(self) -> LangchainDocumentProcessorRefactored | None:
         """Get the Langchain processor instance if available."""
         return self.langchain_processor
 
-    async def _process_with_refactored_langchain(self, file: UploadFile) -> ParsedContent:
+    async def _process_with_refactored_langchain(
+        self, file: UploadFile
+    ) -> ParsedContent:
         """
         Adapter method to process UploadFile with the refactored Langchain processor.
 
@@ -326,13 +342,17 @@ class DocumentProcessor:
                 )
 
                 # Convert to ParsedContent format
-                return self._convert_documents_to_parsed_content(documents, file.filename or "")
+                return self._convert_documents_to_parsed_content(
+                    documents, file.filename or ""
+                )
 
             finally:
                 # Clean up temp file
                 Path(temp_file.name).unlink(missing_ok=True)
 
-    def _convert_documents_to_parsed_content(self, documents: List, filename: str) -> ParsedContent:
+    def _convert_documents_to_parsed_content(
+        self, documents: list, filename: str
+    ) -> ParsedContent:
         """
         Convert Langchain documents to ParsedContent format.
 

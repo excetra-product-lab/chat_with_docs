@@ -1,5 +1,6 @@
 [![Backend CI](https://github.com/excetra-product-lab/chat_with_docs/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/excetra-product-lab/chat_with_docs/actions/workflows/backend-ci.yml)
 [![Frontend CI](https://github.com/excetra-product-lab/chat_with_docs/actions/workflows/frontend-ci.yml/badge.svg)](https://github.com/excetra-product-lab/chat_with_docs/actions/workflows/frontend-ci.yml)
+
 # Chat With Docs (RAG)
 
 ## Tech Stack
@@ -39,17 +40,26 @@
    uv sync
    ```
 
-3. Copy and customize the env files
+3. **Install pre-commit hooks** (optional but recommended - prevents committing broken code):
 
    ```bash
-   cp .env.example .env
+   pre-commit install
+   ```
+
+   > 💡 **Tip**: Pre-commit hooks catch formatting/linting issues before you commit, saving you from CI failures.
+   If you skip this step, CI will still catch issues, but you'll need to fix them in a separate commit.
+
+4. Copy and customize the env files
+
+   ```bash
+   cp .env.test .env
    # Edit .env with database, Azure OpenAI, etc.
    ```
 
-4. Start the dev server
+5. Start the dev server
 
    ```bash
-   uv run "uvicorn app.main:app --reload"
+   uv run uvicorn app.main:app --reload
    ```
 
 ### Frontend Setup

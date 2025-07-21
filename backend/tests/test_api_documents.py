@@ -1,10 +1,13 @@
 """Integration tests for documents API endpoints."""
 
 import io
+from datetime import datetime
+from unittest.mock import MagicMock, patch
 
 from fastapi.testclient import TestClient
 
 from app.api.dependencies import get_current_user
+from app.api.routes.documents import get_storage_service
 from app.main import app
 
 # Mock user for testing
@@ -14,8 +17,97 @@ def mock_get_current_user():
     return {"id": 1, "email": "test@example.com"}
 
 
-# Override the dependency
+# Mock storage service for testing
+class MockStorageService:
+    """Mock implementation of SupabaseFileService for testing."""
+
+    async def upload_file(self, file, document_id: str) -> str:
+        """Mock file upload that returns a fake storage key."""
+        # Return a fake storage key based on document ID and file extension
+        file_extension = file.filename.split(".")[-1] if "." in file.filename else "txt"
+        return f"test-bucket/{document_id}.{file_extension}"
+
+
+# Mock database document
+class MockDBDocument:
+    """Mock database document for testing."""
+
+    def __init__(self, id: int = 1, filename: str = "test.txt", user_id: int = 1):
+        self.id = id
+        self.filename = filename
+        self.user_id = user_id
+        self.status = "processing"
+        self.storage_key = None
+        self.created_at = datetime.now()
+
+
+# Mock database session
+class MockDBSession:
+    """Mock database session for testing."""
+
+    def __init__(self):
+        self.documents = {}
+        self.next_id = 1
+
+    def add(self, document):
+        """Mock add operation."""
+        document.id = self.next_id
+        self.documents[self.next_id] = document
+        self.next_id += 1
+
+    def commit(self):
+        """Mock commit operation."""
+        pass
+
+    def refresh(self, document):
+        """Mock refresh operation."""
+        pass
+
+    def query(self, model):
+        """Mock query operation."""
+        return MockQuery(self.documents)
+
+    def close(self):
+        """Mock close operation."""
+        pass
+
+
+class MockQuery:
+    """Mock SQLAlchemy query for testing."""
+
+    def __init__(self, documents):
+        self.documents = documents
+        self.filters = []
+
+    def filter(self, condition):
+        """Mock filter operation."""
+        # For simplicity, just return the first document
+        return self
+
+    def first(self):
+        """Mock first operation."""
+        if self.documents:
+            return list(self.documents.values())[0]
+        return None
+
+
+# Create mock instances
+mock_storage = MockStorageService()
+
+
+def mock_get_storage_service():
+    return mock_storage
+
+
+# Mock the vectorstore function
+async def mock_store_chunks_with_embeddings(chunks, document_id):
+    """Mock function for storing chunks with embeddings."""
+    return len(chunks)
+
+
+# Override the dependencies
 app.dependency_overrides[get_current_user] = mock_get_current_user
+app.dependency_overrides[get_storage_service] = mock_get_storage_service
 
 client = TestClient(app)
 
@@ -23,7 +115,9 @@ client = TestClient(app)
 class TestDocumentsAPI:
     """Test cases for documents API endpoints."""
 
-    def create_test_file(self, content: bytes, filename: str, content_type: str = "text/plain"):
+    def create_test_file(
+        self, content: bytes, filename: str, content_type: str = "text/plain"
+    ):
         """Helper to create test file for upload."""
         return ("file", (filename, io.BytesIO(content), content_type))
 
@@ -47,7 +141,9 @@ class TestDocumentsAPI:
         """Test successful text document processing."""
 
         content = "This is a test document for processing. " * 10
-        test_file = self.create_test_file(content.encode("utf-8"), "test.txt", "text/plain")
+        test_file = self.create_test_file(
+            content.encode("utf-8"), "test.txt", "text/plain"
+        )
 
         response = client.post("/api/documents/process", files=[test_file])
 
@@ -78,7 +174,9 @@ class TestDocumentsAPI:
     def test_process_document_unsupported_format(self):
         """Test processing unsupported file format."""
 
-        test_file = self.create_test_file(b"test content", "test.xyz", "application/unknown")
+        test_file = self.create_test_file(
+            b"test content", "test.xyz", "application/unknown"
+        )
 
         response = client.post("/api/documents/process", files=[test_file])
 
@@ -111,7 +209,9 @@ class TestDocumentsAPI:
 
         # Create a moderately large file (but within limits)
         content = "This is a large test document. " * 1000  # About 32KB
-        test_file = self.create_test_file(content.encode("utf-8"), "large.txt", "text/plain")
+        test_file = self.create_test_file(
+            content.encode("utf-8"), "large.txt", "text/plain"
+        )
 
         response = client.post("/api/documents/process", files=[test_file])
 
@@ -132,7 +232,9 @@ class TestDocumentsAPI:
             + "This document contains various unicode characters "
             + "from different languages and scripts. " * 3
         )
-        test_file = self.create_test_file(content.encode("utf-8"), "unicode.txt", "text/plain")
+        test_file = self.create_test_file(
+            content.encode("utf-8"), "unicode.txt", "text/plain"
+        )
 
         response = client.post("/api/documents/process", files=[test_file])
 
@@ -162,7 +264,9 @@ CONCLUSION
 
 This is the conclusion section that summarizes everything."""
 
-        test_file = self.create_test_file(content.encode("utf-8"), "structured.txt", "text/plain")
+        test_file = self.create_test_file(
+            content.encode("utf-8"), "structured.txt", "text/plain"
+        )
 
         response = client.post("/api/documents/process", files=[test_file])
 
@@ -204,7 +308,9 @@ This is the conclusion section that summarizes everything."""
 
         # Create content that will definitely create multiple chunks
         paragraphs = []
-        base_sentence = "This is paragraph {i} with truly unique and substantial content. "
+        base_sentence = (
+            "This is paragraph {i} with truly unique and substantial content. "
+        )
         for i in range(100):  # Increased paragraph count significantly
             # Add more unique words to each paragraph
             unique_words = f"Variation {i}. " * 20  # Increased variation
@@ -213,7 +319,9 @@ This is the conclusion section that summarizes everything."""
             )  # Increased repetition significantly
 
         content = "\\n\\n".join(paragraphs)
-        test_file = self.create_test_file(content.encode("utf-8"), "multi_chunk.txt", "text/plain")
+        test_file = self.create_test_file(
+            content.encode("utf-8"), "multi_chunk.txt", "text/plain"
+        )
 
         response = client.post("/api/documents/process", files=[test_file])
 
@@ -228,7 +336,9 @@ This is the conclusion section that summarizes everything."""
 
         # Make content longer to meet minimum chunk size requirements
         content = "Test document for response format validation. " * 10
-        test_file = self.create_test_file(content.encode("utf-8"), "format_test.txt", "text/plain")
+        test_file = self.create_test_file(
+            content.encode("utf-8"), "format_test.txt", "text/plain"
+        )
 
         response = client.post("/api/documents/process", files=[test_file])
 
@@ -236,7 +346,13 @@ This is the conclusion section that summarizes everything."""
         data = response.json()
 
         # Verify top-level structure
-        required_fields = ["success", "message", "document_metadata", "chunks", "processing_stats"]
+        required_fields = [
+            "success",
+            "message",
+            "document_metadata",
+            "chunks",
+            "processing_stats",
+        ]
         for field in required_fields:
             assert field in data
 
@@ -266,3 +382,113 @@ This is the conclusion section that summarizes everything."""
         stats_sections = ["document", "parsing", "chunking", "processing"]
         for section in stats_sections:
             assert section in stats
+
+    # Upload endpoint tests with proper mocking
+    @patch(
+        "app.core.vectorstore.store_chunks_with_embeddings",
+        new=mock_store_chunks_with_embeddings,
+    )
+    @patch("app.core.vectorstore.SessionLocal")
+    def test_upload_document_success(self, mock_session_local):
+        """Test successful document upload with database operations."""
+
+        # Mock the database session
+        mock_db = MockDBSession()
+        mock_session_local.return_value = mock_db
+
+        # Create test file with substantial content to meet chunking requirements
+        test_content = (
+            b"Test document content for upload. " * 50
+        )  # About 1500 characters
+        test_file = self.create_test_file(test_content, "test.txt", "text/plain")
+
+        # Make request
+        response = client.post("/api/documents/upload", files=[test_file])
+
+        # Test the API response
+        assert response.status_code == 200
+        data = response.json()
+
+        # Verify response structure matches new Document schema
+        assert "id" in data
+        assert data["filename"] == "test.txt"
+        assert data["user_id"] == 1  # From mock_get_current_user
+        assert data["status"] == "processed"
+        assert "storage_key" in data
+        assert "created_at" in data
+        assert "chunk_count" in data
+        assert isinstance(data["chunk_count"], int)
+
+    @patch(
+        "app.core.vectorstore.store_chunks_with_embeddings",
+        new=mock_store_chunks_with_embeddings,
+    )
+    @patch("app.core.vectorstore.SessionLocal")
+    def test_upload_storage_service_error(self, mock_session_local):
+        """Test handling of storage service errors."""
+
+        # Mock the database session
+        mock_db = MockDBSession()
+        mock_session_local.return_value = mock_db
+
+        # Create a mock that raises an exception
+        error_storage = MagicMock()
+        error_storage.upload_file.side_effect = Exception("Storage service error")
+
+        # Temporarily override the storage service
+        original_override = app.dependency_overrides.get(get_storage_service)
+        app.dependency_overrides[get_storage_service] = lambda: error_storage
+
+        try:
+            test_file = self.create_test_file(
+                b"Test content that is long enough for proper processing. " * 20,
+                "test.txt",
+            )
+            response = client.post("/api/documents/upload", files=[test_file])
+
+            assert response.status_code == 500
+            assert "Failed to upload and process document" in response.json()["detail"]
+
+        finally:
+            # Restore the original override
+            if original_override:
+                app.dependency_overrides[get_storage_service] = original_override
+
+    @patch(
+        "app.core.vectorstore.store_chunks_with_embeddings",
+        new=mock_store_chunks_with_embeddings,
+    )
+    @patch("app.core.vectorstore.SessionLocal")
+    def test_upload_document_no_filename(self, mock_session_local):
+        """Test upload document without filename."""
+
+        # Mock the database session
+        mock_db = MockDBSession()
+        mock_session_local.return_value = mock_db
+
+        test_file = self.create_test_file(b"test content", "", "text/plain")
+
+        response = client.post("/api/documents/upload", files=[test_file])
+
+        # FastAPI returns 422 for validation errors
+        assert response.status_code == 422
+
+    @patch(
+        "app.core.vectorstore.store_chunks_with_embeddings",
+        new=mock_store_chunks_with_embeddings,
+    )
+    @patch("app.core.vectorstore.SessionLocal")
+    def test_upload_document_processing_error(self, mock_session_local):
+        """Test upload document when processing fails."""
+
+        # Mock the database session
+        mock_db = MockDBSession()
+        mock_session_local.return_value = mock_db
+
+        # Upload an empty file which should fail processing
+        test_file = self.create_test_file(b"", "empty.txt", "text/plain")
+
+        response = client.post("/api/documents/upload", files=[test_file])
+
+        assert response.status_code == 500
+        assert "Document processing validation failed" in response.json()["detail"]

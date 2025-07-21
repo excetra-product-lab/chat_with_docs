@@ -1,7 +1,4 @@
-from typing import Dict, List
-
-
-async def process_document(file_path: str, user_id: int) -> Dict:
+async def process_document(file_path: str, user_id: int) -> dict:
     """
     Process a document: parse, chunk, and generate embeddings
     """
@@ -26,18 +23,20 @@ async def parse_document(file_path: str) -> str:
     return "Document content"
 
 
-def chunk_text(text: str) -> List[str]:
+def chunk_text(text: str) -> list[str]:
     """Split text into overlapping chunks"""
     # TODO: Implement text chunking
     return [text]
 
 
-async def generate_embeddings(chunks: List[str]) -> List[List[float]]:
+async def generate_embeddings(chunks: list[str]) -> list[list[float]]:
     """Generate embeddings using Azure OpenAI"""
     # TODO: Call Azure OpenAI embedding API
     return [[0.0] * 1536 for _ in chunks]
 
 
-async def store_embeddings(chunks: List[str], embeddings: List[List[float]], user_id: int):
+async def store_embeddings(
+    chunks: list[str], embeddings: list[list[float]], user_id: int
+):
     """Store chunks and embeddings in pgvector"""
     # TODO: Store in database

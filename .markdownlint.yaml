@@ -1,12 +1,8 @@
 # Markdownlint configuration
 # See https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
 
-# Line length
-MD013:
-  # Disable line length check for code blocks and tables
-  code_blocks: false
-  tables: false
-  headings: false
+# Completely disable line length checks
+MD013: false
 
 # Ordered list item prefix
 MD029:
@@ -17,4 +13,16 @@ MD029:
 MD033: false
 
 # Allow bare URLs
-MD034: false
+MD034: false             # Allows http://example.com without [](brackets)
+
+# Allow duplicate headings (common in READMEs)
+MD024: false             # Allows multiple "## Installation" sections
+
+# Allow hard tabs (some code examples need them)
+MD010: false             # Allows \t characters
+
+# Allow trailing punctuation in headings
+MD026: false             # Allows "## What's New?"
+
+# Allow first line to not be a top-level heading
+MD041: false             # Allows badges/images before # heading

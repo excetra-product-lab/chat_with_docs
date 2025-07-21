@@ -5,7 +5,8 @@ This module provides shared fixtures and utilities for testing Langchain compone
 with proper fallbacks to fake implementations when Azure OpenAI credentials are not available.
 """
 
-from typing import Any, Generator, List
+from collections.abc import Generator
+from typing import Any
 from unittest.mock import Mock, patch
 
 import pytest
@@ -65,7 +66,7 @@ def fake_embeddings() -> FakeEmbeddings:
 
 
 @pytest.fixture
-def sample_documents() -> List[Document]:
+def sample_documents() -> list[Document]:
     """
     Fixture that provides sample Langchain Document objects for testing.
 
@@ -94,7 +95,7 @@ def sample_documents() -> List[Document]:
 
 
 @pytest.fixture
-def sample_chat_messages() -> List[BaseMessage]:
+def sample_chat_messages() -> list[BaseMessage]:
     """
     Fixture that provides sample chat messages for testing conversational chains.
 
@@ -143,21 +144,23 @@ class LangchainTestHelper:
     @staticmethod
     def assert_is_azure_llm(llm: Any) -> None:
         """Assert that the provided LLM is an Azure implementation."""
-        assert isinstance(llm, AzureChatOpenAI), f"Expected AzureChatOpenAI, got {type(llm)}"
+        assert isinstance(llm, AzureChatOpenAI), (
+            f"Expected AzureChatOpenAI, got {type(llm)}"
+        )
 
     @staticmethod
     def assert_is_fake_embeddings(embeddings: Any) -> None:
         """Assert that the provided embeddings are fake implementation."""
-        assert isinstance(
-            embeddings, FakeEmbeddings
-        ), f"Expected FakeEmbeddings, got {type(embeddings)}"
+        assert isinstance(embeddings, FakeEmbeddings), (
+            f"Expected FakeEmbeddings, got {type(embeddings)}"
+        )
 
     @staticmethod
     def assert_is_azure_embeddings(embeddings: Any) -> None:
         """Assert that the provided embeddings are Azure implementation."""
-        assert isinstance(
-            embeddings, AzureOpenAIEmbeddings
-        ), f"Expected AzureOpenAIEmbeddings, got {type(embeddings)}"
+        assert isinstance(embeddings, AzureOpenAIEmbeddings), (
+            f"Expected AzureOpenAIEmbeddings, got {type(embeddings)}"
+        )
 
     @staticmethod
     def assert_document_structure(doc: Document) -> None:
@@ -174,19 +177,21 @@ class LangchainTestHelper:
         assert isinstance(message.content, str), "Message content must be string"
 
     @staticmethod
-    def create_test_document(content: str, source: str = "test.txt", **metadata) -> Document:
+    def create_test_document(
+        content: str, source: str = "test.txt", **metadata
+    ) -> Document:
         """Create a test Document with specified content and metadata."""
         default_metadata = {"source": source, "page": 1, "chunk_id": 0}
         default_metadata.update(metadata)
         return Document(page_content=content, metadata=default_metadata)
 
     @staticmethod
-    def create_test_embedding_vector(size: int = 1536) -> List[float]:
+    def create_test_embedding_vector(size: int = 1536) -> list[float]:
         """Create a test embedding vector of specified size."""
         return [0.1] * size
 
     @staticmethod
-    def mock_llm_response(llm: FakeListLLM, responses: List[str]) -> None:
+    def mock_llm_response(llm: FakeListLLM, responses: list[str]) -> None:
         """Update a FakeListLLM with new responses."""
         llm.responses = responses
         llm.i = 0  # Reset response index

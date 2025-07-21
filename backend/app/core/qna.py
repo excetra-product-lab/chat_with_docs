@@ -1,5 +1,3 @@
-from typing import Dict, List
-
 from app.core.vectorstore import similarity_search
 from app.models.schemas import Answer, Citation
 
@@ -23,7 +21,7 @@ async def answer_question(question: str, user_id: int) -> Answer:
     return Answer(answer=answer_text, citations=citations, confidence=0.95)
 
 
-def build_context(chunks: List[Dict]) -> str:
+def build_context(chunks: list[dict]) -> str:
     """Build context from retrieved chunks"""
     # TODO: Format chunks into context
     return "Context from documents"
@@ -35,7 +33,7 @@ async def generate_answer(question: str, context: str) -> str:
     return "This is a generated answer based on the documents."
 
 
-def extract_citations(answer: str, chunks: List[Dict]) -> List[Citation]:
+def extract_citations(answer: str, chunks: list[dict]) -> list[Citation]:
     """Extract citations from answer"""
     # TODO: Parse citations from answer
     return []

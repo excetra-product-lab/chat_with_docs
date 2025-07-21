@@ -1,13 +1,15 @@
+import React from 'react'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import { ClerkProvider } from '@clerk/nextjs'
+import { ClientLayout } from '../src/components/Layout/ClientLayout'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Chat With Docs',
-  description: 'AI-powered document Q&A system',
+  title: 'Excetera - Chat with Your Legal Documents',
+  description: 'AI-powered legal document analysis with precise citations. Upload your legal documents and get instant, accurate answers.',
+  keywords: 'legal, AI, document analysis, citations, law firm, legal research',
 }
 
 export default function RootLayout({
@@ -16,10 +18,12 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <ClerkProvider>
-      <html lang="en">
-        <body className={inter.className}>{children}</body>
-      </html>
-    </ClerkProvider>
+    <html lang="en">
+      <body className={inter.className}>
+        <ClientLayout>
+          {children}
+        </ClientLayout>
+      </body>
+    </html>
   )
-}
+} 
