@@ -213,3 +213,8 @@ tasks/
 
 # Scripts directory (contains local development files)
 scripts/
+
+.taskmaster/*
+requirements.md
+personal_todos.md
+.mcp.*
