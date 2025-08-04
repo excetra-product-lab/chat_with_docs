@@ -68,8 +68,8 @@ class TestSystemPrompts:
         assert isinstance(prompt, str)
         assert "cannot find sufficient information" in prompt
         assert "available context covers" in prompt
-        assert "provide additional relevant documents" in prompt
-        assert "rephrase your question" in prompt
+        assert "Provide additional relevant documents" in prompt
+        assert "Rephrase your question" in prompt
     
     def test_format_insufficient_context_response(self):
         """Test insufficient context response formatting"""
@@ -81,7 +81,7 @@ class TestSystemPrompts:
         
         assert test_topics in formatted_response
         assert "available context covers:" in formatted_response
-        assert "provide additional relevant documents" in formatted_response
+        assert "Provide additional relevant documents" in formatted_response
     
     def test_prompt_consistency_across_methods(self):
         """Test that all prompt methods return consistent, non-empty strings"""

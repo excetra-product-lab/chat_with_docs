@@ -82,6 +82,8 @@ class ProcessingConfig(BaseModel):
 # Chat schemas
 class Query(BaseModel):
     question: str
+    document_ids: list[str] | None = None
+    limit: int | None = None
 
 
 class Citation(BaseModel):

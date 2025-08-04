@@ -151,6 +151,7 @@ class TestLangchainConfig:
         mock_settings.AZURE_OPENAI_API_KEY = "test-api-key"
         mock_settings.AZURE_OPENAI_ENDPOINT = "https://test.openai.azure.com/"
         mock_settings.AZURE_OPENAI_DEPLOYMENT_NAME = "gpt-4o-mini"
+        mock_settings.AZURE_OPENAI_EMBEDDING_DEPLOYMENT = "text-embedding-ada-002"
         mock_settings.OPENAI_MODEL = "gpt-4o-mini"
         mock_settings.OPENAI_TEMPERATURE = 0.1
         mock_settings.LANGCHAIN_TRACING_V2 = "false"

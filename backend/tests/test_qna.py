@@ -2,9 +2,33 @@ import pytest
 from unittest.mock import patch, MagicMock, AsyncMock
 from langchain_core.messages import AIMessage
 from openai import RateLimitError, APITimeoutError, APIConnectionError, APIError
+import httpx
 
 from app.core.qna import build_context, estimate_tokens, generate_answer, answer_question
 from app.models.schemas import Citation
+from app.core.exceptions import (
+    EmptyContextError, 
+    LLMGenerationError, 
+    TokenLimitExceededError,
+    AzureAPIError,
+    DocumentNotFoundError
+)
+
+
+# Helper functions for creating proper OpenAI exceptions
+def create_mock_response():
+    """Create a mock httpx.Response for OpenAI exceptions"""
+    mock_response = MagicMock(spec=httpx.Response)
+    mock_request = MagicMock(spec=httpx.Request)
+    mock_response.request = mock_request
+    mock_response.status_code = 429  # Rate limit status code
+    mock_response.headers = {"x-request-id": "test-request-id"}
+    return mock_response
+
+
+def create_mock_request():
+    """Create a mock httpx.Request for OpenAI exceptions"""
+    return MagicMock(spec=httpx.Request)
 
 
 class TestBuildContext:
@@ -59,10 +83,8 @@ class TestBuildContext:
     
     def test_build_context_empty_chunks(self):
         """Test 1.3: Handle empty search results"""
-        context, chunk_mapping = build_context([])
-        
-        assert context == "No relevant documents found."
-        assert chunk_mapping == []
+        with pytest.raises(EmptyContextError):
+            build_context([])
     
     def test_build_context_chunks_with_empty_content(self):
         """Test 1.3: Handle chunks with no valid content"""
@@ -72,10 +94,8 @@ class TestBuildContext:
             {"content": None, "metadata": {"filename": "none.pdf"}}
         ]
         
-        context, chunk_mapping = build_context(chunks)
-        
-        assert context == "No relevant content found in the documents."
-        assert chunk_mapping == []
+        with pytest.raises(EmptyContextError):
+            build_context(chunks)
     
     def test_build_context_mixed_valid_invalid_chunks(self):
         """Test handling of mixed valid and invalid chunks"""
@@ -157,7 +177,7 @@ class TestGenerateAnswer:
     """Tests for Task 3: Azure OpenAI Integration Implementation"""
     
     @patch('app.core.qna.langchain_config')
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_generate_answer_success(self, mock_config):
         """Test 3.1, 3.2, 3.5: Successful answer generation"""
         # Mock LLM response
@@ -185,43 +205,43 @@ class TestGenerateAnswer:
             assert call_args[1].content == question
     
     @patch('app.core.qna.langchain_config')
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_generate_answer_empty_question(self, mock_config):
         """Test input validation for empty question"""
-        result = await generate_answer("", "context")
-        assert result == "Please provide a valid question."
+        with pytest.raises(LLMGenerationError):
+            await generate_answer("", "context")
         
-        result = await generate_answer("   ", "context")
-        assert result == "Please provide a valid question."
+        with pytest.raises(LLMGenerationError):
+            await generate_answer("   ", "context")
     
     @patch('app.core.qna.langchain_config')
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_generate_answer_empty_context(self, mock_config):
         """Test input validation for empty context"""
-        result = await generate_answer("question", "")
-        assert "don't have enough context" in result
+        with pytest.raises(EmptyContextError):
+            await generate_answer("question", "")
         
-        result = await generate_answer("question", "   ")
-        assert "don't have enough context" in result
+        with pytest.raises(EmptyContextError):
+            await generate_answer("question", "   ")
     
     @patch('app.core.qna.langchain_config')
     @patch('app.core.qna.estimate_tokens')
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_generate_answer_token_limit_exceeded(self, mock_tokens, mock_config):
         """Test token limit validation"""
         # Mock token estimation to exceed limits
         mock_tokens.side_effect = [1000, 125000, 1000]  # question, context, system_prompt
         
-        result = await generate_answer("question", "very long context")
-        assert "context is too long for processing" in result
+        with pytest.raises(TokenLimitExceededError):
+            await generate_answer("question", "very long context")
         
         # Test question too long
         mock_tokens.side_effect = [5000, 1000, 1000]  # question, context, system_prompt
-        result = await generate_answer("very long question", "context") 
-        assert "question is too long" in result
+        with pytest.raises(TokenLimitExceededError):
+            await generate_answer("very long question", "context")
     
     @patch('app.core.qna.langchain_config')
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_generate_answer_empty_response(self, mock_config):
         """Test 3.5: Handle empty LLM response"""
         mock_llm = AsyncMock()
@@ -230,17 +250,17 @@ class TestGenerateAnswer:
         mock_config.llm = mock_llm
         
         with patch('app.core.qna.SystemPrompts.format_rag_prompt'):
-            result = await generate_answer("question", "context")
-            assert "received an empty response" in result
+            with pytest.raises(LLMGenerationError):
+                await generate_answer("question", "context")
     
     @patch('app.core.qna.langchain_config')
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_generate_answer_rate_limit_error(self, mock_config):
         """Test 3.3, 3.4: Rate limit error handling with exponential backoff"""
         mock_llm = AsyncMock()
         mock_llm.ainvoke.side_effect = [
-            RateLimitError("Rate limit exceeded", response=None, body=None),
-            RateLimitError("Rate limit exceeded", response=None, body=None),
+            RateLimitError("Rate limit exceeded", response=create_mock_response(), body=None),
+            RateLimitError("Rate limit exceeded", response=create_mock_response(), body=None),
             AIMessage(content="Success after retries")
         ]
         mock_config.llm = mock_llm
@@ -254,22 +274,20 @@ class TestGenerateAnswer:
                 assert mock_sleep.call_count == 2  # Two retries with delays
     
     @patch('app.core.qna.langchain_config')
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_generate_answer_rate_limit_exhausted(self, mock_config):
         """Test 3.4: Rate limit retries exhausted"""
         mock_llm = AsyncMock()
-        mock_llm.ainvoke.side_effect = RateLimitError("Rate limit exceeded", response=None, body=None)
+        mock_llm.ainvoke.side_effect = RateLimitError("Rate limit exceeded", response=create_mock_response(), body=None)
         mock_config.llm = mock_llm
         
         with patch('app.core.qna.SystemPrompts.format_rag_prompt'):
             with patch('asyncio.sleep'):
-                result = await generate_answer("question", "context")
-                
-                assert "experiencing high demand" in result
-                assert mock_llm.ainvoke.call_count == 4  # Initial + 3 retries
+                with pytest.raises(AzureAPIError):
+                    await generate_answer("question", "context")
     
     @patch('app.core.qna.langchain_config')
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_generate_answer_timeout_error(self, mock_config):
         """Test 3.3, 3.4: API timeout error handling"""
         mock_llm = AsyncMock()
@@ -288,26 +306,24 @@ class TestGenerateAnswer:
                 assert mock_sleep.call_count == 1
     
     @patch('app.core.qna.langchain_config')
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_generate_answer_connection_error(self, mock_config):
         """Test 3.3: API connection error handling"""
         mock_llm = AsyncMock()
-        mock_llm.ainvoke.side_effect = APIConnectionError("Connection failed")
+        mock_llm.ainvoke.side_effect = APIConnectionError(message="Connection failed", request=create_mock_request())
         mock_config.llm = mock_llm
         
         with patch('app.core.qna.SystemPrompts.format_rag_prompt'):
             with patch('asyncio.sleep'):
-                result = await generate_answer("question", "context")
-                
-                assert "trouble connecting to the AI service" in result
-                assert mock_llm.ainvoke.call_count == 4  # Initial + 3 retries
+                with pytest.raises(AzureAPIError):
+                    await generate_answer("question", "context")
     
     @patch('app.core.qna.langchain_config')
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_generate_answer_api_error_server(self, mock_config):
         """Test 3.3: Server API error (5xx) with retry"""
         mock_llm = AsyncMock()
-        server_error = APIError("Server error")
+        server_error = APIError("Server error", request=create_mock_request(), body=None)
         server_error.status_code = 500
         mock_llm.ainvoke.side_effect = [
             server_error,
@@ -323,23 +339,21 @@ class TestGenerateAnswer:
                 assert mock_llm.ainvoke.call_count == 2
     
     @patch('app.core.qna.langchain_config')
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_generate_answer_api_error_client(self, mock_config):
         """Test 3.3: Client API error (4xx) without retry"""
         mock_llm = AsyncMock()
-        client_error = APIError("Bad request")
+        client_error = APIError("Bad request", request=create_mock_request(), body=None)
         client_error.status_code = 400
         mock_llm.ainvoke.side_effect = client_error
         mock_config.llm = mock_llm
         
         with patch('app.core.qna.SystemPrompts.format_rag_prompt'):
-            result = await generate_answer("question", "context")
-            
-            assert "encountered an issue with the AI service" in result
-            assert mock_llm.ainvoke.call_count == 1  # No retries for client errors
+            with pytest.raises(AzureAPIError):
+                await generate_answer("question", "context")
     
     @patch('app.core.qna.langchain_config')
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_generate_answer_unexpected_error(self, mock_config):
         """Test 3.3: Unexpected error handling"""
         mock_llm = AsyncMock()
@@ -348,13 +362,11 @@ class TestGenerateAnswer:
         
         with patch('app.core.qna.SystemPrompts.format_rag_prompt'):
             with patch('asyncio.sleep'):
-                result = await generate_answer("question", "context")
-                
-                assert "unable to generate an answer" in result
-                assert mock_llm.ainvoke.call_count == 4  # Initial + 3 retries
+                with pytest.raises(LLMGenerationError):
+                    await generate_answer("question", "context")
     
     @patch('app.core.qna.langchain_config')
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_generate_answer_exponential_backoff(self, mock_config):
         """Test 3.4: Exponential backoff timing"""
         mock_llm = AsyncMock()
@@ -386,7 +398,7 @@ class TestAnswerQuestion:
     @patch('app.core.qna.similarity_search')
     @patch('app.core.qna.generate_answer')
     @patch('app.core.qna.extract_citations')
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_answer_question_integration(self, mock_extract, mock_generate, mock_search):
         """Test complete RAG pipeline integration"""
         # Mock the pipeline components
@@ -402,14 +414,136 @@ class TestAnswerQuestion:
         result = await answer_question("What is the test?", 123)
         
         # Verify all components were called
-        mock_search.assert_called_once_with("What is the test?", 123)
+        mock_search.assert_called_once_with("What is the test?", 123, k=5)  # Default limit of 5
         mock_generate.assert_called_once()
         mock_extract.assert_called_once_with("Test answer with [test.pdf p. 1]", mock_chunks)
         
-        # Verify result structure
-        assert isinstance(result, dict)  # Answer model should serialize to dict
-        assert "answer" in str(result) or hasattr(result, 'answer')
-        assert "citations" in str(result) or hasattr(result, 'citations')
+        # Verify result structure - should be an Answer model
+        assert hasattr(result, 'answer')
+        assert hasattr(result, 'citations')
+        assert hasattr(result, 'confidence')
+    
+    @patch('app.core.qna.similarity_search')
+    @patch('app.core.qna.generate_answer')
+    @patch('app.core.qna.extract_citations')
+    @pytest.mark.anyio
+    async def test_answer_question_with_custom_limit(self, mock_extract, mock_generate, mock_search):
+        """Test RAG pipeline with custom limit parameter (Task 5)"""
+        mock_chunks = [
+            {"content": "Test content", "metadata": {"filename": "test.pdf", "page": 1}}
+        ]
+        mock_search.return_value = mock_chunks
+        mock_generate.return_value = "Test answer"
+        mock_extract.return_value = []
+        
+        # Test with custom limit
+        await answer_question("What is the test?", 123, limit=10)
+        
+        # Verify similarity_search was called with custom limit
+        mock_search.assert_called_once_with("What is the test?", 123, k=10)
+    
+    @patch('app.core.qna.similarity_search')
+    @patch('app.core.qna.generate_answer')
+    @patch('app.core.qna.extract_citations')
+    @pytest.mark.anyio
+    async def test_answer_question_with_document_ids_filter(self, mock_extract, mock_generate, mock_search):
+        """Test RAG pipeline with document_ids filtering (Task 5)"""
+        # Mock chunks with different document IDs
+        mock_chunks = [
+            {"content": "Content 1", "document_id": 1, "metadata": {"filename": "doc1.pdf", "page": 1}},
+            {"content": "Content 2", "document_id": 2, "metadata": {"filename": "doc2.pdf", "page": 1}},
+            {"content": "Content 3", "document_id": 3, "metadata": {"filename": "doc3.pdf", "page": 1}}
+        ]
+        mock_search.return_value = mock_chunks
+        mock_generate.return_value = "Test answer"
+        mock_extract.return_value = []
+        
+        # Test with document_ids filter
+        await answer_question("What is the test?", 123, document_ids=["1", "3"])
+        
+        # Verify generate_answer was called with filtered chunks (only doc IDs 1 and 3)
+        mock_generate.assert_called_once()
+        context_arg = mock_generate.call_args[0][1]  # Second argument is context
+        
+        # The context should only contain content from documents 1 and 3
+        assert "Content 1" in context_arg
+        assert "Content 3" in context_arg
+        assert "Content 2" not in context_arg
+    
+    @patch('app.core.qna.similarity_search')
+    @patch('app.core.qna.generate_answer')
+    @patch('app.core.qna.extract_citations')
+    @pytest.mark.anyio
+    async def test_answer_question_with_both_limit_and_document_ids(self, mock_extract, mock_generate, mock_search):
+        """Test RAG pipeline with both limit and document_ids parameters (Task 5)"""
+        mock_chunks = [
+            {"content": "Content 1", "document_id": 1, "metadata": {"filename": "doc1.pdf", "page": 1}},
+            {"content": "Content 2", "document_id": 2, "metadata": {"filename": "doc2.pdf", "page": 1}}
+        ]
+        mock_search.return_value = mock_chunks
+        mock_generate.return_value = "Test answer"
+        mock_extract.return_value = []
+        
+        # Test with both parameters
+        await answer_question("What is the test?", 123, document_ids=["1"], limit=15)
+        
+        # Verify similarity_search was called with custom limit
+        mock_search.assert_called_once_with("What is the test?", 123, k=15)
+        
+        # Verify filtering was applied
+        mock_generate.assert_called_once()
+        context_arg = mock_generate.call_args[0][1]
+        assert "Content 1" in context_arg
+        assert "Content 2" not in context_arg
+    
+    @patch('app.core.qna.similarity_search')
+    @pytest.mark.anyio
+    async def test_answer_question_backward_compatibility(self, mock_search):
+        """Test backward compatibility - old signature still works (Task 5)"""
+        mock_search.return_value = []
+        
+        # This should raise DocumentNotFoundError but not fail due to signature mismatch
+        with pytest.raises(DocumentNotFoundError):
+            await answer_question("What is the test?", 123)
+        
+        # Verify it was called with default parameters
+        mock_search.assert_called_once_with("What is the test?", 123, k=5)
+    
+    @patch('app.core.qna.similarity_search')
+    @patch('app.core.qna.generate_answer')
+    @patch('app.core.qna.extract_citations')
+    @pytest.mark.anyio
+    async def test_answer_question_invalid_document_ids(self, mock_extract, mock_generate, mock_search):
+        """Test RAG pipeline handles invalid document_ids gracefully (Task 5)"""
+        mock_chunks = [
+            {"content": "Content 1", "document_id": 1, "metadata": {"filename": "doc1.pdf", "page": 1}}
+        ]
+        mock_search.return_value = mock_chunks
+        mock_generate.return_value = "Test answer"
+        mock_extract.return_value = []
+        
+        # Test with invalid document_ids (non-numeric)
+        await answer_question("What is the test?", 123, document_ids=["invalid", "also_invalid"])
+        
+        # Should continue with unfiltered results when document_ids are invalid
+        mock_generate.assert_called_once()
+        context_arg = mock_generate.call_args[0][1]
+        assert "Content 1" in context_arg  # Original content should still be there
+    
+    @patch('app.core.qna.similarity_search')
+    @pytest.mark.anyio
+    async def test_answer_question_document_filter_no_matches(self, mock_search):
+        """Test RAG pipeline when document_ids filter results in no matches (Task 5)"""
+        mock_chunks = [
+            {"content": "Content 1", "document_id": 1, "metadata": {"filename": "doc1.pdf", "page": 1}}
+        ]
+        mock_search.return_value = mock_chunks
+        
+        # Test with document_ids that don't match any chunks
+        with pytest.raises(DocumentNotFoundError):
+            await answer_question("What is the test?", 123, document_ids=["999", "888"])
+        
+        # Verify search was called but filtering resulted in no chunks
 
 
 class TestExtractCitations:

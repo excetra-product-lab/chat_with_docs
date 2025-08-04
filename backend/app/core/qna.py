@@ -10,8 +10,14 @@ from app.core.exceptions import (
     LLMGenerationError
 )
 from app.core.logging_config import get_rag_logger
+from app.core.langchain_config import langchain_config
+from app.core.prompts import SystemPrompts
+from langchain_core.messages import HumanMessage, SystemMessage
+from openai import RateLimitError, APIError, APIConnectionError, APITimeoutError
 import tiktoken
 import re
+import asyncio
+import random
 from typing import Optional
 
 
@@ -35,13 +41,20 @@ def estimate_tokens(text: str, model: str = "gpt-4o-mini") -> int:
         return len(text) // 4
 
 
-async def answer_question(question: str, user_id: int) -> Answer:
+async def answer_question(
+    question: str, 
+    user_id: int, 
+    document_ids: Optional[list[str]] = None, 
+    limit: Optional[int] = None
+) -> Answer:
     """
     Process a question through the RAG pipeline with comprehensive error handling.
     
     Args:
         question: The user's question
         user_id: The authenticated user's ID
+        document_ids: Optional list of document IDs to filter search results
+        limit: Optional limit on number of chunks to retrieve (default: 5)
         
     Returns:
         Answer object with response, citations, and confidence
@@ -55,16 +68,19 @@ async def answer_question(question: str, user_id: int) -> Answer:
     """
     logger = get_rag_logger(__name__, {
         "user_id": user_id,
-        "question_preview": question[:50] + "..." if len(question) > 50 else question
+        "question_preview": question[:50] + "..." if len(question) > 50 else question,
+        "document_ids": document_ids,
+        "limit": limit
     })
     
     logger.info("Starting RAG pipeline processing")
     
     try:
         # Step 1: Search for relevant chunks
-        logger.info("Performing vector similarity search")
+        search_limit = limit if limit is not None else 5
+        logger.info(f"Performing vector similarity search with limit={search_limit}")
         try:
-            relevant_chunks = await similarity_search(question, user_id)
+            relevant_chunks = await similarity_search(question, user_id, k=search_limit)
         except Exception as e:
             logger.error(f"Vector search failed: {str(e)}")
             raise VectorSearchError(
@@ -74,14 +90,30 @@ async def answer_question(question: str, user_id: int) -> Answer:
                 original_error=e
             )
 
-        # Step 2: Validate search results
+        # Step 2: Filter by document IDs if specified
+        if document_ids is not None:
+            logger.info(f"Filtering results by document IDs: {document_ids}")
+            # Convert document_ids to integers for comparison (assuming they're stored as integers)
+            try:
+                doc_id_ints = [int(doc_id) for doc_id in document_ids]
+                filtered_chunks = [
+                    chunk for chunk in relevant_chunks 
+                    if chunk.get('document_id') in doc_id_ints
+                ]
+                logger.info(f"Filtered from {len(relevant_chunks)} to {len(filtered_chunks)} chunks")
+                relevant_chunks = filtered_chunks
+            except ValueError as e:
+                logger.warning(f"Invalid document ID format: {e}")
+                # Continue with unfiltered results rather than failing
+
+        # Step 3: Validate search results
         if not relevant_chunks:
             logger.warning("No relevant chunks found for query")
             raise DocumentNotFoundError(query=question, user_id=user_id)
 
         logger.info(f"Found {len(relevant_chunks)} relevant chunks")
 
-        # Step 3: Build context from chunks
+        # Step 4: Build context from chunks
         logger.info("Building context from retrieved chunks")
         try:
             context, chunk_mapping = build_context(relevant_chunks)
@@ -99,7 +131,7 @@ async def answer_question(question: str, user_id: int) -> Answer:
                 reason="All chunks were empty or invalid"
             )
 
-        # Step 4: Generate answer using LLM
+        # Step 5: Generate answer using LLM
         logger.info("Generating answer with LLM")
         try:
             answer_text = await generate_answer(question, context)
@@ -122,7 +154,7 @@ async def answer_question(question: str, user_id: int) -> Answer:
                 question=question
             )
 
-        # Step 5: Extract citations
+        # Step 6: Extract citations
         logger.info("Extracting citations from answer")
         try:
             citations = extract_citations(answer_text, relevant_chunks)
@@ -209,8 +241,7 @@ def build_context(chunks: list[dict]) -> tuple[str, list[dict]]:
         logger.warning(f"No valid content found in {len(chunks)} chunks")
         raise EmptyContextError(
             chunks_retrieved=len(chunks),
-            reason="All chunks were empty or invalid"
-        )
+            reason="All chunks were empty or invalid"        )
     
     # Join all context parts with separators
     full_context = "\n".join(context_parts)
@@ -237,12 +268,6 @@ async def generate_answer(question: str, context: str) -> str:
         AzureAPIError: When Azure OpenAI API fails
         LLMGenerationError: When generation fails for other reasons
     """
-    from langchain_core.messages import HumanMessage, SystemMessage
-    from app.core.langchain_config import langchain_config
-    from app.core.prompts import SystemPrompts
-    import asyncio
-    import random
-    from openai import RateLimitError, APIError, APIConnectionError, APITimeoutError
     
     logger = get_rag_logger(__name__)
 
@@ -515,10 +540,8 @@ def _find_matching_chunk(
         # Normalize chunk filename for comparison
         normalized_chunk_filename = chunk_filename.lower().strip()
         
-        # Check for exact match
-        if (normalized_filename == normalized_chunk_filename or 
-            normalized_filename in normalized_chunk_filename or
-            normalized_chunk_filename in normalized_filename):
+        # Check for exact match first
+        if normalized_filename == normalized_chunk_filename:
             
             # If page number specified, verify it matches
             if page_num is not None:
