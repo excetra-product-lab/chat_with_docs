@@ -25,11 +25,11 @@ from app.models.schemas import Answer, Citation, RetrievedChunk
 def estimate_tokens(text: str, model: str = "gpt-4o-mini") -> int:
     """
     Estimate the number of tokens in a text string for a given model.
-    
+
     Args:
         text: The input text to count tokens for
         model: The model name to use for tokenization
-        
+
     Returns:
         Estimated number of tokens
     """
@@ -46,20 +46,20 @@ async def answer_question(
     question: str,
     user_id: int,
     document_ids: list[str] | None = None,
-    limit: int | None = None
+    limit: int | None = None,
 ) -> Answer:
     """
     Process a question through the RAG pipeline with comprehensive error handling.
-    
+
     Args:
         question: The user's question
         user_id: The authenticated user's ID
         document_ids: Optional list of document IDs to filter search results
         limit: Optional limit on number of chunks to retrieve (default: 5)
-        
+
     Returns:
         Answer object with response, citations, and confidence
-        
+
     Raises:
         DocumentNotFoundError: When no relevant documents are found
         VectorSearchError: When vector search fails
@@ -67,12 +67,17 @@ async def answer_question(
         LLMGenerationError: When answer generation fails
         CitationParsingError: When citation extraction fails
     """
-    logger = get_rag_logger(__name__, {
-        "user_id": user_id,
-        "question_preview": question[:50] + "..." if len(question) > 50 else question,
-        "document_ids": document_ids,
-        "limit": limit
-    })
+    logger = get_rag_logger(
+        __name__,
+        {
+            "user_id": user_id,
+            "question_preview": question[:50] + "..."
+            if len(question) > 50
+            else question,
+            "document_ids": document_ids,
+            "limit": limit,
+        },
+    )
 
     logger.info("Starting RAG pipeline processing")
 
@@ -88,8 +93,8 @@ async def answer_question(
                 query=question,
                 reason=f"Database or search index error: {str(e)}",
                 user_id=user_id,
-                original_error=e
-            )
+                original_error=e,
+            ) from e
 
         # Step 2: Filter by document IDs if specified
         if document_ids is not None:
@@ -98,10 +103,13 @@ async def answer_question(
             try:
                 doc_id_ints = [int(doc_id) for doc_id in document_ids]
                 filtered_chunks = [
-                    chunk for chunk in relevant_chunks
-                    if chunk.get('document_id') in doc_id_ints
+                    chunk
+                    for chunk in relevant_chunks
+                    if chunk.get("document_id") in doc_id_ints
                 ]
-                logger.info(f"Filtered from {len(relevant_chunks)} to {len(filtered_chunks)} chunks")
+                logger.info(
+                    f"Filtered from {len(relevant_chunks)} to {len(filtered_chunks)} chunks"
+                )
                 relevant_chunks = filtered_chunks
             except ValueError as e:
                 logger.warning(f"Invalid document ID format: {e}")
@@ -122,14 +130,14 @@ async def answer_question(
             logger.error(f"Context building failed: {str(e)}")
             raise EmptyContextError(
                 chunks_retrieved=len(relevant_chunks),
-                reason=f"Context formatting error: {str(e)}"
-            )
+                reason=f"Context formatting error: {str(e)}",
+            ) from e
 
         # Validate context is not empty
         if not context or context.strip() == "No relevant documents found.":
             raise EmptyContextError(
                 chunks_retrieved=len(relevant_chunks),
-                reason="All chunks were empty or invalid"
+                reason="All chunks were empty or invalid",
             )
 
         # Step 5: Generate answer using LLM
@@ -139,20 +147,21 @@ async def answer_question(
         except Exception as e:
             logger.error(f"Answer generation failed: {str(e)}")
             # Re-raise specific exceptions, wrap others
-            if isinstance(e, (AzureAPIError, TokenLimitExceededError, LLMGenerationError)):
+            if isinstance(
+                e, AzureAPIError | TokenLimitExceededError | LLMGenerationError
+            ):
                 raise
             else:
                 raise LLMGenerationError(
                     reason=f"Unexpected error during generation: {str(e)}",
                     question=question,
-                    original_error=e
-                )
+                    original_error=e,
+                ) from e
 
         # Validate generated answer
         if not answer_text or not answer_text.strip():
             raise LLMGenerationError(
-                reason="LLM returned empty response",
-                question=question
+                reason="LLM returned empty response", question=question
             )
 
         # Step 6: Extract citations
@@ -170,30 +179,36 @@ async def answer_question(
         for chunk in relevant_chunks:
             try:
                 # Extract metadata
-                metadata = chunk.get('metadata', {})
-                document_name = metadata.get('filename') or metadata.get('source', 'Unknown Document')
-                page_num = metadata.get('page') or metadata.get('page_number')
+                metadata = chunk.get("metadata", {})
+                document_name = metadata.get("filename") or metadata.get(
+                    "source", "Unknown Document"
+                )
+                page_num = metadata.get("page") or metadata.get("page_number")
 
                 # Create document ID (use actual document_id if available, otherwise generate one)
-                document_id = str(chunk.get('document_id', document_name))
+                document_id = str(chunk.get("document_id", document_name))
 
                 # Get similarity score (default to 0.0 if not available)
-                similarity_score = chunk.get('similarity_score', chunk.get('score', 0.0))
+                similarity_score = chunk.get(
+                    "similarity_score", chunk.get("score", 0.0)
+                )
 
                 retrieved_chunk = RetrievedChunk(
                     document_id=document_id,
                     document_name=document_name,
-                    content=chunk.get('content', ''),
+                    content=chunk.get("content", ""),
                     page=int(page_num) if page_num is not None else None,
                     similarity_score=float(similarity_score),
-                    metadata=metadata
+                    metadata=metadata,
                 )
                 retrieved_chunks.append(retrieved_chunk)
             except Exception as e:
                 logger.warning(f"Failed to format chunk for response: {e}")
                 continue
 
-        logger.info(f"Successfully completed RAG pipeline with {len(citations)} citations and {len(retrieved_chunks)} chunks")
+        logger.info(
+            f"Successfully completed RAG pipeline with {len(citations)} citations and {len(retrieved_chunks)} chunks"
+        )
 
         return Answer(
             answer=answer_text,
@@ -206,12 +221,19 @@ async def answer_question(
                 "chunks_formatted": len(retrieved_chunks),
                 "citations_found": len(citations),
                 "search_limit": search_limit,
-                "document_ids_filter": document_ids
-            }
+                "document_ids_filter": document_ids,
+            },
         )
 
-    except (DocumentNotFoundError, VectorSearchError, EmptyContextError,
-            LLMGenerationError, AzureAPIError, TokenLimitExceededError, CitationParsingError):
+    except (
+        DocumentNotFoundError,
+        VectorSearchError,
+        EmptyContextError,
+        LLMGenerationError,
+        AzureAPIError,
+        TokenLimitExceededError,
+        CitationParsingError,
+    ):
         # Re-raise our custom exceptions
         raise
     except Exception as e:
@@ -220,20 +242,20 @@ async def answer_question(
         raise LLMGenerationError(
             reason=f"Unexpected pipeline error: {str(e)}",
             question=question,
-            original_error=e
-        )
+            original_error=e,
+        ) from e
 
 
 def build_context(chunks: list[dict]) -> tuple[str, list[dict]]:
     """
     Build context from retrieved chunks with error handling
-    
+
     Args:
         chunks: List of chunk dictionaries containing content, metadata, and source info
-        
+
     Returns:
         Tuple of (formatted context string for LLM processing, chunk mapping for citation generation)
-        
+
     Raises:
         EmptyContextError: When no valid context can be built from chunks
     """
@@ -248,15 +270,15 @@ def build_context(chunks: list[dict]) -> tuple[str, list[dict]]:
 
     for i, chunk in enumerate(chunks, 1):
         # Extract metadata
-        content = chunk.get('content', '') or ''
-        content = content.strip() if content else ''
+        content = chunk.get("content", "") or ""
+        content = content.strip() if content else ""
         if not content:
             continue
 
         # Get document metadata
-        metadata = chunk.get('metadata', {})
-        filename = metadata.get('filename', metadata.get('source', f'Document {i}'))
-        page_num = metadata.get('page', metadata.get('page_number'))
+        metadata = chunk.get("metadata", {})
+        filename = metadata.get("filename", metadata.get("source", f"Document {i}"))
+        page_num = metadata.get("page", metadata.get("page_number"))
 
         # Format the chunk with source information
         chunk_header = f"=== Source {i}: {filename}"
@@ -268,19 +290,21 @@ def build_context(chunks: list[dict]) -> tuple[str, list[dict]]:
         context_parts.append(f"{chunk_header}\n{content}\n")
 
         # Create mapping entry for citation generation
-        chunk_mapping.append({
-            'source_id': i,
-            'content': content,
-            'filename': filename,
-            'page': page_num,
-            'original_chunk': chunk
-        })
+        chunk_mapping.append(
+            {
+                "source_id": i,
+                "content": content,
+                "filename": filename,
+                "page": page_num,
+                "original_chunk": chunk,
+            }
+        )
 
     if not context_parts:
         logger.warning(f"No valid content found in {len(chunks)} chunks")
         raise EmptyContextError(
-            chunks_retrieved=len(chunks),
-            reason="All chunks were empty or invalid"        )
+            chunks_retrieved=len(chunks), reason="All chunks were empty or invalid"
+        )
 
     # Join all context parts with separators
     full_context = "\n".join(context_parts)
@@ -294,14 +318,14 @@ def build_context(chunks: list[dict]) -> tuple[str, list[dict]]:
 async def generate_answer(question: str, context: str) -> str:
     """
     Generate answer using Azure OpenAI with comprehensive error handling and retry logic
-    
+
     Args:
         question: The user's question
         context: The formatted context from retrieved documents
-        
+
     Returns:
         Generated answer string
-        
+
     Raises:
         TokenLimitExceededError: When input exceeds token limits
         AzureAPIError: When Azure OpenAI API fails
@@ -331,19 +355,19 @@ async def generate_answer(question: str, context: str) -> str:
     max_input_tokens = 120000  # Reserve 8k tokens for response
 
     if total_input_tokens > max_input_tokens:
-        logger.warning(f"Input too long: {total_input_tokens} tokens (max: {max_input_tokens})")
+        logger.warning(
+            f"Input too long: {total_input_tokens} tokens (max: {max_input_tokens})"
+        )
         raise TokenLimitExceededError(
             token_count=total_input_tokens,
             token_limit=max_input_tokens,
-            component="total_input"
+            component="total_input",
         )
 
     if question_tokens > 4000:  # Reasonable limit for questions
         logger.warning(f"Question too long: {question_tokens} tokens")
         raise TokenLimitExceededError(
-            token_count=question_tokens,
-            token_limit=4000,
-            component="question"
+            token_count=question_tokens, token_limit=4000, component="question"
         )
 
     # Retry configuration
@@ -362,123 +386,144 @@ async def generate_answer(question: str, context: str) -> str:
             # Create messages for the chat completion
             messages = [
                 SystemMessage(content=formatted_system_prompt),
-                HumanMessage(content=question)
+                HumanMessage(content=question),
             ]
 
             # Log attempt details
-            logger.info(f"Generating answer for question (attempt {attempt + 1}/{max_retries + 1}): {question[:50]}...")
+            logger.info(
+                f"Generating answer for question (attempt {attempt + 1}/{max_retries + 1}): {question[:50]}..."
+            )
 
             # Generate response using LangChain's async invoke
             response = await llm.ainvoke(messages)
 
             # Extract the content from the response
-            answer = response.content if hasattr(response, 'content') else str(response)
+            answer = response.content if hasattr(response, "content") else str(response)
 
             # Validate response
-            if not answer or not answer.strip():
+            if not answer or (isinstance(answer, str) and not answer.strip()):
                 logger.warning("Empty response received from LLM")
                 if attempt < max_retries:
                     continue
                 raise LLMGenerationError(
                     reason="LLM returned empty response after all retries",
                     question=question,
-                    attempts=max_retries + 1
+                    attempts=max_retries + 1,
                 )
 
-            logger.info(f"Successfully generated answer for question: {question[:50]}...")
-            return answer.strip()
+            logger.info(
+                f"Successfully generated answer for question: {question[:50]}..."
+            )
+            return str(answer).strip()
 
         except RateLimitError as e:
             logger.warning(f"Rate limit exceeded (attempt {attempt + 1}): {str(e)}")
             if attempt < max_retries:
                 # Exponential backoff with jitter for rate limits
-                delay = min(base_delay * (2 ** attempt) + random.uniform(0, 1), max_delay)
-                logger.info(f"Waiting {delay:.2f} seconds before retry due to rate limit...")
+                delay = min(base_delay * (2**attempt) + random.uniform(0, 1), max_delay)
+                logger.info(
+                    f"Waiting {delay:.2f} seconds before retry due to rate limit..."
+                )
                 await asyncio.sleep(delay)
                 continue
             raise AzureAPIError(
                 message="Rate limit exceeded after all retries",
                 status_code=429,
                 error_type="RateLimitError",
-                original_error=e
-            )
+                original_error=e,
+            ) from e
 
         except APITimeoutError as e:
             logger.warning(f"API timeout (attempt {attempt + 1}): {str(e)}")
             if attempt < max_retries:
-                delay = min(base_delay * (2 ** attempt), max_delay)
-                logger.info(f"Waiting {delay:.2f} seconds before retry due to timeout...")
+                delay = min(base_delay * (2**attempt), max_delay)
+                logger.info(
+                    f"Waiting {delay:.2f} seconds before retry due to timeout..."
+                )
                 await asyncio.sleep(delay)
                 continue
             raise AzureAPIError(
                 message="Request timed out after all retries",
                 status_code=408,
                 error_type="APITimeoutError",
-                original_error=e
-            )
+                original_error=e,
+            ) from e
 
         except APIConnectionError as e:
             logger.warning(f"API connection error (attempt {attempt + 1}): {str(e)}")
             if attempt < max_retries:
-                delay = min(base_delay * (2 ** attempt), max_delay)
-                logger.info(f"Waiting {delay:.2f} seconds before retry due to connection error...")
+                delay = min(base_delay * (2**attempt), max_delay)
+                logger.info(
+                    f"Waiting {delay:.2f} seconds before retry due to connection error..."
+                )
                 await asyncio.sleep(delay)
                 continue
             raise AzureAPIError(
                 message="Connection to AI service failed after all retries",
                 status_code=503,
                 error_type="APIConnectionError",
-                original_error=e
-            )
+                original_error=e,
+            ) from e
 
         except APIError as e:
             logger.error(f"API error (attempt {attempt + 1}): {str(e)}")
-            if attempt < max_retries and hasattr(e, 'status_code') and e.status_code >= 500:
+            if (
+                attempt < max_retries
+                and hasattr(e, "status_code")
+                and e.status_code >= 500
+            ):
                 # Retry on server errors (5xx)
-                delay = min(base_delay * (2 ** attempt), max_delay)
-                logger.info(f"Waiting {delay:.2f} seconds before retry due to server error...")
+                delay = min(base_delay * (2**attempt), max_delay)
+                logger.info(
+                    f"Waiting {delay:.2f} seconds before retry due to server error..."
+                )
                 await asyncio.sleep(delay)
                 continue
             raise AzureAPIError(
                 message=f"Azure API error: {str(e)}",
-                status_code=getattr(e, 'status_code', 500),
+                status_code=getattr(e, "status_code", 500),
                 error_type="APIError",
-                original_error=e
-            )
+                original_error=e,
+            ) from e
 
         except Exception as e:
-            logger.error(f"Unexpected error generating answer (attempt {attempt + 1}): {str(e)}", exc_info=True)
+            logger.error(
+                f"Unexpected error generating answer (attempt {attempt + 1}): {str(e)}",
+                exc_info=True,
+            )
             if attempt < max_retries:
-                delay = min(base_delay * (2 ** attempt), max_delay)
-                logger.info(f"Waiting {delay:.2f} seconds before retry due to unexpected error...")
+                delay = min(base_delay * (2**attempt), max_delay)
+                logger.info(
+                    f"Waiting {delay:.2f} seconds before retry due to unexpected error..."
+                )
                 await asyncio.sleep(delay)
                 continue
             raise LLMGenerationError(
                 reason=f"Unexpected error during generation: {str(e)}",
                 question=question,
                 attempts=max_retries + 1,
-                original_error=e
-            )
+                original_error=e,
+            ) from e
 
     # This should never be reached, but included for completeness
     raise LLMGenerationError(
         reason="Failed to generate answer after all retries",
         question=question,
-        attempts=max_retries + 1
+        attempts=max_retries + 1,
     )
 
 
 def extract_citations(answer: str, chunks: list[dict]) -> list[Citation]:
     """
     Extract citations from LLM answer and link them to source documents.
-    
+
     Args:
         answer: The LLM's response text containing potential citations
         chunks: List of source document chunks used to generate the answer
-        
+
     Returns:
         List of Citation objects for valid citations found
-        
+
     Raises:
         CitationParsingError: When citation extraction fails completely
     """
@@ -496,7 +541,7 @@ def extract_citations(answer: str, chunks: list[dict]) -> list[Citation]:
     # - Filename (non-greedy, stopping at p. or closing bracket)
     # - Optional page number after "p." or "page"
     # - Optional closing bracket whitespace
-    citation_pattern = r'\[\s*([^[\]]+?)(?:\s+(?:p\.?\s*|page\s*)(\d+))?\s*\]'
+    citation_pattern = r"\[\s*([^[\]]+?)(?:\s+(?:p\.?\s*|page\s*)(\d+))?\s*\]"
 
     citations = []
     matches = re.finditer(citation_pattern, answer, re.IGNORECASE)
@@ -532,9 +577,9 @@ def extract_citations(answer: str, chunks: list[dict]) -> list[Citation]:
         else:
             # Task 4.4: Handle malformed/unmappable citations
             logger.warning(
-                f"Citation [{filename_raw}" +
-                (f" p. {page_num}" if page_num else "") +
-                "] could not be mapped to source documents"
+                f"Citation [{filename_raw}"
+                + (f" p. {page_num}" if page_num else "")
+                + "] could not be mapped to source documents"
             )
 
     # Remove duplicate citations based on document_id and page
@@ -555,13 +600,13 @@ def _find_matching_chunk(
 ) -> dict | None:
     """
     Find the chunk that matches the citation filename and page number.
-    
+
     Args:
         filename: The filename from the citation
         page_num: Optional page number from the citation
         chunks: List of source chunks to search
         logger: Logger instance
-        
+
     Returns:
         Matching chunk dict or None
     """
@@ -570,8 +615,8 @@ def _find_matching_chunk(
 
     # Try exact filename matches first
     for chunk in chunks:
-        metadata = chunk.get('metadata', {})
-        chunk_filename = metadata.get('filename') or metadata.get('source', '')
+        metadata = chunk.get("metadata", {})
+        chunk_filename = metadata.get("filename") or metadata.get("source", "")
 
         if not chunk_filename:
             continue
@@ -581,10 +626,9 @@ def _find_matching_chunk(
 
         # Check for exact match first
         if normalized_filename == normalized_chunk_filename:
-
             # If page number specified, verify it matches
             if page_num is not None:
-                chunk_page = metadata.get('page') or metadata.get('page_number')
+                chunk_page = metadata.get("page") or metadata.get("page_number")
                 if chunk_page is not None:
                     try:
                         if int(chunk_page) == page_num:
@@ -599,21 +643,29 @@ def _find_matching_chunk(
                 return chunk
 
     # Try partial filename matches (without extensions)
-    filename_base = normalized_filename.split('.')[0] if '.' in normalized_filename else normalized_filename
+    filename_base = (
+        normalized_filename.split(".")[0]
+        if "." in normalized_filename
+        else normalized_filename
+    )
 
     for chunk in chunks:
-        metadata = chunk.get('metadata', {})
-        chunk_filename = metadata.get('filename') or metadata.get('source', '')
+        metadata = chunk.get("metadata", {})
+        chunk_filename = metadata.get("filename") or metadata.get("source", "")
 
         if not chunk_filename:
             continue
 
-        chunk_filename_base = chunk_filename.lower().split('.')[0] if '.' in chunk_filename else chunk_filename.lower()
+        chunk_filename_base = (
+            chunk_filename.lower().split(".")[0]
+            if "." in chunk_filename
+            else chunk_filename.lower()
+        )
 
         if filename_base == chunk_filename_base:
             # If page number specified, verify it matches
             if page_num is not None:
-                chunk_page = metadata.get('page') or metadata.get('page_number')
+                chunk_page = metadata.get("page") or metadata.get("page_number")
                 if chunk_page is not None:
                     try:
                         if int(chunk_page) == page_num:
@@ -623,8 +675,10 @@ def _find_matching_chunk(
             else:
                 return chunk
 
-    logger.warning(f"No matching chunk found for citation: {filename}" +
-                  (f" p. {page_num}" if page_num else ""))
+    logger.warning(
+        f"No matching chunk found for citation: {filename}"
+        + (f" p. {page_num}" if page_num else "")
+    )
     return None
 
 
@@ -633,23 +687,23 @@ def _create_citation_object(
 ) -> Citation | None:
     """
     Create a Citation object from a matched chunk.
-    
+
     Args:
         chunk: The matched source chunk
         filename: Original filename from citation
         page_num: Optional page number from citation
         logger: Logger instance
-        
+
     Returns:
         Citation object or None if creation fails
     """
     try:
-        metadata = chunk.get('metadata', {})
-        content = chunk.get('content', '').strip()
+        metadata = chunk.get("metadata", {})
+        content = chunk.get("content", "").strip()
 
         # Extract document information
-        document_name = metadata.get('filename') or metadata.get('source') or filename
-        chunk_page = metadata.get('page') or metadata.get('page_number')
+        document_name = metadata.get("filename") or metadata.get("source") or filename
+        chunk_page = metadata.get("page") or metadata.get("page_number")
 
         # Use page from citation if available, otherwise use chunk page
         final_page = page_num if page_num is not None else chunk_page
@@ -670,14 +724,16 @@ def _create_citation_object(
 
         # Validate required fields
         if not document_name or not snippet:
-            logger.warning(f"Missing required fields for citation: document_name='{document_name}', snippet length={len(snippet)}")
+            logger.warning(
+                f"Missing required fields for citation: document_name='{document_name}', snippet length={len(snippet)}"
+            )
             return None
 
         return Citation(
             document_id=document_id,
             document_name=document_name,
             page=final_page,
-            snippet=snippet
+            snippet=snippet,
         )
 
     except Exception as e:

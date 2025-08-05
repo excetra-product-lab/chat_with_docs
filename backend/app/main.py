@@ -1,14 +1,14 @@
-from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 import logging
 import uuid
 
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+
 from app.api.routes import auth, chat, documents
-from app.core.settings import settings
+from app.core.error_handler import create_error_response
 from app.core.exceptions import RAGPipelineError
-from app.core.error_handler import ErrorHandler, create_error_response
 from app.core.logging_config import configure_application_logging
+from app.core.settings import settings
 
 # Initialize logging configuration
 configure_application_logging()
@@ -28,20 +28,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # Global exception handlers
 @app.exception_handler(RAGPipelineError)
 async def rag_pipeline_exception_handler(request: Request, exc: RAGPipelineError):
     """Handle all RAG pipeline custom exceptions."""
     request_id = str(uuid.uuid4())
-    
+
     # Add request context to error details
-    if hasattr(exc, 'details'):
-        exc.details.update({
-            "request_url": str(request.url),
-            "request_method": request.method,
-            "request_id": request_id
-        })
-    
+    if hasattr(exc, "details"):
+        exc.details.update(
+            {
+                "request_url": str(request.url),
+                "request_method": request.method,
+                "request_id": request_id,
+            }
+        )
+
     return create_error_response(exc, request_id)
 
 
@@ -50,19 +53,19 @@ async def general_exception_handler(request: Request, exc: Exception):
     """Handle all other unhandled exceptions."""
     logger = logging.getLogger(__name__)
     request_id = str(uuid.uuid4())
-    
+
     # Log the unexpected error
     logger.error(
-        f"Unhandled exception in request {request_id}: {str(exc)}", 
+        f"Unhandled exception in request {request_id}: {str(exc)}",
         exc_info=True,
         extra={
             "request_id": request_id,
             "request_url": str(request.url),
             "request_method": request.method,
-            "error_type": type(exc).__name__
-        }
+            "error_type": type(exc).__name__,
+        },
     )
-    
+
     # Create a generic RAG pipeline error for consistent handling
     generic_error = RAGPipelineError(
         "An unexpected error occurred while processing your request.",
@@ -70,11 +73,11 @@ async def general_exception_handler(request: Request, exc: Exception):
             "request_id": request_id,
             "request_url": str(request.url),
             "request_method": request.method,
-            "original_error_type": type(exc).__name__
+            "original_error_type": type(exc).__name__,
         },
-        original_error=exc
+        original_error=exc,
     )
-    
+
     return create_error_response(generic_error, request_id)
 
 

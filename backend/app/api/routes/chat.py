@@ -11,9 +11,9 @@ router = APIRouter()
 async def chat_query(query: Query, current_user: dict = Depends(get_current_user)):
     # Process query through RAG pipeline with optional parameters
     answer = await answer_question(
-        question=query.question, 
+        question=query.question,
         user_id=current_user["id"],
         document_ids=query.document_ids,
-        limit=query.limit
+        limit=query.limit,
     )
     return answer

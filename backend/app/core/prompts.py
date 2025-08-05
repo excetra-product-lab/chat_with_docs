@@ -2,18 +2,17 @@
 System prompt templates for RAG-based question answering.
 """
 
-from typing import Dict, Any
 
 
 class SystemPrompts:
     """Collection of system prompt templates for different use cases."""
-    
+
     @staticmethod
     def get_rag_system_prompt() -> str:
         """
         Get the main RAG system prompt template that enforces citation requirements
         and grounded responses.
-        
+
         Returns:
             System prompt template string with context placeholder
         """
@@ -35,7 +34,7 @@ Context:
     def get_citation_validation_prompt() -> str:
         """
         Get prompt for validating and standardizing citations.
-        
+
         Returns:
             Citation validation prompt template
         """
@@ -57,11 +56,11 @@ Available sources:
     def get_context_insufficient_prompt() -> str:
         """
         Get prompt for handling cases with insufficient context.
-        
+
         Returns:
             Insufficient context response template
         """
-        return """I cannot find sufficient information in the provided documents to answer your question comprehensively. 
+        return """I cannot find sufficient information in the provided documents to answer your question comprehensively.
 
 The available context covers: {available_topics}
 
@@ -74,10 +73,10 @@ To get a complete answer, you may need to:
     def format_rag_prompt(context: str) -> str:
         """
         Format the RAG system prompt with the provided context.
-        
+
         Args:
             context: The document context to include in the prompt
-            
+
         Returns:
             Formatted system prompt ready for use
         """
@@ -87,27 +86,26 @@ To get a complete answer, you may need to:
     def format_citation_validation_prompt(answer: str, sources: str) -> str:
         """
         Format the citation validation prompt with answer and sources.
-        
+
         Args:
             answer: The answer text to validate
             sources: Available source information
-            
+
         Returns:
             Formatted citation validation prompt
         """
         return SystemPrompts.get_citation_validation_prompt().format(
-            answer=answer, 
-            sources=sources
+            answer=answer, sources=sources
         )
 
     @staticmethod
     def format_insufficient_context_response(available_topics: str) -> str:
         """
         Format response for insufficient context scenarios.
-        
+
         Args:
             available_topics: Summary of topics covered in available context
-            
+
         Returns:
             Formatted insufficient context response
         """
