@@ -82,6 +82,8 @@ class ProcessingConfig(BaseModel):
 # Chat schemas
 class Query(BaseModel):
     question: str
+    document_ids: list[str] | None = None
+    limit: int | None = None
 
 
 class Citation(BaseModel):
@@ -91,7 +93,19 @@ class Citation(BaseModel):
     snippet: str
 
 
+class RetrievedChunk(BaseModel):
+    document_id: str
+    document_name: str
+    content: str
+    page: int | None = None
+    similarity_score: float
+    metadata: dict = {}
+
+
 class Answer(BaseModel):
     answer: str
     citations: list[Citation]
     confidence: float
+    query: str
+    chunks: list[RetrievedChunk]
+    metadata: dict = {}

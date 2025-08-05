@@ -23,6 +23,8 @@ dependencies = [
   # dev & test
   "pytest>=7.4.4",
   "pytest-cov>=4.1.0",
+  "pytest-asyncio>=0.24.0",
+  "pytest-mock>=3.12.0",
   "httpx>=0.26.0",
   "pre-commit>=4.2.0",
   "email-validator>=2.2.0",
@@ -69,7 +71,6 @@ testpaths = ["tests"]
 addopts = "-v --tb=short"
 pythonpath = ["."]
 asyncio_mode = "auto"
-asyncio_default_fixture_loop_scope = "function"
 
 [dependency-groups]
 dev = ["pytest-asyncio>=1.0.0"]
