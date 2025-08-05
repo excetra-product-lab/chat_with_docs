@@ -3,7 +3,6 @@ System prompt templates for RAG-based question answering.
 """
 
 
-
 class SystemPrompts:
     """Collection of system prompt templates for different use cases."""
 
