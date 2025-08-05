@@ -4,7 +4,7 @@ from langchain_core.messages import AIMessage
 from openai import RateLimitError, APITimeoutError, APIConnectionError, APIError
 import httpx
 
-from app.core.qna import build_context, estimate_tokens, generate_answer, answer_question
+from app.core.rag_pipeline import build_context, estimate_tokens, generate_answer, answer_question
 from app.models.schemas import Citation
 from app.core.exceptions import (
     EmptyContextError, 
@@ -176,7 +176,7 @@ class TestEstimateTokens:
 class TestGenerateAnswer:
     """Tests for Task 3: Azure OpenAI Integration Implementation"""
     
-    @patch('app.core.qna.langchain_config')
+    @patch('app.core.rag_pipeline.langchain_config')
     @pytest.mark.anyio
     async def test_generate_answer_success(self, mock_config):
         """Test 3.1, 3.2, 3.5: Successful answer generation"""
@@ -189,7 +189,7 @@ class TestGenerateAnswer:
         question = "What is the main topic?"
         context = "This document discusses machine learning basics."
         
-        with patch('app.core.qna.SystemPrompts.format_rag_prompt') as mock_format:
+        with patch('app.core.rag_pipeline.SystemPrompts.format_rag_prompt') as mock_format:
             mock_format.return_value = "Formatted system prompt"
             
             result = await generate_answer(question, context)
@@ -204,7 +204,7 @@ class TestGenerateAnswer:
             assert len(call_args) == 2  # SystemMessage and HumanMessage
             assert call_args[1].content == question
     
-    @patch('app.core.qna.langchain_config')
+    @patch('app.core.rag_pipeline.langchain_config')
     @pytest.mark.anyio
     async def test_generate_answer_empty_question(self, mock_config):
         """Test input validation for empty question"""
@@ -214,7 +214,7 @@ class TestGenerateAnswer:
         with pytest.raises(LLMGenerationError):
             await generate_answer("   ", "context")
     
-    @patch('app.core.qna.langchain_config')
+    @patch('app.core.rag_pipeline.langchain_config')
     @pytest.mark.anyio
     async def test_generate_answer_empty_context(self, mock_config):
         """Test input validation for empty context"""
@@ -224,8 +224,8 @@ class TestGenerateAnswer:
         with pytest.raises(EmptyContextError):
             await generate_answer("question", "   ")
     
-    @patch('app.core.qna.langchain_config')
-    @patch('app.core.qna.estimate_tokens')
+    @patch('app.core.rag_pipeline.langchain_config')
+    @patch('app.core.rag_pipeline.estimate_tokens')
     @pytest.mark.anyio
     async def test_generate_answer_token_limit_exceeded(self, mock_tokens, mock_config):
         """Test token limit validation"""
@@ -240,7 +240,7 @@ class TestGenerateAnswer:
         with pytest.raises(TokenLimitExceededError):
             await generate_answer("very long question", "context")
     
-    @patch('app.core.qna.langchain_config')
+    @patch('app.core.rag_pipeline.langchain_config')
     @pytest.mark.anyio
     async def test_generate_answer_empty_response(self, mock_config):
         """Test 3.5: Handle empty LLM response"""
@@ -249,11 +249,11 @@ class TestGenerateAnswer:
         mock_llm.ainvoke.return_value = mock_response
         mock_config.llm = mock_llm
         
-        with patch('app.core.qna.SystemPrompts.format_rag_prompt'):
+        with patch('app.core.rag_pipeline.SystemPrompts.format_rag_prompt'):
             with pytest.raises(LLMGenerationError):
                 await generate_answer("question", "context")
     
-    @patch('app.core.qna.langchain_config')
+    @patch('app.core.rag_pipeline.langchain_config')
     @pytest.mark.anyio
     async def test_generate_answer_rate_limit_error(self, mock_config):
         """Test 3.3, 3.4: Rate limit error handling with exponential backoff"""
@@ -265,7 +265,7 @@ class TestGenerateAnswer:
         ]
         mock_config.llm = mock_llm
         
-        with patch('app.core.qna.SystemPrompts.format_rag_prompt'):
+        with patch('app.core.rag_pipeline.SystemPrompts.format_rag_prompt'):
             with patch('asyncio.sleep') as mock_sleep:
                 result = await generate_answer("question", "context")
                 
@@ -273,7 +273,7 @@ class TestGenerateAnswer:
                 assert mock_llm.ainvoke.call_count == 3
                 assert mock_sleep.call_count == 2  # Two retries with delays
     
-    @patch('app.core.qna.langchain_config')
+    @patch('app.core.rag_pipeline.langchain_config')
     @pytest.mark.anyio
     async def test_generate_answer_rate_limit_exhausted(self, mock_config):
         """Test 3.4: Rate limit retries exhausted"""
@@ -281,12 +281,12 @@ class TestGenerateAnswer:
         mock_llm.ainvoke.side_effect = RateLimitError("Rate limit exceeded", response=create_mock_response(), body=None)
         mock_config.llm = mock_llm
         
-        with patch('app.core.qna.SystemPrompts.format_rag_prompt'):
+        with patch('app.core.rag_pipeline.SystemPrompts.format_rag_prompt'):
             with patch('asyncio.sleep'):
                 with pytest.raises(AzureAPIError):
                     await generate_answer("question", "context")
     
-    @patch('app.core.qna.langchain_config')
+    @patch('app.core.rag_pipeline.langchain_config')
     @pytest.mark.anyio
     async def test_generate_answer_timeout_error(self, mock_config):
         """Test 3.3, 3.4: API timeout error handling"""
@@ -297,7 +297,7 @@ class TestGenerateAnswer:
         ]
         mock_config.llm = mock_llm
         
-        with patch('app.core.qna.SystemPrompts.format_rag_prompt'):
+        with patch('app.core.rag_pipeline.SystemPrompts.format_rag_prompt'):
             with patch('asyncio.sleep') as mock_sleep:
                 result = await generate_answer("question", "context")
                 
@@ -305,7 +305,7 @@ class TestGenerateAnswer:
                 assert mock_llm.ainvoke.call_count == 2
                 assert mock_sleep.call_count == 1
     
-    @patch('app.core.qna.langchain_config')
+    @patch('app.core.rag_pipeline.langchain_config')
     @pytest.mark.anyio
     async def test_generate_answer_connection_error(self, mock_config):
         """Test 3.3: API connection error handling"""
@@ -313,12 +313,12 @@ class TestGenerateAnswer:
         mock_llm.ainvoke.side_effect = APIConnectionError(message="Connection failed", request=create_mock_request())
         mock_config.llm = mock_llm
         
-        with patch('app.core.qna.SystemPrompts.format_rag_prompt'):
+        with patch('app.core.rag_pipeline.SystemPrompts.format_rag_prompt'):
             with patch('asyncio.sleep'):
                 with pytest.raises(AzureAPIError):
                     await generate_answer("question", "context")
     
-    @patch('app.core.qna.langchain_config')
+    @patch('app.core.rag_pipeline.langchain_config')
     @pytest.mark.anyio
     async def test_generate_answer_api_error_server(self, mock_config):
         """Test 3.3: Server API error (5xx) with retry"""
@@ -331,14 +331,14 @@ class TestGenerateAnswer:
         ]
         mock_config.llm = mock_llm
         
-        with patch('app.core.qna.SystemPrompts.format_rag_prompt'):
+        with patch('app.core.rag_pipeline.SystemPrompts.format_rag_prompt'):
             with patch('asyncio.sleep'):
                 result = await generate_answer("question", "context")
                 
                 assert result == "Success after server error"
                 assert mock_llm.ainvoke.call_count == 2
     
-    @patch('app.core.qna.langchain_config')
+    @patch('app.core.rag_pipeline.langchain_config')
     @pytest.mark.anyio
     async def test_generate_answer_api_error_client(self, mock_config):
         """Test 3.3: Client API error (4xx) without retry"""
@@ -348,11 +348,11 @@ class TestGenerateAnswer:
         mock_llm.ainvoke.side_effect = client_error
         mock_config.llm = mock_llm
         
-        with patch('app.core.qna.SystemPrompts.format_rag_prompt'):
+        with patch('app.core.rag_pipeline.SystemPrompts.format_rag_prompt'):
             with pytest.raises(AzureAPIError):
                 await generate_answer("question", "context")
     
-    @patch('app.core.qna.langchain_config')
+    @patch('app.core.rag_pipeline.langchain_config')
     @pytest.mark.anyio
     async def test_generate_answer_unexpected_error(self, mock_config):
         """Test 3.3: Unexpected error handling"""
@@ -360,12 +360,12 @@ class TestGenerateAnswer:
         mock_llm.ainvoke.side_effect = Exception("Unexpected error")
         mock_config.llm = mock_llm
         
-        with patch('app.core.qna.SystemPrompts.format_rag_prompt'):
+        with patch('app.core.rag_pipeline.SystemPrompts.format_rag_prompt'):
             with patch('asyncio.sleep'):
                 with pytest.raises(LLMGenerationError):
                     await generate_answer("question", "context")
     
-    @patch('app.core.qna.langchain_config')
+    @patch('app.core.rag_pipeline.langchain_config')
     @pytest.mark.anyio
     async def test_generate_answer_exponential_backoff(self, mock_config):
         """Test 3.4: Exponential backoff timing"""
@@ -378,7 +378,7 @@ class TestGenerateAnswer:
         ]
         mock_config.llm = mock_llm
         
-        with patch('app.core.qna.SystemPrompts.format_rag_prompt'):
+        with patch('app.core.rag_pipeline.SystemPrompts.format_rag_prompt'):
             with patch('asyncio.sleep') as mock_sleep:
                 result = await generate_answer("question", "context")
                 
@@ -395,9 +395,9 @@ class TestGenerateAnswer:
 class TestAnswerQuestion:
     """Integration tests for the complete RAG pipeline"""
     
-    @patch('app.core.qna.similarity_search')
-    @patch('app.core.qna.generate_answer')
-    @patch('app.core.qna.extract_citations')
+    @patch('app.core.rag_pipeline.similarity_search')
+    @patch('app.core.rag_pipeline.generate_answer')
+    @patch('app.core.rag_pipeline.extract_citations')
     @pytest.mark.anyio
     async def test_answer_question_integration(self, mock_extract, mock_generate, mock_search):
         """Test complete RAG pipeline integration"""
@@ -423,9 +423,9 @@ class TestAnswerQuestion:
         assert hasattr(result, 'citations')
         assert hasattr(result, 'confidence')
     
-    @patch('app.core.qna.similarity_search')
-    @patch('app.core.qna.generate_answer')
-    @patch('app.core.qna.extract_citations')
+    @patch('app.core.rag_pipeline.similarity_search')
+    @patch('app.core.rag_pipeline.generate_answer')
+    @patch('app.core.rag_pipeline.extract_citations')
     @pytest.mark.anyio
     async def test_answer_question_with_custom_limit(self, mock_extract, mock_generate, mock_search):
         """Test RAG pipeline with custom limit parameter (Task 5)"""
@@ -442,9 +442,9 @@ class TestAnswerQuestion:
         # Verify similarity_search was called with custom limit
         mock_search.assert_called_once_with("What is the test?", 123, k=10)
     
-    @patch('app.core.qna.similarity_search')
-    @patch('app.core.qna.generate_answer')
-    @patch('app.core.qna.extract_citations')
+    @patch('app.core.rag_pipeline.similarity_search')
+    @patch('app.core.rag_pipeline.generate_answer')
+    @patch('app.core.rag_pipeline.extract_citations')
     @pytest.mark.anyio
     async def test_answer_question_with_document_ids_filter(self, mock_extract, mock_generate, mock_search):
         """Test RAG pipeline with document_ids filtering (Task 5)"""
@@ -470,9 +470,9 @@ class TestAnswerQuestion:
         assert "Content 3" in context_arg
         assert "Content 2" not in context_arg
     
-    @patch('app.core.qna.similarity_search')
-    @patch('app.core.qna.generate_answer')
-    @patch('app.core.qna.extract_citations')
+    @patch('app.core.rag_pipeline.similarity_search')
+    @patch('app.core.rag_pipeline.generate_answer')
+    @patch('app.core.rag_pipeline.extract_citations')
     @pytest.mark.anyio
     async def test_answer_question_with_both_limit_and_document_ids(self, mock_extract, mock_generate, mock_search):
         """Test RAG pipeline with both limit and document_ids parameters (Task 5)"""
@@ -496,7 +496,7 @@ class TestAnswerQuestion:
         assert "Content 1" in context_arg
         assert "Content 2" not in context_arg
     
-    @patch('app.core.qna.similarity_search')
+    @patch('app.core.rag_pipeline.similarity_search')
     @pytest.mark.anyio
     async def test_answer_question_backward_compatibility(self, mock_search):
         """Test backward compatibility - old signature still works (Task 5)"""
@@ -509,9 +509,9 @@ class TestAnswerQuestion:
         # Verify it was called with default parameters
         mock_search.assert_called_once_with("What is the test?", 123, k=5)
     
-    @patch('app.core.qna.similarity_search')
-    @patch('app.core.qna.generate_answer')
-    @patch('app.core.qna.extract_citations')
+    @patch('app.core.rag_pipeline.similarity_search')
+    @patch('app.core.rag_pipeline.generate_answer')
+    @patch('app.core.rag_pipeline.extract_citations')
     @pytest.mark.anyio
     async def test_answer_question_invalid_document_ids(self, mock_extract, mock_generate, mock_search):
         """Test RAG pipeline handles invalid document_ids gracefully (Task 5)"""
@@ -530,7 +530,7 @@ class TestAnswerQuestion:
         context_arg = mock_generate.call_args[0][1]
         assert "Content 1" in context_arg  # Original content should still be there
     
-    @patch('app.core.qna.similarity_search')
+    @patch('app.core.rag_pipeline.similarity_search')
     @pytest.mark.anyio
     async def test_answer_question_document_filter_no_matches(self, mock_search):
         """Test RAG pipeline when document_ids filter results in no matches (Task 5)"""
@@ -551,7 +551,7 @@ class TestExtractCitations:
     
     def test_extract_citations_basic_format(self):
         """Test 4.1: Basic regex pattern matching for [filename p. X] format"""
-        from app.core.qna import extract_citations
+        from app.core.rag_pipeline import extract_citations
         
         answer = "According to the study [research.pdf p. 5], machine learning is growing. See also [data.pdf p. 10]."
         chunks = [
@@ -575,7 +575,7 @@ class TestExtractCitations:
     
     def test_extract_citations_filename_only_format(self):
         """Test 4.1: Citations without page numbers [filename]"""
-        from app.core.qna import extract_citations
+        from app.core.rag_pipeline import extract_citations
         
         answer = "The report [annual_review.pdf] shows positive trends."
         chunks = [
@@ -593,7 +593,7 @@ class TestExtractCitations:
     
     def test_extract_citations_whitespace_variations(self):
         """Test 4.1: Regex handles whitespace variations"""
-        from app.core.qna import extract_citations
+        from app.core.rag_pipeline import extract_citations
         
         answer = "See [ doc.pdf p. 3 ] and [  file.pdf   p.   7  ]."
         chunks = [
@@ -617,7 +617,7 @@ class TestExtractCitations:
     
     def test_extract_citations_case_insensitive_matching(self):
         """Test 4.2: Citation-to-source mapping is case insensitive"""
-        from app.core.qna import extract_citations
+        from app.core.rag_pipeline import extract_citations
         
         answer = "The data [REPORT.PDF p. 2] shows results."
         chunks = [
@@ -635,7 +635,7 @@ class TestExtractCitations:
     
     def test_extract_citations_partial_filename_matching(self):
         """Test 4.2: Partial filename matching (without extensions)"""
-        from app.core.qna import extract_citations
+        from app.core.rag_pipeline import extract_citations
         
         answer = "According to [report p. 1], the findings are significant."
         chunks = [
@@ -653,7 +653,7 @@ class TestExtractCitations:
     
     def test_extract_citations_alternative_page_formats(self):
         """Test 4.1: Support for different page number formats"""
-        from app.core.qna import extract_citations
+        from app.core.rag_pipeline import extract_citations
         
         answer = "See [doc.pdf page 5] and [file.pdf p.10] and [book.pdf p 15]."
         chunks = [
@@ -680,7 +680,7 @@ class TestExtractCitations:
     
     def test_extract_citations_snippet_creation(self):
         """Test 4.3: Proper snippet creation and truncation"""
-        from app.core.qna import extract_citations
+        from app.core.rag_pipeline import extract_citations
         
         long_content = "This is a very long piece of content that should be truncated when creating snippets for citations. " * 10
         answer = "According to [doc.pdf p. 1], this is true."
@@ -700,7 +700,7 @@ class TestExtractCitations:
     
     def test_extract_citations_document_id_generation(self):
         """Test 4.3: Proper document_id generation"""
-        from app.core.qna import extract_citations
+        from app.core.rag_pipeline import extract_citations
         
         answer = "See [doc.pdf p. 5] and [nodoc.pdf]."
         chunks = [
@@ -722,7 +722,7 @@ class TestExtractCitations:
     
     def test_extract_citations_malformed_citations_ignored(self):
         """Test 4.4: Malformed citations are gracefully ignored"""
-        from app.core.qna import extract_citations
+        from app.core.rag_pipeline import extract_citations
         
         answer = "See [nonexistent.pdf p. 1] and [valid.pdf p. 2] and [p. 3] and []."
         chunks = [
@@ -741,7 +741,7 @@ class TestExtractCitations:
     
     def test_extract_citations_duplicate_removal(self):
         """Test 4.4: Duplicate citations are removed"""
-        from app.core.qna import extract_citations
+        from app.core.rag_pipeline import extract_citations
         
         answer = "See [doc.pdf p. 1] and later [doc.pdf p. 1] again."
         chunks = [
@@ -760,7 +760,7 @@ class TestExtractCitations:
     
     def test_extract_citations_empty_input_handling(self):
         """Test 4.4: Handle empty inputs gracefully"""
-        from app.core.qna import extract_citations
+        from app.core.rag_pipeline import extract_citations
         
         # Empty answer
         assert extract_citations("", [{"content": "test"}]) == []
@@ -773,7 +773,7 @@ class TestExtractCitations:
     
     def test_extract_citations_missing_metadata_handling(self):
         """Test 4.4: Handle chunks with missing metadata"""
-        from app.core.qna import extract_citations
+        from app.core.rag_pipeline import extract_citations
         
         answer = "See [doc.pdf p. 1] and [missing.pdf p. 2]."
         chunks = [
@@ -800,7 +800,7 @@ class TestExtractCitations:
     
     def test_extract_citations_alternative_metadata_keys(self):
         """Test 4.2: Support alternative metadata key formats"""
-        from app.core.qna import extract_citations
+        from app.core.rag_pipeline import extract_citations
         
         answer = "See [source_doc.pdf p. 3]."
         chunks = [
@@ -818,7 +818,7 @@ class TestExtractCitations:
     
     def test_extract_citations_invalid_page_numbers(self):
         """Test 4.4: Handle invalid page numbers gracefully"""
-        from app.core.qna import extract_citations
+        from app.core.rag_pipeline import extract_citations
         
         answer = "See [doc.pdf p. invalid] and [doc2.pdf p. 5]."
         chunks = [
@@ -837,7 +837,7 @@ class TestExtractCitations:
     
     def test_extract_citations_page_mismatch_handling(self):
         """Test 4.2: Handle page number mismatches"""
-        from app.core.qna import extract_citations
+        from app.core.rag_pipeline import extract_citations
         
         answer = "See [doc.pdf p. 5] and [doc.pdf p. 10]."
         chunks = [
@@ -860,7 +860,7 @@ class TestExtractCitations:
     
     def test_extract_citations_no_page_in_chunk_but_page_in_citation(self):
         """Test 4.2: Handle chunks without page info when citation has page"""
-        from app.core.qna import extract_citations
+        from app.core.rag_pipeline import extract_citations
         
         answer = "See [doc.pdf p. 5]."
         chunks = [
