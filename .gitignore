@@ -216,3 +216,8 @@ tasks/
 
 # Scripts directory (contains local development files)
 scripts/
+# But allow eval/scripts for evaluation system
+!eval/scripts/
+
+# Local data directory for end-to-end testing
+data/
