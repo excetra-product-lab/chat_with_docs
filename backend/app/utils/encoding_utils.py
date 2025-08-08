@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import codecs
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import chardet
 
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-def _detect_bom(file_content: bytes) -> Dict[str, Any]:
+def _detect_bom(file_content: bytes) -> dict[str, Any]:
     """Detect a Byte Order Mark (BOM) in *file_content*.
 
     Returns a mapping with *bom_type*, *encoding* and *bom_bytes* keys.
@@ -53,22 +53,25 @@ def _detect_bom(file_content: bytes) -> Dict[str, Any]:
 async def detect_file_encoding(
     file_content: bytes,
     confidence_threshold: float = 0.7,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Detect the character encoding of *file_content* using **chardet**.
 
     The return value mirrors the structure previously produced by the
     `LangchainDocumentProcessor.detect_file_encoding` method.
     """
     try:
-        detection_result: Dict[str, Any] = chardet.detect(file_content)  # type: ignore[assignment]
+        detection_result: dict[str, Any] = chardet.detect(file_content)  # type: ignore[assignment]
         bom_info = _detect_bom(file_content)
 
+        # Handle case where chardet returns None for encoding
+        detected_encoding = detection_result.get("encoding") or "utf-8"
         encoding_info = {
-            "encoding": detection_result.get("encoding", "utf-8").lower(),
+            "encoding": detected_encoding.lower(),
             "confidence": detection_result.get("confidence", 0.0),
             "detected_bom": bom_info["bom_type"],
             "bom_bytes": bom_info["bom_bytes"],
-            "is_reliable": detection_result.get("confidence", 0.0) >= confidence_threshold,
+            "is_reliable": detection_result.get("confidence", 0.0)
+            >= confidence_threshold,
             "original_detection": detection_result,
         }
 
@@ -99,11 +102,11 @@ async def detect_file_encoding(
         }
 
 
-async def validate_text_encoding(text: str, encoding: str) -> Dict[str, Any]:
+async def validate_text_encoding(text: str, encoding: str) -> dict[str, Any]:
     """Light-weight heuristics to validate that *text* matches *encoding*."""
 
     try:
-        validation_info: Dict[str, Any] = {
+        validation_info: dict[str, Any] = {
             "is_valid": True,
             "encoding": encoding,
             "char_count": len(text),
@@ -111,7 +114,7 @@ async def validate_text_encoding(text: str, encoding: str) -> Dict[str, Any]:
             "confidence_score": 1.0,
         }
 
-        issues: List[str] = []
+        issues: list[str] = []
 
         # Replacement characters (\uFFFD)
         repl_chars = text.count("\ufffd")
@@ -128,7 +131,9 @@ async def validate_text_encoding(text: str, encoding: str) -> Dict[str, Any]:
                 validation_info["confidence_score"] -= count / max(len(text), 1) * 0.3
 
         # Round-trip encode check for UTF encodings.
-        if encoding.lower().startswith("utf") and any(ord(c) > 127 for c in text[:1000]):
+        if encoding.lower().startswith("utf") and any(
+            ord(c) > 127 for c in text[:1000]
+        ):
             try:
                 text.encode(encoding)
             except UnicodeEncodeError as exc:
@@ -155,7 +160,7 @@ async def validate_text_encoding(text: str, encoding: str) -> Dict[str, Any]:
         }
 
 
-def get_encoding_fallback_list(detected_encoding: Optional[str] = None) -> List[str]:
+def get_encoding_fallback_list(detected_encoding: str | None = None) -> list[str]:
     """Return a prioritized list of encodings to try when decoding bytes."""
 
     base_encodings = [
@@ -200,7 +205,7 @@ def get_encoding_fallback_list(detected_encoding: Optional[str] = None) -> List[
         "ascii",
     ]
 
-    priority: List[str] = []
+    priority: list[str] = []
 
     if detected_encoding:
         norm = detected_encoding.lower().replace("_", "-")
@@ -215,8 +220,8 @@ def get_encoding_fallback_list(detected_encoding: Optional[str] = None) -> List[
 
 async def try_decode_with_fallback(
     file_content: bytes,
-    encoding_list: Optional[List[str]] = None,
-) -> Dict[str, Any]:
+    encoding_list: list[str] | None = None,
+) -> dict[str, Any]:
     """Attempt to decode *file_content* using an ordered *encoding_list*.
 
     Falls back through the list until a valid decoding is found (validated by
@@ -229,7 +234,7 @@ async def try_decode_with_fallback(
         detection_info = await detect_file_encoding(file_content)
         encoding_list = get_encoding_fallback_list(detection_info["encoding"])
 
-    attempts: List[Dict[str, Any]] = []
+    attempts: list[dict[str, Any]] = []
 
     for enc in encoding_list:
         try:

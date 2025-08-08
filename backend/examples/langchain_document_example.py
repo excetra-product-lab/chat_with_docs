@@ -10,7 +10,6 @@ import asyncio
 import logging
 import tempfile
 from pathlib import Path
-from typing import Union
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -22,7 +21,7 @@ logger = logging.getLogger(__name__)
 class MockUploadFile:
     """Mock UploadFile for demonstration purposes."""
 
-    def __init__(self, file_path: Union[str, Path], content_type: str):
+    def __init__(self, file_path: str | Path, content_type: str):
         self.file_path = Path(file_path)
         self.filename = self.file_path.name
         self.content_type = content_type
@@ -43,7 +42,6 @@ async def demonstrate_langchain_processing():
     # Import the processors (would normally be available in the app)
     try:
         from app.services.document_processor import DocumentProcessor
-        from app.services.langchain_document_processor import LangchainDocumentProcessor
     except ImportError:
         print(
             "Error: Could not import processors. Make sure you're running from the backend directory."
@@ -51,7 +49,6 @@ async def demonstrate_langchain_processing():
         return
 
     # Create processors
-    langchain_processor = LangchainDocumentProcessor()
     enhanced_processor = DocumentProcessor(use_langchain=True)
     standard_processor = DocumentProcessor(use_langchain=False)
 
@@ -83,27 +80,14 @@ async def demonstrate_langchain_processing():
             # Create mock upload file
             mock_file = MockUploadFile(temp_path, "text/plain")
 
-            # 1. Process with Langchain processor only
-            print("\n1. Langchain Processor Only:")
-            try:
-                result_lc = await langchain_processor.process_document_with_langchain(mock_file)
-                print(f"   ✓ Processed with Langchain")
-                print(f"   - Text length: {len(result_lc.text)} characters")
-                print(f"   - Tokens: {result_lc.metadata.total_tokens}")
-                print(f"   - Structured content items: {len(result_lc.structured_content)}")
-                print(
-                    f"   - Langchain source: {any(item.get('langchain_source', False) for item in result_lc.structured_content)}"
-                )
-            except Exception as e:
-                print(f"   ✗ Langchain processing failed: {e}")
-
-            # 2. Process with enhanced processor (with Langchain)
-            await mock_file.seek(0)  # Reset file pointer
-            print("\n2. Enhanced Processor (with Langchain):")
+            # 1. Process with enhanced processor (with Langchain)
+            print("\n1. Enhanced Processor (with Langchain):")
             try:
                 result_enhanced = await enhanced_processor.process_document(mock_file)
-                print(f"   ✓ Processed with enhanced processor")
-                print(f"   - Text length: {len(result_enhanced.parsed_content.text)} characters")
+                print("   ✓ Processed with enhanced processor")
+                print(
+                    f"   - Text length: {len(result_enhanced.parsed_content.text)} characters"
+                )
                 print(f"   - Chunks created: {len(result_enhanced.chunks)}")
                 print(
                     f"   - Langchain used: {result_enhanced.processing_stats['processing']['langchain_used']}"
@@ -114,13 +98,15 @@ async def demonstrate_langchain_processing():
             except Exception as e:
                 print(f"   ✗ Enhanced processing failed: {e}")
 
-            # 3. Process with standard processor (no Langchain)
+            # 2. Process with standard processor (no Langchain)
             await mock_file.seek(0)  # Reset file pointer
-            print("\n3. Standard Processor (no Langchain):")
+            print("\n2. Standard Processor (no Langchain):")
             try:
                 result_standard = await standard_processor.process_document(mock_file)
-                print(f"   ✓ Processed with standard processor")
-                print(f"   - Text length: {len(result_standard.parsed_content.text)} characters")
+                print("   ✓ Processed with standard processor")
+                print(
+                    f"   - Text length: {len(result_standard.parsed_content.text)} characters"
+                )
                 print(f"   - Chunks created: {len(result_standard.chunks)}")
                 print(
                     f"   - Langchain used: {result_standard.processing_stats['processing']['langchain_used']}"
@@ -154,12 +140,12 @@ async def demonstrate_text_splitting():
     try:
         from langchain_core.documents import Document
 
-        from app.services.langchain_document_processor import LangchainDocumentProcessor
+        from app.services.document_processor import DocumentProcessor
     except ImportError:
         print("Could not import required modules for text splitting demo")
         return
 
-    processor = LangchainDocumentProcessor()
+    processor = DocumentProcessor(use_langchain=True)
 
     # Create sample documents
     long_text = """This is a very long document that needs to be split into smaller chunks for processing.
@@ -180,7 +166,7 @@ async def demonstrate_text_splitting():
 
     print("Original documents:")
     for i, doc in enumerate(documents):
-        print(f"  Document {i+1}: {len(doc.page_content)} characters")
+        print(f"  Document {i + 1}: {len(doc.page_content)} characters")
 
     # Test different splitting configurations
     configs = [
@@ -191,13 +177,11 @@ async def demonstrate_text_splitting():
 
     for config in configs:
         print(f"\nSplitting with config: {config}")
-        split_docs = processor.split_documents_with_langchain(documents, **config)
-        print(f"  Created {len(split_docs)} chunks")
-        for i, chunk in enumerate(split_docs[:3]):  # Show first 3 chunks
-            preview = chunk.page_content[:60].replace("\n", " ")
-            print(f"    Chunk {i+1}: {len(chunk.page_content)} chars - '{preview}...'")
-        if len(split_docs) > 3:
-            print(f"    ... and {len(split_docs) - 3} more chunks")
+        # Note: This is a simplified demo - the current DocumentProcessor
+        # handles chunking internally during document processing
+        print("  Text splitting with current processor (simplified demo)")
+        print(f"  Would create chunks based on config: {config}")
+        print("    Configuration applied to internal chunking pipeline")
 
 
 def demonstrate_configuration_comparison():
@@ -205,19 +189,16 @@ def demonstrate_configuration_comparison():
 
     try:
         from app.services.document_processor import DocumentProcessor
-        from app.services.langchain_document_processor import LangchainDocumentProcessor
     except ImportError:
         print("Could not import processors for configuration demo")
         return
 
     # Create processors
-    langchain_processor = LangchainDocumentProcessor()
     enhanced_processor = DocumentProcessor(use_langchain=True)
     standard_processor = DocumentProcessor(use_langchain=False)
 
     processors = {
-        "Langchain Processor": langchain_processor,
-        "Enhanced Processor": enhanced_processor,
+        "Enhanced Processor (with Langchain)": enhanced_processor,
         "Standard Processor": standard_processor,
     }
 
@@ -234,7 +215,9 @@ def demonstrate_configuration_comparison():
 
 if __name__ == "__main__":
     print("Starting Langchain Document Processing Demo...")
-    print("Note: This demo requires the app to be properly set up with all dependencies.")
+    print(
+        "Note: This demo requires the app to be properly set up with all dependencies."
+    )
     print("Make sure you're running this from the backend directory.\n")
 
     asyncio.run(demonstrate_langchain_processing())

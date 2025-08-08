@@ -31,7 +31,7 @@ dev:
 	@make -j 2 dev-backend dev-frontend
 
 test:
-	cd backend && . venv/bin/activate && pytest
+	cd backend && . .venv/bin/activate && pytest
 	cd frontend && npm test
 
 format:

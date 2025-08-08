@@ -83,7 +83,7 @@ vercel
 - 📄 Multi-format document upload (PDF, DOCX, TXT)
 - 🔍 Semantic search with pgvector
 - 💬 AI-powered Q&A with GPT-4o
-- 📚 Automatic citation generation
+- 📚 Document-aware responses
 - ✅ Source verification
 - 🇪🇺 GDPR compliant hosting
 EOF

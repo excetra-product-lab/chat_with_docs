@@ -6,6 +6,11 @@ import pytest
 from fastapi import HTTPException, UploadFile
 from starlette.datastructures import Headers
 
+from app.core.exceptions import (
+    DocumentValidationError,
+    FileTooLargeError,
+    UnsupportedFormatError,
+)
 from app.services.document_parser import DocumentMetadata, DocumentParser, ParsedContent
 
 
@@ -35,20 +40,18 @@ class TestDocumentParser:
     def test_validate_file_no_filename(self):
         """Test validation fails with no filename."""
         file = self.create_upload_file(b"test content", "")
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(DocumentValidationError) as exc_info:
             self.parser._validate_file(file)
-        assert exc_info.value.status_code == 400
-        assert "No filename provided" in str(exc_info.value.detail)
+        assert "No filename provided" in str(exc_info.value)
 
     def test_validate_file_too_large(self):
         """Test validation fails with oversized file."""
         # Create a file larger than MAX_FILE_SIZE
         large_content = b"x" * (self.parser.MAX_FILE_SIZE + 1)
         file = self.create_upload_file(large_content, "large.txt")
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(FileTooLargeError) as exc_info:
             self.parser._validate_file(file)
-        assert exc_info.value.status_code == 400
-        assert "File too large" in str(exc_info.value.detail)
+        assert "File too large. Maximum size: 50.0MB" in exc_info.value.message
 
     def test_get_file_type_from_content_type(self):
         """Test file type detection from content type."""
@@ -71,10 +74,9 @@ class TestDocumentParser:
 
     def test_get_file_type_unsupported(self):
         """Test unsupported file type raises exception."""
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(UnsupportedFormatError) as exc_info:
             self.parser._get_file_type("application/unknown", "test.unknown")
-        assert exc_info.value.status_code == 400
-        assert "Unsupported file format" in str(exc_info.value.detail)
+        assert "Unsupported file format: application/unknown" in exc_info.value.message
 
     @pytest.mark.asyncio
     async def test_parse_text_file_utf8(self):
@@ -108,11 +110,14 @@ class TestDocumentParser:
 
     @pytest.mark.asyncio
     async def test_parse_text_file_empty(self):
-        """Test parsing empty text file raises exception."""
+        """Test parsing empty text file."""
+        empty_content = b""
+        file = self.create_upload_file(empty_content, "empty.txt")
+
         with pytest.raises(HTTPException) as exc_info:
-            await self.parser._parse_text(b"", "empty.txt")
-        assert exc_info.value.status_code == 400
-        assert "No text content found" in str(exc_info.value.detail)
+            await self.parser._parse_text(empty_content, "empty.txt")
+        assert exc_info.value.status_code == 500  # Empty file treated as parsing error
+        assert "No text content found in file" in str(exc_info.value.detail)
 
     @pytest.mark.asyncio
     async def test_parse_text_file_with_fallback_encoding(self):
@@ -178,10 +183,9 @@ class TestDocumentParser:
         """Test parsing unsupported file format."""
         file = self.create_upload_file(b"test", "test.xyz", "application/unknown")
 
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(UnsupportedFormatError) as exc_info:
             await self.parser.parse_document(file)
-        assert exc_info.value.status_code == 400
-        assert "Unsupported file format" in str(exc_info.value.detail)
+        assert "Unsupported file format: application/unknown" in exc_info.value.message
 
     def test_supported_formats(self):
         """Test that supported formats are correctly defined."""

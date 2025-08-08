@@ -190,7 +190,7 @@ export default function Home() {
             AI-Powered Document Q&A
           </h2>
           <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Upload your legal documents and ask questions. Get accurate answers with citations.
+            Upload your legal documents and ask questions. Get accurate answers with sources.
           </p>
 
           <div className="mt-6">
@@ -519,15 +519,10 @@ interface Message {
   id: string
   type: 'user' | 'assistant'
   content: string
-  citations?: Citation[]
+  // citations field removed
 }
 
-interface Citation {
-  document_id: number
-  document_name: string
-  page?: number
-  snippet: string
-}
+// Citation interface removed
 
 export default function ChatWindow() {
   const [messages, setMessages] = useState<Message[]>([])
@@ -565,8 +560,8 @@ export default function ChatWindow() {
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'assistant',
-        content: response.data.answer,
-        citations: response.data.citations
+        content: response.data.answer
+        // citations field removed
       }
 
       setMessages(prev => [...prev, assistantMessage])
@@ -636,21 +631,16 @@ EOF
 cat > frontend/components/MessageBubble.tsx << 'EOF'
 'use client'
 
-import CitationViewer from '@/components/CitationViewer'
+// CitationViewer import removed
 
 interface Message {
   id: string
   type: 'user' | 'assistant'
   content: string
-  citations?: Citation[]
+  // citations field removed
 }
 
-interface Citation {
-  document_id: number
-  document_name: string
-  page?: number
-  snippet: string
-}
+// Citation interface removed
 
 export default function MessageBubble({ message }: { message: Message }) {
   const isUser = message.type === 'user'
@@ -666,60 +656,14 @@ export default function MessageBubble({ message }: { message: Message }) {
       >
         <p className="whitespace-pre-wrap">{message.content}</p>
 
-        {message.citations && message.citations.length > 0 && (
-          <div className="mt-3 space-y-2">
-            <p className="text-sm font-semibold">Sources:</p>
-            {message.citations.map((citation, index) => (
-              <CitationViewer key={index} citation={citation} />
-            ))}
-          </div>
-        )}
+        {/* Citation rendering section completely removed */}
       </div>
     </div>
   )
 }
 EOF
 
-# Create components/CitationViewer.tsx
-cat > frontend/components/CitationViewer.tsx << 'EOF'
-'use client'
-
-import { useState } from 'react'
-import { FileText, ChevronDown, ChevronUp } from 'lucide-react'
-
-interface Citation {
-  document_id: number
-  document_name: string
-  page?: number
-  snippet: string
-}
-
-export default function CitationViewer({ citation }: { citation: Citation }) {
-  const [expanded, setExpanded] = useState(false)
-
-  return (
-    <div className="bg-white/10 rounded p-2 text-sm">
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="flex items-center justify-between w-full text-left hover:bg-white/10 rounded p-1"
-      >
-        <div className="flex items-center gap-2">
-          <FileText className="w-4 h-4" />
-          <span className="font-medium">{citation.document_name}</span>
-          {citation.page && <span className="text-xs opacity-75">p. {citation.page}</span>}
-        </div>
-        {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-      </button>
-
-      {expanded && (
-        <div className="mt-2 p-2 bg-black/10 rounded text-xs">
-          {citation.snippet}
-        </div>
-      )}
-    </div>
-  )
-}
-EOF
+# CitationViewer component creation removed
 
 # Create lib/api.ts
 cat > frontend/lib/api.ts << 'EOF'

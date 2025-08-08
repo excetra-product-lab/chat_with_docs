@@ -20,22 +20,11 @@ export interface DocumentChunk {
   endIndex: number;
 }
 
-export interface Citation {
-  documentId: string;
-  documentName: string;
-  chunkId?: string;
-  page?: number;
-  section?: string;
-  excerpt?: string;
-  confidence?: number;
-}
-
 export interface Message {
   id: string;
   type: 'user' | 'assistant';
   content: string;
   timestamp: Date;
-  citations?: Citation[];
 }
 
 export interface ChatState {

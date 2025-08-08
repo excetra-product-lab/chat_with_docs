@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     AZURE_OPENAI_API_VERSION: str | None = None
 
     # Azure OpenAI Model Configuration
-    OPENAI_MODEL: str = "gpt-4o-mini"  # Default deployment name
+    OPENAI_MODEL: str = "gpt-4o"  # Default deployment name
     OPENAI_TEMPERATURE: float = 0.1
 
     # Langchain Configuration

@@ -236,7 +236,7 @@ EOF
 cat > backend/app/core/qna.py << 'EOF'
 from typing import List, Dict
 from app.core.vectorstore import similarity_search
-from app.models.schemas import Answer, Citation
+from app.models.schemas import Answer
 
 async def answer_question(question: str, user_id: int) -> Answer:
     """
@@ -251,12 +251,10 @@ async def answer_question(question: str, user_id: int) -> Answer:
     # TODO: Generate answer using LLM
     answer_text = await generate_answer(question, context)
 
-    # TODO: Extract citations
-    citations = extract_citations(answer_text, relevant_chunks)
+        # Citations removed
 
     return Answer(
         answer=answer_text,
-        citations=citations,
         confidence=0.95
     )
 
@@ -270,10 +268,7 @@ async def generate_answer(question: str, context: str) -> str:
     # TODO: Call Azure OpenAI chat API
     return "This is a generated answer based on the documents."
 
-def extract_citations(answer: str, chunks: List[Dict]) -> List[Citation]:
-    """Extract citations from answer"""
-    # TODO: Parse citations from answer
-    return []
+# Citation extraction function removed
 EOF
 
 # Create vectorstore.py
@@ -339,15 +334,8 @@ class Document(BaseModel):
 class Query(BaseModel):
     question: str
 
-class Citation(BaseModel):
-    document_id: int
-    document_name: str
-    page: Optional[int]
-    snippet: str
-
 class Answer(BaseModel):
     answer: str
-    citations: List[Citation]
     confidence: float
 EOF
 

@@ -2,7 +2,7 @@
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from langchain_community.document_loaders import TextLoader
 from langchain_core.documents import Document
@@ -34,10 +34,10 @@ class TextDocumentLoader(BaseDocumentLoader):
     async def load_document(
         self,
         file_path: str,
-        password: Optional[str] = None,
+        password: str | None = None,
         preserve_layout: bool = True,
-        encoding_info: Optional[Dict[str, Any]] = None,
-    ) -> List[Document]:
+        encoding_info: dict[str, Any] | None = None,
+    ) -> list[Document]:
         """Load a text document.
 
         Args:
@@ -60,13 +60,52 @@ class TextDocumentLoader(BaseDocumentLoader):
         return await self._load_text_with_encoding_fallback(file_path, encoding_info)
 
     async def _load_text_with_encoding_fallback(
-        self, file_path: str, encoding_info: Dict[str, Any]
-    ) -> List[Document]:
+        self, file_path: str, encoding_info: dict[str, Any]
+    ) -> list[Document]:
         """Load text file with encoding fallback mechanism."""
 
-        # Try the detected encoding first
         detected_encoding = encoding_info.get("encoding", "utf-8")
+        is_reliable = encoding_info.get("is_reliable", False)
+        confidence = encoding_info.get("confidence", 0.0)
 
+        # If detection confidence is low, try UTF-8 first
+        if not is_reliable or confidence < 0.8:
+            self.logger.info(
+                f"Low confidence detection ({confidence:.2f}) for {detected_encoding}, trying UTF-8 first"
+            )
+
+            try:
+                loader = TextLoader(file_path, encoding="utf-8")
+                documents = loader.load()
+
+                if documents and documents[0].page_content:
+                    # Basic check: UTF-8 should not have replacement characters
+                    if "\ufffd" not in documents[0].page_content:
+                        # Add metadata
+                        for doc in documents:
+                            doc.metadata.update(
+                                {
+                                    "source": file_path,
+                                    "file_type": "text",
+                                    "encoding": "utf-8",
+                                    "encoding_confidence": 1.0,  # High confidence for successful UTF-8
+                                    "original_detection": encoding_info,
+                                    "file_size": Path(file_path).stat().st_size,
+                                }
+                            )
+
+                        self.logger.info(
+                            f"Successfully loaded text file with UTF-8 (overriding low-confidence {detected_encoding})"
+                        )
+                        return documents
+                    else:
+                        self.logger.warning(
+                            "UTF-8 attempt resulted in replacement characters"
+                        )
+            except Exception as e:
+                self.logger.warning(f"UTF-8 attempt failed: {str(e)}")
+
+        # Try the detected encoding
         try:
             loader = TextLoader(file_path, encoding=detected_encoding)
             documents = loader.load()
@@ -85,7 +124,9 @@ class TextDocumentLoader(BaseDocumentLoader):
                                 "source": file_path,
                                 "file_type": "text",
                                 "encoding": detected_encoding,
-                                "encoding_confidence": encoding_info.get("confidence", 0.0),
+                                "encoding_confidence": encoding_info.get(
+                                    "confidence", 0.0
+                                ),
                                 "encoding_validation": validation,
                                 "file_size": Path(file_path).stat().st_size,
                             }
@@ -106,11 +147,13 @@ class TextDocumentLoader(BaseDocumentLoader):
             )
 
         # Fallback to trying multiple encodings
-        return await self._load_with_encoding_fallback_list(file_path, detected_encoding)
+        return await self._load_with_encoding_fallback_list(
+            file_path, detected_encoding
+        )
 
     async def _load_with_encoding_fallback_list(
-        self, file_path: str, detected_encoding: Optional[str] = None
-    ) -> List[Document]:
+        self, file_path: str, detected_encoding: str | None = None
+    ) -> list[Document]:
         """Try loading with multiple encoding fallbacks."""
 
         # Get fallback encoding list
@@ -154,7 +197,9 @@ class TextDocumentLoader(BaseDocumentLoader):
             self.logger.error(error_msg)
             raise ValueError(error_msg)
 
-    async def load_text_with_custom_encoding(self, file_path: str, encoding: str) -> List[Document]:
+    async def load_text_with_custom_encoding(
+        self, file_path: str, encoding: str
+    ) -> list[Document]:
         """Load text file with a specific encoding.
 
         Args:
@@ -183,7 +228,9 @@ class TextDocumentLoader(BaseDocumentLoader):
                     }
                 )
 
-            self.logger.info(f"Successfully loaded text file with custom encoding {encoding}")
+            self.logger.info(
+                f"Successfully loaded text file with custom encoding {encoding}"
+            )
             return documents
 
         except Exception as e:
@@ -191,7 +238,7 @@ class TextDocumentLoader(BaseDocumentLoader):
             self.logger.error(error_msg)
             raise ValueError(error_msg)
 
-    async def detect_text_encoding(self, file_path: str) -> Dict[str, Any]:
+    async def detect_text_encoding(self, file_path: str) -> dict[str, Any]:
         """Detect encoding of a text file without loading it.
 
         Args:
@@ -214,7 +261,9 @@ class TextDocumentLoader(BaseDocumentLoader):
             self.logger.error(f"Error detecting encoding for {file_path}: {str(e)}")
             return {"error": str(e), "file_path": file_path}
 
-    async def validate_text_file_encoding(self, file_path: str, encoding: str) -> Dict[str, Any]:
+    async def validate_text_file_encoding(
+        self, file_path: str, encoding: str
+    ) -> dict[str, Any]:
         """Validate that a text file can be properly decoded with a specific encoding.
 
         Args:
@@ -225,7 +274,7 @@ class TextDocumentLoader(BaseDocumentLoader):
             Dictionary containing validation results
         """
         try:
-            with open(file_path, "r", encoding=encoding) as f:
+            with open(file_path, encoding=encoding) as f:
                 text_content = f.read()
 
             validation = await validate_text_encoding(text_content, encoding)
@@ -235,7 +284,9 @@ class TextDocumentLoader(BaseDocumentLoader):
             return validation
 
         except Exception as e:
-            self.logger.error(f"Error validating encoding {encoding} for {file_path}: {str(e)}")
+            self.logger.error(
+                f"Error validating encoding {encoding} for {file_path}: {str(e)}"
+            )
             return {
                 "is_valid": False,
                 "error": str(e),
@@ -243,7 +294,7 @@ class TextDocumentLoader(BaseDocumentLoader):
                 "encoding": encoding,
             }
 
-    async def get_text_file_stats(self, file_path: str) -> Dict[str, Any]:
+    async def get_text_file_stats(self, file_path: str) -> dict[str, Any]:
         """Get statistics about a text file.
 
         Args:
@@ -278,7 +329,9 @@ class TextDocumentLoader(BaseDocumentLoader):
                 "line_count": len(lines),
                 "empty_lines": sum(1 for line in lines if not line.strip()),
                 "max_line_length": max(len(line) for line in lines) if lines else 0,
-                "avg_line_length": sum(len(line) for line in lines) / len(lines) if lines else 0,
+                "avg_line_length": sum(len(line) for line in lines) / len(lines)
+                if lines
+                else 0,
             }
 
             return stats
@@ -287,7 +340,7 @@ class TextDocumentLoader(BaseDocumentLoader):
             self.logger.error(f"Error getting stats for {file_path}: {str(e)}")
             return {"error": str(e), "file_path": file_path}
 
-    def get_supported_mime_types(self) -> List[str]:
+    def get_supported_mime_types(self) -> list[str]:
         """Get the MIME types supported by this loader.
 
         Returns:
@@ -300,7 +353,7 @@ class TextDocumentLoader(BaseDocumentLoader):
             "application/csv",
         ]
 
-    def get_supported_extensions(self) -> List[str]:
+    def get_supported_extensions(self) -> list[str]:
         """Get the file extensions supported by this loader.
 
         Returns:

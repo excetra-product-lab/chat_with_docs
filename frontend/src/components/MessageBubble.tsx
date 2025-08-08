@@ -1,7 +1,7 @@
 import React from 'react';
 import { User, Bot, Copy, RotateCcw } from 'lucide-react';
 import { Message } from '../types';
-import { CitationTag } from './CitationTag';
+// Citation imports removed
 
 interface MessageBubbleProps {
   message: Message;
@@ -15,10 +15,10 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   onRegenerate
 }) => {
   const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('en-US', { 
-      hour: 'numeric', 
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
       minute: '2-digit',
-      hour12: true 
+      hour12: true
     });
   };
 
@@ -32,8 +32,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       <div className={`flex max-w-4xl ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
         <div className={`flex-shrink-0 ${message.type === 'user' ? 'ml-3' : 'mr-3'}`}>
           <div className={`w-8 h-8 rounded-full flex items-center justify-center shadow-lg ${
-            message.type === 'user' 
-              ? 'bg-gradient-to-br from-blue-600 to-blue-700' 
+            message.type === 'user'
+              ? 'bg-gradient-to-br from-blue-600 to-blue-700'
               : 'bg-gradient-to-br from-orange-600 to-red-700'
           }`}>
             {message.type === 'user' ? (
@@ -43,7 +43,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
             )}
           </div>
         </div>
-        
+
         <div className={`flex-1 ${message.type === 'user' ? 'text-right' : 'text-left'}`}>
           <div
             className={`inline-block p-4 rounded-2xl max-w-full shadow-lg ${
@@ -55,23 +55,15 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
             <div className="prose prose-sm max-w-none">
               <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
             </div>
-            
-            {message.citations && message.citations.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-stone-700">
-                <div className="flex flex-wrap gap-2">
-                  {message.citations.map((citation, index) => (
-                    <CitationTag key={index} citation={citation} />
-                  ))}
-                </div>
-              </div>
-            )}
+
+            {/* Citations section removed */}
           </div>
-          
+
           <div className={`flex items-center mt-2 space-x-3 ${
             message.type === 'user' ? 'justify-end' : 'justify-start'
           }`}>
             <span className="text-xs text-stone-500">{formatTime(message.timestamp)}</span>
-            
+
             {message.type === 'assistant' && (
               <div className="flex space-x-1">
                 <button

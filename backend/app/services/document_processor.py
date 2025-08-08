@@ -6,8 +6,8 @@ from pathlib import Path
 from fastapi import HTTPException, UploadFile
 
 from app.services.document_parser import DocumentParser, ParsedContent
-from app.services.langchain_document_processor_refactored import (
-    LangchainDocumentProcessorRefactored,
+from app.services.langchain_pipeline import (
+    DocumentPipeline,
 )
 from app.services.text_chunker import DocumentChunk, TextChunker
 
@@ -54,9 +54,7 @@ class DocumentProcessor:
             min_chunk_size=min_chunk_size,
         )
         self.use_langchain = use_langchain
-        self.langchain_processor = (
-            LangchainDocumentProcessorRefactored() if use_langchain else None
-        )
+        self.langchain_processor = DocumentPipeline() if use_langchain else None
         self.logger = logging.getLogger(__name__)
 
     async def process_document(
@@ -295,13 +293,13 @@ class DocumentProcessor:
         """
         self.use_langchain = use_langchain
         if use_langchain and self.langchain_processor is None:
-            self.langchain_processor = LangchainDocumentProcessorRefactored()
+            self.langchain_processor = DocumentPipeline()
 
         self.logger.info(
             f"Langchain usage {'enabled' if use_langchain else 'disabled'}"
         )
 
-    def get_langchain_processor(self) -> LangchainDocumentProcessorRefactored | None:
+    def get_langchain_processor(self) -> DocumentPipeline | None:
         """Get the Langchain processor instance if available."""
         return self.langchain_processor
 
@@ -415,7 +413,9 @@ class DocumentProcessor:
             return "pdf"
         elif extension in [".doc", ".docx"]:
             return "word"
-        elif extension in [".txt", ".md"]:
+        elif extension == ".txt":
+            return "txt"
+        elif extension in [".md", ".markdown"]:
             return "text"
         else:
             return "unknown"

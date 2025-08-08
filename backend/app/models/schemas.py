@@ -1,23 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr
-
-
-# Authentication schemas
-class UserCreate(BaseModel):
-    email: EmailStr
-    password: str
-
-
-class User(BaseModel):
-    id: int
-    email: EmailStr
-    created_at: datetime
-
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str
+from pydantic import BaseModel
 
 
 # Document schemas
@@ -84,14 +67,6 @@ class Query(BaseModel):
     question: str
 
 
-class Citation(BaseModel):
-    document_id: str
-    document_name: str
-    page: int | None
-    snippet: str
-
-
 class Answer(BaseModel):
     answer: str
-    citations: list[Citation]
     confidence: float

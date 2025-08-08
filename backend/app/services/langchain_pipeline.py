@@ -1,9 +1,9 @@
-"""Refactored document processor using modular services."""
+"""Document processing pipeline using modular services."""
 
 import asyncio
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from langchain_core.documents import Document
 
@@ -13,17 +13,17 @@ from app.services.document_loaders import (
     TextDocumentLoader,
     WordDocumentLoader,
 )
-from app.services.document_splitters import DocumentSplitter
 from app.services.document_transformers import DocumentTransformer
+from app.services.hierarchical_chunker import HierarchicalChunker
 from app.utils.token_counter import TokenCounter
 
 logger = logging.getLogger(__name__)
 
 
-class LangchainDocumentProcessorRefactored:
-    """Refactored document processor using modular services."""
+class DocumentPipeline:
+    """Document processing pipeline using modular services."""
 
-    def __init__(self, token_counter: Optional[TokenCounter] = None):
+    def __init__(self, token_counter: TokenCounter | None = None):
         """Initialize the document processor with modular services.
 
         Args:
@@ -34,10 +34,16 @@ class LangchainDocumentProcessorRefactored:
 
         # Initialize services
         self.transformer = DocumentTransformer()
-        self.splitter = DocumentSplitter(token_counter=self.token_counter)
+        # Use HierarchicalChunker for tree-based chunking (default for legal documents)
+        self.splitter = HierarchicalChunker(
+            token_counter=self.token_counter,
+            legal_specific=True,  # Optimized for legal documents
+            chunk_size=600,  # Optimal token size for RAG
+            chunk_overlap=100,  # Good context preservation
+        )
 
         # Initialize loaders
-        self.loaders: Dict[str, BaseDocumentLoader] = {
+        self.loaders: dict[str, BaseDocumentLoader] = {
             "pdf": PDFDocumentLoader(),
             "word": WordDocumentLoader(),
             "text": TextDocumentLoader(),
@@ -61,7 +67,7 @@ class LangchainDocumentProcessorRefactored:
 
     async def process_documents(
         self,
-        file_paths: List[Union[str, Path]],
+        file_paths: list[str | Path],
         chunk_size: int = 1000,
         chunk_overlap: int = 200,
         remove_html: bool = True,
@@ -73,7 +79,7 @@ class LangchainDocumentProcessorRefactored:
         preserve_structure: bool = True,
         use_token_counting: bool = False,
         batch_size: int = 10,
-    ) -> List[Document]:
+    ) -> list[Document]:
         """Process multiple documents through the complete pipeline.
 
         Args:
@@ -93,7 +99,9 @@ class LangchainDocumentProcessorRefactored:
         Returns:
             List of processed document chunks
         """
-        self.logger.info(f"Starting document processing pipeline for {len(file_paths)} files")
+        self.logger.info(
+            f"Starting document processing pipeline for {len(file_paths)} files"
+        )
 
         # Step 1: Load documents
         documents = await self._load_documents_batch(file_paths, batch_size)
@@ -117,33 +125,54 @@ class LangchainDocumentProcessorRefactored:
         self.logger.info(f"Transformed to {len(transformed_documents)} documents")
 
         # Step 3: Split documents into chunks
-        chunks = await self.splitter.split_documents(
-            documents=transformed_documents,
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap,
-            strategy=splitting_strategy,
-            preserve_structure=preserve_structure,
-            use_token_counting=use_token_counting,
-        )
+        # Note: HierarchicalChunker uses its initialization parameters, not call-time parameters
+        if hasattr(self.splitter, "chunk_document"):
+            # Use HierarchicalChunker's specialized method
+            chunks = []
+            for doc in transformed_documents:
+                doc_chunks = self.splitter.chunk_document(doc)
+                chunks.extend(doc_chunks)
+        else:
+            # Fallback for standard LangChain splitters
+            chunks = await self.splitter.split_documents(
+                documents=transformed_documents,
+                chunk_size=chunk_size,
+                chunk_overlap=chunk_overlap,
+                strategy=splitting_strategy,
+                use_token_counting=use_token_counting,
+            )
 
         self.logger.info(f"Split into {len(chunks)} chunks")
 
         # Step 4: Analyze results
-        chunk_stats = await self.splitter.analyze_chunk_distribution(chunks)
+        if hasattr(self.splitter, "analyze_chunk_distribution"):
+            chunk_stats = await self.splitter.analyze_chunk_distribution(chunks)
+        else:
+            # Manual chunk analysis for HierarchicalChunker
+            chunk_lengths = [len(chunk.page_content) for chunk in chunks]
+            chunk_stats = {
+                "total_chunks": len(chunks),
+                "avg_chunk_length": sum(chunk_lengths) / len(chunks) if chunks else 0,
+                "min_chunk_length": min(chunk_lengths) if chunks else 0,
+                "max_chunk_length": max(chunk_lengths) if chunks else 0,
+                "chunking_strategy": "hierarchical_tree_based",
+            }
         self.logger.info(f"Chunk distribution: {chunk_stats}")
 
         return chunks
 
     async def _load_documents_batch(
-        self, file_paths: List[Union[str, Path]], batch_size: int
-    ) -> List[Document]:
+        self, file_paths: list[str | Path], batch_size: int
+    ) -> list[Document]:
         """Load documents in batches to manage memory and concurrency."""
         all_documents = []
 
         # Process files in batches
         for i in range(0, len(file_paths), batch_size):
             batch = file_paths[i : i + batch_size]
-            self.logger.info(f"Processing batch {i//batch_size + 1}: {len(batch)} files")
+            self.logger.info(
+                f"Processing batch {i // batch_size + 1}: {len(batch)} files"
+            )
 
             # Load batch concurrently
             batch_tasks = [self._load_single_document(file_path) for file_path in batch]
@@ -158,7 +187,7 @@ class LangchainDocumentProcessorRefactored:
 
         return all_documents
 
-    async def _load_single_document(self, file_path: Union[str, Path]) -> List[Document]:
+    async def _load_single_document(self, file_path: str | Path) -> list[Document]:
         """Load a single document using the appropriate loader."""
         try:
             file_path = Path(file_path)
@@ -170,7 +199,9 @@ class LangchainDocumentProcessorRefactored:
             # Determine loader type
             loader_type = self._get_loader_type(file_path)
             if not loader_type:
-                self.logger.warning(f"No loader available for file type: {file_path.suffix}")
+                self.logger.warning(
+                    f"No loader available for file type: {file_path.suffix}"
+                )
                 return []
 
             # Load document
@@ -184,41 +215,45 @@ class LangchainDocumentProcessorRefactored:
             self.logger.error(f"Error loading document {file_path}: {e}")
             return []
 
-    def _get_loader_type(self, file_path: Path) -> Optional[str]:
+    def _get_loader_type(self, file_path: Path) -> str | None:
         """Determine the appropriate loader type for a file."""
         extension = file_path.suffix.lower()
         return self.extension_mappings.get(extension)
 
-    async def process_single_file(self, file_path: Union[str, Path], **kwargs) -> List[Document]:
+    async def process_single_file(
+        self, file_path: str | Path, **kwargs
+    ) -> list[Document]:
         """Process a single file through the complete pipeline."""
         return await self.process_documents([file_path], **kwargs)
 
     async def load_documents_only(
-        self, file_paths: List[Union[str, Path]], batch_size: int = 10
-    ) -> List[Document]:
+        self, file_paths: list[str | Path], batch_size: int = 10
+    ) -> list[Document]:
         """Load documents without transformation or splitting."""
         return await self._load_documents_batch(file_paths, batch_size)
 
     async def transform_documents_only(
-        self, documents: List[Document], **transform_kwargs
-    ) -> List[Document]:
+        self, documents: list[Document], **transform_kwargs
+    ) -> list[Document]:
         """Apply transformations to documents without loading or splitting."""
         return await self.transformer.transform_documents(documents, **transform_kwargs)
 
     async def split_documents_only(
-        self, documents: List[Document], **split_kwargs
-    ) -> List[Document]:
+        self, documents: list[Document], **split_kwargs
+    ) -> list[Document]:
         """Split documents without loading or transformation."""
         return await self.splitter.split_documents(documents, **split_kwargs)
 
-    async def get_supported_file_types(self) -> Dict[str, List[str]]:
+    async def get_supported_file_types(self) -> dict[str, list[str]]:
         """Get information about supported file types."""
         return {
-            loader_type: [ext for ext, lt in self.extension_mappings.items() if lt == loader_type]
+            loader_type: [
+                ext for ext, lt in self.extension_mappings.items() if lt == loader_type
+            ]
             for loader_type in self.loaders.keys()
         }
 
-    async def analyze_documents(self, documents: List[Document]) -> Dict[str, Any]:
+    async def analyze_documents(self, documents: list[Document]) -> dict[str, Any]:
         """Analyze document characteristics and provide processing recommendations."""
         if not documents:
             return {}
@@ -235,7 +270,7 @@ class LangchainDocumentProcessorRefactored:
             "min_document_length": min(doc_lengths),
             "max_document_length": max(doc_lengths),
             "document_sources": list(
-                set(doc.metadata.get("source", "unknown") for doc in documents)
+                {doc.metadata.get("source", "unknown") for doc in documents}
             ),
         }
 
@@ -262,7 +297,9 @@ class LangchainDocumentProcessorRefactored:
 
         return content_analysis
 
-    async def estimate_processing_time(self, file_paths: List[Union[str, Path]]) -> Dict[str, Any]:
+    async def estimate_processing_time(
+        self, file_paths: list[str | Path]
+    ) -> dict[str, Any]:
         """Estimate processing time and resource requirements."""
         total_size = 0
         file_types = {}
@@ -296,7 +333,7 @@ class LangchainDocumentProcessorRefactored:
             "estimated_time_minutes": estimated_time / 60,
         }
 
-    async def validate_files(self, file_paths: List[Union[str, Path]]) -> Dict[str, Any]:
+    async def validate_files(self, file_paths: list[str | Path]) -> dict[str, Any]:
         """Validate files before processing."""
         results = {
             "valid_files": [],
@@ -336,7 +373,7 @@ class LangchainDocumentProcessorRefactored:
 
         return results
 
-    def get_processing_config(self) -> Dict:
+    def get_processing_config(self) -> dict:
         """Get current processing configuration."""
         return {
             "chunk_size": 1000,  # Default chunk size
@@ -347,7 +384,7 @@ class LangchainDocumentProcessorRefactored:
             "langchain_enabled": True,
         }
 
-    async def get_processing_stats(self) -> Dict[str, Any]:
+    async def get_processing_stats(self) -> dict[str, Any]:
         """Get statistics about the processor and its services."""
         return {
             "supported_loaders": list(self.loaders.keys()),
