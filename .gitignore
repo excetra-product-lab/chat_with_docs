@@ -186,6 +186,9 @@ Thumbs.db
 *.swo
 *~
 
+# IntelliJ IDEA
+*.iml
+
 # Testing
 coverage/
 .nyc_output/
@@ -221,3 +224,6 @@ scripts/
 
 # Local data directory for end-to-end testing
 data/
+
+# clerk configuration (can include secrets)
+frontend/.clerk/

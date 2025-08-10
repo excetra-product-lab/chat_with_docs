@@ -2,7 +2,7 @@ from app.core.vectorstore import similarity_search
 from app.models.schemas import Answer
 
 
-async def answer_question(question: str, user_id: int) -> Answer:
+async def answer_question(question: str, user_id: str) -> Answer:
     """
     Process a question through the RAG pipeline
     """

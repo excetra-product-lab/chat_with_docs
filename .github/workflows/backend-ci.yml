@@ -35,44 +35,23 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
-
     - name: Install uv
       uses: astral-sh/setup-uv@v4
       with:
         enable-cache: true
         cache-dependency-glob: "backend/uv.lock"
 
-    - name: Install dependencies
+    - name: Run CI
       run: |
-        uv sync --frozen
+        make ci
 
-    - name: Run Black formatter check
-      run: |
-        uv run black --check app tests
-      continue-on-error: true
-
-    - name: Run isort import checker
-      run: |
-        uv run isort --check-only app tests
-      continue-on-error: true
-
-    - name: Run Flake8 linter
-      run: |
-        uv run flake8 app tests --max-line-length=100 --extend-ignore=E203,W503
-      continue-on-error: true
-
-    - name: Run MyPy type checker
-      run: |
-        uv run mypy app --ignore-missing-imports --explicit-package-bases
-      continue-on-error: true
-
-    - name: Run tests with pytest
-      run: |
-        uv run pytest -v --cov=app --cov-report=xml --cov-report=html
+    - name: Upload backend test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: backend-test-results
+        path: backend/htmlcov/
+        retention-days: 7
 
     - name: Upload coverage reports
       uses: codecov/codecov-action@v4
@@ -81,41 +60,3 @@ jobs:
         flags: backend
         name: backend-coverage
       continue-on-error: true
-
-    # Summary of linting issues
-    - name: Linting Summary
-      if: always()
-      run: |
-        echo "## Linting Summary" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-
-        echo "### Black (Code Formatting)" >> $GITHUB_STEP_SUMMARY
-        if uv run black --check app tests 2>/dev/null; then
-          echo "✅ All files are properly formatted" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "❌ Some files need formatting. Run \`black app tests\` locally." >> $GITHUB_STEP_SUMMARY
-        fi
-        echo "" >> $GITHUB_STEP_SUMMARY
-
-        echo "### isort (Import Sorting)" >> $GITHUB_STEP_SUMMARY
-        if uv run isort --check-only app tests 2>/dev/null; then
-          echo "✅ All imports are properly sorted" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "❌ Some imports need sorting. Run \`isort app tests\` locally." >> $GITHUB_STEP_SUMMARY
-        fi
-        echo "" >> $GITHUB_STEP_SUMMARY
-
-        echo "### Flake8 (Code Quality)" >> $GITHUB_STEP_SUMMARY
-        if uv run flake8 app tests --max-line-length=100 --extend-ignore=E203,W503 2>/dev/null; then
-          echo "✅ No linting issues found" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "❌ Linting issues found. Run \`flake8 app tests\` locally to see details." >> $GITHUB_STEP_SUMMARY
-        fi
-        echo "" >> $GITHUB_STEP_SUMMARY
-
-        echo "### MyPy (Type Checking)" >> $GITHUB_STEP_SUMMARY
-        if uv run mypy app --ignore-missing-imports --explicit-package-bases 2>/dev/null; then
-          echo "✅ No type checking issues found" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "❌ Type checking issues found. Run \`mypy app\` locally to see details." >> $GITHUB_STEP_SUMMARY
-        fi

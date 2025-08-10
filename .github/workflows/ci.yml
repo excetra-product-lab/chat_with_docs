@@ -7,57 +7,6 @@ on:
     branches: [ main, develop ]
 
 jobs:
-  # Run backend checks
-  backend:
-    name: Backend Tests & Linting
-    runs-on: ubuntu-latest
-
-    env:
-      # These are set from GitHub secrets
-      DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
-      AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
-      AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
-      AZURE_OPENAI_DEPLOYMENT_NAME: ${{ secrets.AZURE_OPENAI_DEPLOYMENT_NAME }}
-      AZURE_OPENAI_EMBEDDING_DEPLOYMENT: ${{ secrets.AZURE_OPENAI_EMBEDDING_DEPLOYMENT }}
-      SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
-      ALGORITHM: HS256
-      ACCESS_TOKEN_EXPIRE_MINUTES: 30
-      ALLOWED_ORIGINS: '["http://localhost:3000"]'
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
-
-    - name: Install uv
-      uses: astral-sh/setup-uv@v4
-      with:
-        enable-cache: true
-        cache-dependency-glob: "backend/uv.lock"
-
-    - name: Backend CI
-      working-directory: backend
-      run: |
-        uv sync --frozen
-        # Code formatting and linting with Ruff (replaces black, isort, flake8)
-        uv run ruff check app tests  # Linting
-        uv run ruff format --check app tests  # Format checking
-        # Type checking
-        uv run mypy app --ignore-missing-imports --explicit-package-bases
-        # Run tests
-        uv run pytest -v
-
-    - name: Upload backend test results
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: backend-test-results
-        path: backend/htmlcov/
-        retention-days: 7
-
   # Run frontend checks
   frontend:
     name: Frontend Tests & Linting
@@ -123,16 +72,15 @@ jobs:
   # Check if all required checks pass
   ci-success:
     name: CI Success
-    needs: [backend, frontend]
+    needs: [frontend]
     runs-on: ubuntu-latest
     if: always()
 
     steps:
     - name: Check CI Status
       run: |
-        if [ "${{ needs.backend.result }}" != "success" ] || [ "${{ needs.frontend.result }}" != "success" ]; then
+        if [ "${{ needs.frontend.result }}" != "success" ]; then
           echo "❌ CI Failed"
-          echo "Backend: ${{ needs.backend.result }}"
           echo "Frontend: ${{ needs.frontend.result }}"
           exit 1
         else

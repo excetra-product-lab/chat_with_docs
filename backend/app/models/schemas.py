@@ -10,7 +10,7 @@ class UserCreate(BaseModel):
 
 
 class User(BaseModel):
-    id: int
+    id: str
     email: str
     created_at: datetime
 
@@ -28,7 +28,7 @@ class DocumentCreate(BaseModel):
 class Document(BaseModel):
     id: int  # Changed from str to int to match database model
     filename: str
-    user_id: int
+    user_id: str
     status: str
     storage_key: str | None = None
     created_at: datetime

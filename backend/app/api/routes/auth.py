@@ -15,7 +15,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
 async def signup(user: UserCreate):
     # TODO: Check if user exists in database
     # TODO: Create user with hashed password
-    return {"id": 1, "email": user.email, "created_at": "2024-01-01T00:00:00"}
+    return {"id": "1", "email": user.email, "created_at": "2024-01-01T00:00:00"}
 
 
 @router.post("/token", response_model=Token)

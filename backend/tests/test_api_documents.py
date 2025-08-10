@@ -14,7 +14,7 @@ from app.main import app
 
 
 def mock_get_current_user():
-    return {"id": 1, "email": "test@example.com"}
+    return {"id": "user_test123", "email": "test@example.com"}
 
 
 # Mock storage service for testing
@@ -32,7 +32,9 @@ class MockStorageService:
 class MockDBDocument:
     """Mock database document for testing."""
 
-    def __init__(self, id: int = 1, filename: str = "test.txt", user_id: int = 1):
+    def __init__(
+        self, id: int = 1, filename: str = "test.txt", user_id: str = "user_test123"
+    ):
         self.id = id
         self.filename = filename
         self.user_id = user_id
@@ -476,7 +478,7 @@ This is the conclusion section that summarizes everything."""
         # Verify response structure matches new Document schema
         assert "id" in data
         assert data["filename"] == "test.txt"
-        assert data["user_id"] == 1  # From mock_get_current_user
+        assert data["user_id"] == "user_test123"  # From mock_get_current_user
         assert data["status"] == "processed"
         assert "storage_key" in data
         assert "created_at" in data
