@@ -13,19 +13,18 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-try:
-    from app.models.langchain_models import EnhancedDocument
-
-    ENHANCED_DOCUMENT_AVAILABLE = True
-except ImportError:
-    ENHANCED_DOCUMENT_AVAILABLE = False
-
-try:
-    from langchain.schema import Document
-
-    LANGCHAIN_AVAILABLE = True
-except ImportError:
-    LANGCHAIN_AVAILABLE = False
+# Optional imports for type checking only - not used in runtime
+# try:
+#     from app.models.langchain_models import EnhancedDocument
+#     ENHANCED_DOCUMENT_AVAILABLE = True
+# except ImportError:
+#     ENHANCED_DOCUMENT_AVAILABLE = False
+#
+# try:
+#     from langchain.schema import Document
+#     LANGCHAIN_AVAILABLE = True
+# except ImportError:
+#     LANGCHAIN_AVAILABLE = False
 
 
 @dataclass
@@ -314,7 +313,7 @@ class ChunkVisualizer:
         if interesting_others and len(lines) < 5:  # Don't overcrowd
             for key in sorted(interesting_others)[:3]:  # Limit to 3 extra fields
                 value = metadata[key]
-                if isinstance(value, (str, int, float, bool)):
+                if isinstance(value, str | int | float | bool):
                     if len(str(value)) > 50:
                         value = str(value)[:47] + "..."
                     lines.append(f"📋 {key}: {value}")

@@ -272,7 +272,7 @@ class TestHeadingDetector:
         assert len(headings) > 0
 
         # Should find multiple types
-        element_types = {h.element_type for h in headings}
+        {h.element_type for h in headings}
         heading_texts = [h.text for h in headings]
 
         # Should detect various formats

@@ -10,22 +10,22 @@ export default function UploadPage() {
   const { documents, isLoading, error, refetch } = useDocuments()
   const { uploadDocument, isUploading, uploadProgress, error: uploadError } = useDocumentUpload()
   const { deleteDocument, isDeleting, error: deleteError } = useDocumentDelete()
-  
+
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null)
 
   const handleFileUpload = async (file: File) => {
     try {
       setUploadSuccess(null)
       const newDocument = await uploadDocument(file)
-      
+
       // Simulate adding to the documents list (in real app, refetch would get this)
       setUploadSuccess(`Successfully uploaded: ${file.name}`)
-      
+
       // Refetch documents to get updated list
       setTimeout(() => {
         refetch()
       }, 1000)
-      
+
     } catch (error) {
       console.error('Upload failed:', error)
     }
@@ -59,7 +59,7 @@ export default function UploadPage() {
             isUploading={isUploading}
             uploadProgress={uploadProgress}
           />
-          
+
           {/* Upload Status Messages */}
           <div className="mt-3 min-h-[50px]">
             {uploadError && (
@@ -68,7 +68,7 @@ export default function UploadPage() {
                 <span className="text-red-300 text-sm">{uploadError}</span>
               </div>
             )}
-            
+
             {uploadSuccess && (
               <div className="flex items-center space-x-2 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
                 <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
@@ -100,7 +100,7 @@ export default function UploadPage() {
                 <span>Processing time varies based on document size and complexity</span>
               </div>
             </div>
-            
+
             <div className="pt-3 border-t border-slate-700/50">
               <div className="text-xs text-slate-500">
                 <p>💡 <strong>Tip:</strong> For best results, ensure documents are text-searchable PDFs or properly formatted text files.</p>
@@ -149,4 +149,4 @@ export default function UploadPage() {
       </div>
     </div>
   )
-} 
+}

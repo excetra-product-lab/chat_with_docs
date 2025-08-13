@@ -112,7 +112,7 @@ class TestDocumentParser:
     async def test_parse_text_file_empty(self):
         """Test parsing empty text file."""
         empty_content = b""
-        file = self.create_upload_file(empty_content, "empty.txt")
+        self.create_upload_file(empty_content, "empty.txt")
 
         with pytest.raises(HTTPException) as exc_info:
             await self.parser._parse_text(empty_content, "empty.txt")

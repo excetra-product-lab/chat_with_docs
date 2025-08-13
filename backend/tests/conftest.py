@@ -15,6 +15,8 @@ from langchain.schema.document import Document
 from langchain_community.embeddings import FakeEmbeddings
 from langchain_openai import AzureChatOpenAI, AzureOpenAIEmbeddings
 
+from app.core.langchain_config import langchain_config
+
 
 # Patch the embedding service before any imports that might use it
 @pytest.fixture(scope="session", autouse=True)
@@ -40,9 +42,6 @@ def mock_embedding_service_for_collection():
         with patch("app.services.embedding_service.EmbeddingService") as mock_class:
             mock_class.return_value = mock_service
             yield
-
-
-from app.core.langchain_config import langchain_config
 
 
 # Fix LangChain compatibility issues by creating simple mock replacements

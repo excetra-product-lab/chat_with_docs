@@ -413,7 +413,7 @@ The `DocumentPipeline` orchestrates the entire process:
 
 For a legal contract with sections like:
 
-```
+```text
 ARTICLE I - DEFINITIONS
 1.1 "Agreement" means...
 1.2 "Party" means...

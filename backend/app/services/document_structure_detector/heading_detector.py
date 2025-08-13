@@ -305,7 +305,7 @@ class HeadingDetector:
             for numbering_info in numbering_matches:
                 # numbering_info is a tuple: (numbering_type, value, start_pos, end_pos)
                 match_start = numbering_info[2]
-                match_end = numbering_info[3]
+                numbering_info[3]
 
                 # Check if numbering is at the start of this line
                 if line_start_pos <= match_start < line_start_pos + len(line):
@@ -353,7 +353,6 @@ class HeadingDetector:
             List[HeadingCandidate]: Multi-line heading candidates
         """
         candidates = []
-        current_position = 0
 
         # Look for sequences of short lines that might form a multi-line heading
         i = 0

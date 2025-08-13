@@ -177,7 +177,7 @@ class TokenCounter:
                 # Adjust token count for legal patterns
                 legal_adjustments = 0
 
-                for pattern_name, pattern in self.LEGAL_PATTERNS.items():
+                for _pattern_name, pattern in self.LEGAL_PATTERNS.items():
                     matches = pattern.findall(text)
                     # Legal terms tend to be tokenized differently, add small adjustment
                     legal_adjustments += len(matches) * 0.5

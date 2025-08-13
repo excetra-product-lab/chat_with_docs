@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 """PDF-specific helper utilities extracted from the bulky
 `LangchainDocumentProcessor` class so the parent module can stay focused on API
 orchestration.
@@ -8,8 +10,6 @@ These helpers are **pure functions** – they do not depend on FastAPI, project
 settings, or class instances – which makes them easier to unit-test in
 isolation.
 """
-
-from typing import Any, Dict, List, Optional
 
 __all__ = [
     "extract_pdf_formatting",
@@ -26,7 +26,7 @@ __all__ = [
 # ---------------------------------------------------------------------------
 
 
-def extract_pdf_formatting(chars: List[Dict[str, Any]]) -> Dict[str, Any]:
+def extract_pdf_formatting(chars: list[dict[str, Any]]) -> dict[str, Any]:
     """Return high-level font / colour statistics for a PDF page."""
 
     # Collect mutable sets first – this avoids the *set vs list* type clash
@@ -35,7 +35,7 @@ def extract_pdf_formatting(chars: List[Dict[str, Any]]) -> Dict[str, Any]:
     font_sizes: set[float] = set()
     colors: set[str] = set()
 
-    text_styles: Dict[str, int] = {
+    text_styles: dict[str, int] = {
         "bold_chars": 0,
         "italic_chars": 0,
         "total_chars": len(chars),
@@ -74,7 +74,7 @@ def extract_pdf_formatting(chars: List[Dict[str, Any]]) -> Dict[str, Any]:
 
 
 def is_heading(
-    line: str, avg_font_size: float, chars: List[Dict], line_idx: int
+    line: str, avg_font_size: float, chars: list[dict], line_idx: int
 ) -> bool:  # noqa: D401
     """Heuristic to decide if *line* looks like a heading."""
     if len(line) > 100:
@@ -94,7 +94,7 @@ def is_heading(
 
 
 def determine_heading_level(
-    line: str, avg_font_size: float, chars: List[Dict], line_idx: int
+    line: str, avg_font_size: float, chars: list[dict], line_idx: int
 ) -> int:
     """Crude mapping of line to heading level 1-3."""
     if line.isupper():
@@ -120,14 +120,18 @@ def is_list_item(line: str) -> bool:
     return line[0] in bullet_chars
 
 
-def detect_table_header(table: List[List[Optional[str]]]) -> bool:
+def detect_table_header(table: list[list[str | None]]) -> bool:
     """Heuristic: first row is header if it contains fewer numbers than second row."""
     if not table or len(table) < 2:
         return False
 
     first_row, second_row = table[0], table[1]
-    nums_first = sum(1 for cell in first_row if cell and any(c.isdigit() for c in str(cell)))
-    nums_second = sum(1 for cell in second_row if cell and any(c.isdigit() for c in str(cell)))
+    nums_first = sum(
+        1 for cell in first_row if cell and any(c.isdigit() for c in str(cell))
+    )
+    nums_second = sum(
+        1 for cell in second_row if cell and any(c.isdigit() for c in str(cell))
+    )
     return nums_first < nums_second
 
 
@@ -136,9 +140,14 @@ def detect_table_header(table: List[List[Optional[str]]]) -> bool:
 # ---------------------------------------------------------------------------
 
 
-def extract_pdf_structure_elements(text: str, chars: List[Dict]) -> Dict[str, Any]:
+def extract_pdf_structure_elements(text: str, chars: list[dict]) -> dict[str, Any]:
     """Return detected headings, lists, paragraph counts and text blocks."""
-    structure: Dict[str, Any] = {"headings": [], "lists": [], "paragraphs": 0, "text_blocks": []}
+    structure: dict[str, Any] = {
+        "headings": [],
+        "lists": [],
+        "paragraphs": 0,
+        "text_blocks": [],
+    }
 
     lines = text.split("\n")
     font_sizes = [char.get("size", 12) for char in chars if "size" in char]
@@ -151,10 +160,14 @@ def extract_pdf_structure_elements(text: str, chars: List[Dict]) -> Dict[str, An
 
         if is_heading(stripped, avg_font_size, chars, idx):
             level = determine_heading_level(stripped, avg_font_size, chars, idx)
-            structure["headings"].append({"text": stripped, "level": level, "line_number": idx})
+            structure["headings"].append(
+                {"text": stripped, "level": level, "line_number": idx}
+            )
         elif is_list_item(stripped):
             list_type = "numbered" if stripped[0].isdigit() else "bulleted"
-            structure["lists"].append({"text": stripped, "type": list_type, "line_number": idx})
+            structure["lists"].append(
+                {"text": stripped, "type": list_type, "line_number": idx}
+            )
         elif len(stripped) > 20:
             structure["paragraphs"] += 1
 

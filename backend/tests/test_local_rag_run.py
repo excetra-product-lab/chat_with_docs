@@ -30,6 +30,8 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 # Vector store dependencies
 try:
     import faiss
@@ -41,7 +43,7 @@ except ImportError:
 
 # LangChain for OpenAI
 try:
-    from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+    from langchain_openai import ChatOpenAI
 
     LANGCHAIN_OPENAI_AVAILABLE = True
 except ImportError:
@@ -144,7 +146,7 @@ class LocalVectorStore:
 
         print(f"  📡 Generating embeddings for {len(enhanced_doc.chunks)} chunks...")
 
-        for i, chunk in enumerate(enhanced_doc.chunks):
+        for _i, chunk in enumerate(enhanced_doc.chunks):
             # Use real embedding service
             embedding = await self.embedding_service.generate_embedding(chunk.text)
 
@@ -663,7 +665,6 @@ async def main():
 
 
 # Pytest integration
-import pytest
 
 
 @pytest.mark.asyncio

@@ -90,7 +90,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
             </div>
             <div className="max-w-xs mx-auto">
               <div className="w-full bg-slate-700/50 rounded-full h-1.5">
-                <div 
+                <div
                   className="bg-violet-500 h-1.5 rounded-full transition-all duration-300"
                   style={{ width: `${uploadProgress}%` }}
                 ></div>
@@ -102,7 +102,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
             <div className="w-12 h-12 mx-auto flex items-center justify-center">
               <Upload className="w-6 h-6 text-slate-400" />
             </div>
-            
+
             <div className="space-y-2">
               <h3 className="text-lg font-semibold text-slate-200">
                 Upload your legal documents
@@ -137,7 +137,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
           </div>
         )}
       </div>
-      
+
       {error && (
         <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
           <div className="flex items-center space-x-2">

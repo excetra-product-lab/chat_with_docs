@@ -38,8 +38,9 @@ from app.models.hierarchy_models import (
 from app.models.langchain_models import (
     EnhancedDocument,
     EnhancedDocumentChunk,
-    # EnhancedCitation removed
 )
+
+# EnhancedCitation removed
 from app.services.embedding_service import get_embedding_service
 from app.utils.token_counter import TokenCounter
 

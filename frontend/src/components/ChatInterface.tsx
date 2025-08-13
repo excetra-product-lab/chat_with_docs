@@ -98,7 +98,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             {messages.map((message) => (
               <MessageBubble key={message.id} message={message} />
             ))}
-            
+
             {isLoading && (
               <div className="flex justify-start">
                 <div className="flex items-center space-x-3">

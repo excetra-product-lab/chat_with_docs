@@ -8,6 +8,7 @@ expected.
 from __future__ import annotations
 
 import io
+import logging
 import tempfile
 from unittest.mock import AsyncMock, patch
 
@@ -17,6 +18,8 @@ from langchain_core.documents import Document
 from starlette.datastructures import Headers
 
 from app.services.document_processor import DocumentProcessor
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -134,13 +137,13 @@ async def test_layout_preservation_flag_present_for_pdf():
             b"%PDF-1.4\n1 0 obj<>stream\nendstream\nendobj\nxref\n0 2\n0000000000 65535 f\n"  # noqa: E501
             b"0000000010 00000 n\ntrailer<</Size 2>>\nstartxref\n55\n%%EOF"
         )
-        tmp_pdf.name
+        # tmp_pdf.name is available for use but not needed in this test
 
     # UploadFile mock – content is irrelevant because we patch the loader below.
     upload_file = create_upload_file(b"%PDF-1.4", "layout.pdf", "application/pdf")
 
     # Fake documents with layout metadata
-    fake_docs = [
+    [
         Document(
             page_content="Some content",
             metadata={

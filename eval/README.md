@@ -17,7 +17,7 @@ cd eval/scripts && ./run_evaluation.sh
 
 ## Directory Structure
 
-```
+```text
 eval/
 ├── run_evaluation.sh              # Main entry point (from project root)
 ├── README.md                      # This file

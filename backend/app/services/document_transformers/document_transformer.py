@@ -379,7 +379,7 @@ class DocumentTransformer:
         )
 
         # If all documents have the same source, keep it; otherwise mark as merged
-        sources = set(doc.metadata.get("source", "unknown") for doc in documents)
+        sources = {doc.metadata.get("source", "unknown") for doc in documents}
         if len(sources) == 1:
             merged_metadata["source"] = list(sources)[0]
         else:
@@ -419,9 +419,9 @@ class DocumentTransformer:
                 # Remove empty strings
                 if clean_value:
                     cleaned[clean_key] = clean_value
-            elif isinstance(value, (int, float, bool)):
+            elif isinstance(value, int | float | bool):
                 cleaned[clean_key] = value
-            elif isinstance(value, (list, dict)):
+            elif isinstance(value, list | dict):
                 # Keep complex types as-is for now
                 cleaned[clean_key] = value
             elif value is not None:

@@ -4,7 +4,7 @@ I've successfully implemented and organized a comprehensive RAG evaluation syste
 
 ## 📁 New Directory Structure
 
-```
+```text
 eval/
 ├── README.md                          # Comprehensive usage guide
 ├── run_evaluation.sh                  # Convenience entry point

@@ -236,7 +236,7 @@ class TextDocumentLoader(BaseDocumentLoader):
         except Exception as e:
             error_msg = f"Failed to load text file {file_path} with encoding {encoding}: {str(e)}"
             self.logger.error(error_msg)
-            raise ValueError(error_msg)
+            raise ValueError(error_msg) from e
 
     async def detect_text_encoding(self, file_path: str) -> dict[str, Any]:
         """Detect encoding of a text file without loading it.

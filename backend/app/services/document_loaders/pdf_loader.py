@@ -2,7 +2,7 @@
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.documents import Document
@@ -32,10 +32,10 @@ class PDFDocumentLoader(BaseDocumentLoader):
     async def load_document(
         self,
         file_path: str,
-        password: Optional[str] = None,
+        password: str | None = None,
         preserve_layout: bool = True,
-        encoding_info: Optional[Dict[str, Any]] = None,
-    ) -> List[Document]:
+        encoding_info: dict[str, Any] | None = None,
+    ) -> list[Document]:
         """Load a PDF document.
 
         Args:
@@ -55,13 +55,15 @@ class PDFDocumentLoader(BaseDocumentLoader):
             return await self._load_pdf_standard(file_path, password)
 
     async def _load_pdf_with_layout_preservation(
-        self, file_path: str, password: Optional[str] = None
-    ) -> List[Document]:
+        self, file_path: str, password: str | None = None
+    ) -> list[Document]:
         """Load PDF with layout preservation using PyMuPDF."""
         try:
             import fitz  # PyMuPDF
         except ImportError:
-            self.logger.warning("PyMuPDF not available, falling back to standard PDF loading")
+            self.logger.warning(
+                "PyMuPDF not available, falling back to standard PDF loading"
+            )
             return await self._load_pdf_standard(file_path, password)
 
         documents = []
@@ -73,7 +75,9 @@ class PDFDocumentLoader(BaseDocumentLoader):
             # Handle password protection
             if pdf_doc.needs_pass:
                 if not password:
-                    raise ValueError("PDF is password protected but no password provided")
+                    raise ValueError(
+                        "PDF is password protected but no password provided"
+                    )
                 if not pdf_doc.authenticate(password):
                     raise ValueError("Invalid password for PDF")
 
@@ -130,8 +134,8 @@ class PDFDocumentLoader(BaseDocumentLoader):
             return await self._load_pdf_standard(file_path, password)
 
     async def _load_pdf_standard(
-        self, file_path: str, password: Optional[str] = None
-    ) -> List[Document]:
+        self, file_path: str, password: str | None = None
+    ) -> list[Document]:
         """Load PDF using standard PyPDFLoader."""
         try:
             loader = PyPDFLoader(file_path)
@@ -156,11 +160,11 @@ class PDFDocumentLoader(BaseDocumentLoader):
 
         except Exception as e:
             self.logger.error(f"Error loading PDF: {str(e)}")
-            raise ValueError(f"Failed to load PDF document: {str(e)}")
+            raise ValueError(f"Failed to load PDF document: {str(e)}") from e
 
     async def extract_pdf_with_multiple_passwords(
-        self, file_path: str, password_candidates: List[str]
-    ) -> List[Document]:
+        self, file_path: str, password_candidates: list[str]
+    ) -> list[Document]:
         """Try to extract PDF with multiple password candidates.
 
         Args:
@@ -184,8 +188,8 @@ class PDFDocumentLoader(BaseDocumentLoader):
         raise ValueError("None of the provided passwords worked for the PDF")
 
     async def extract_pdf_metadata_only(
-        self, file_path: str, password: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, file_path: str, password: str | None = None
+    ) -> dict[str, Any]:
         """Extract only metadata from PDF without loading full content.
 
         Args:
@@ -206,7 +210,9 @@ class PDFDocumentLoader(BaseDocumentLoader):
 
             if pdf_doc.needs_pass:
                 if not password:
-                    raise ValueError("PDF is password protected but no password provided")
+                    raise ValueError(
+                        "PDF is password protected but no password provided"
+                    )
                 if not pdf_doc.authenticate(password):
                     raise ValueError("Invalid password for PDF")
 
@@ -249,7 +255,7 @@ class PDFDocumentLoader(BaseDocumentLoader):
         except Exception:
             return False
 
-    def get_supported_mime_types(self) -> List[str]:
+    def get_supported_mime_types(self) -> list[str]:
         """Get the MIME types supported by this loader.
 
         Returns:
@@ -257,7 +263,7 @@ class PDFDocumentLoader(BaseDocumentLoader):
         """
         return ["application/pdf"]
 
-    def get_supported_extensions(self) -> List[str]:
+    def get_supported_extensions(self) -> list[str]:
         """Get the file extensions supported by this loader.
 
         Returns:

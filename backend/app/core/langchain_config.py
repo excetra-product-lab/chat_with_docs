@@ -13,6 +13,8 @@ from langchain_community.llms import FakeListLLM
 from langchain_openai import AzureChatOpenAI, AzureOpenAIEmbeddings
 from pydantic import SecretStr
 
+from .settings import settings
+
 
 # Simple fallback LLM that avoids Pydantic validation issues
 class SimpleFallbackLLM:
@@ -40,8 +42,6 @@ try:
     AzureOpenAIEmbeddings.model_rebuild()
 except Exception:
     pass  # Ignore if model_rebuild fails - will use fallback approach
-
-from .settings import settings
 
 logger = logging.getLogger(__name__)
 

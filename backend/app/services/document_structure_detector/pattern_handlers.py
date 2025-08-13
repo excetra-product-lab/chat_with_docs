@@ -238,8 +238,8 @@ class PatternHandler:
 
         # Compile and validate all patterns
         compiled_count = 0
-        for category, category_patterns in patterns.items():
-            for pattern_name, pattern in category_patterns.items():
+        for _category, category_patterns in patterns.items():
+            for _pattern_name, pattern in category_patterns.items():
                 if isinstance(pattern, re.Pattern):
                     compiled_count += 1
 
@@ -282,7 +282,7 @@ class PatternHandler:
         else:
             patterns_to_search = self.patterns[category]
 
-        for name, pattern in patterns_to_search.items():
+        for _name, pattern in patterns_to_search.items():
             for match in pattern.finditer(text):
                 matches.append((match.start(), match.group(0), match.groups()))
 

@@ -66,10 +66,7 @@ ignore = [
   "E501", # line too long
   "B008", # do not perform function calls in argument defaults (FastAPI Depends)
 ]
-
-[tool.ruff.format]
-quote-style = "double"
-indent-style = "space"
+fixable = ["ALL"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

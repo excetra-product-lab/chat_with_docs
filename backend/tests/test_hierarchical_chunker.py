@@ -351,7 +351,7 @@ Either Party may terminate this Agreement with thirty (30) days written notice."
         initial_stats = self.chunker.get_token_usage_stats()
 
         # Perform chunking
-        chunks = self.chunker.chunk_text_with_hierarchy(sample_legal_document)
+        self.chunker.chunk_text_with_hierarchy(sample_legal_document)
         final_stats = self.chunker.get_token_usage_stats()
 
         # Verify statistics were updated

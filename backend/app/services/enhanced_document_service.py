@@ -83,8 +83,7 @@ class EnhancedDocumentService:
 
             try:
                 # Determine file type and appropriate HTML handling
-                file_suffix = Path(file.filename or "").suffix.lower()
-                is_markdown = file_suffix in [".md", ".markdown"]
+                Path(file.filename or "").suffix.lower()
 
                 # Process with Langchain pipeline
                 # Now using improved HTML processing that's markdown-aware
@@ -232,9 +231,7 @@ class EnhancedDocumentService:
             "chunks_with_pages": sum(
                 1 for chunk in document.chunks if chunk.page_number
             ),
-            "unique_chunk_types": len(
-                set(chunk.chunk_type for chunk in document.chunks)
-            ),
+            "unique_chunk_types": len({chunk.chunk_type for chunk in document.chunks}),
             "has_content_hash": document.metadata.document_hash is not None,
             "processing_timestamp": document.metadata.processing_timestamp.isoformat(),
         }

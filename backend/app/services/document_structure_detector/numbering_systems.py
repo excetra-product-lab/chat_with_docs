@@ -513,7 +513,7 @@ class NumberingSystemHandler:
             return -1 if norm1[0] < norm2[0] else 1
 
         # Compare hierarchy levels
-        for i, (v1, v2) in enumerate(zip(norm1[1], norm2[1], strict=False)):
+        for _i, (v1, v2) in enumerate(zip(norm1[1], norm2[1], strict=False)):
             if v1 != v2:
                 return -1 if v1 < v2 else 1
 

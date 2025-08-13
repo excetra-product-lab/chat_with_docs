@@ -14,7 +14,6 @@ from .database import (
 
 # Export hierarchy and relationship models
 from .hierarchy_models import (
-    DocumentHierarchy,
     DocumentRelationship,
     EnhancedDocumentElement,
     EnhancedElementType,

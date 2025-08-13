@@ -423,7 +423,7 @@ Neural networks are inspired by the human brain.
 
         # Test search performance
         search_start = datetime.utcnow()
-        search_results = await enhanced_vector_store.enhanced_similarity_search(
+        await enhanced_vector_store.enhanced_similarity_search(
             query="neural networks", limit=10
         )
         search_end = datetime.utcnow()
@@ -438,7 +438,7 @@ Neural networks are inspired by the human brain.
 
         # Test with invalid document text - check actual validation behavior
         try:
-            metadata = EnhancedDocumentMetadata(
+            EnhancedDocumentMetadata(
                 filename="",  # Empty filename might be allowed
                 file_type="pdf",
                 total_chars=100,
@@ -450,7 +450,7 @@ Neural networks are inspired by the human brain.
 
         # Test with invalid chunk data
         with pytest.raises(ValueError):
-            chunk = EnhancedDocumentChunk(
+            EnhancedDocumentChunk(
                 text="test",
                 chunk_index=0,
                 document_filename="test.pdf",

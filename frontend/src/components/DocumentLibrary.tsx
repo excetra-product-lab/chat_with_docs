@@ -55,8 +55,8 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
   };
 
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
       day: 'numeric',
       year: 'numeric'
     });
@@ -77,7 +77,7 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
             </button>
           </div>
         </div>
-        
+
         <div className="flex-1 flex flex-col items-center justify-center p-4">
           <div className="text-center space-y-4">
             <div className="text-2xl font-bold text-violet-400">{documents.length}</div>
@@ -142,7 +142,7 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
                   )}
                 </div>
               </div>
-              
+
               <div className="flex items-center mt-2">
                 <div className="flex items-center space-x-2">
                   <div className={`w-2 h-2 rounded-full ${
@@ -161,7 +161,7 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
               </div>
             </div>
           ))}
-          
+
           {documents.length === 0 && (
             <div className="text-center py-8">
               <FileText className="w-12 h-12 text-slate-600 mx-auto mb-3" />
@@ -172,7 +172,7 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
         </div>
       </div>
 
-      <DocumentUpload 
+      <DocumentUpload
         onUpload={onUpload}
         isUploading={isUploading}
         uploadProgress={uploadProgress}

@@ -16,4 +16,4 @@ export default function HomePage() {
       <LandingPage onGetStarted={handleGetStarted} />
     </main>
   )
-} 
+}

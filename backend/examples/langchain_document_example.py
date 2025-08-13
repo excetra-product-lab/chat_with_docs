@@ -145,7 +145,7 @@ async def demonstrate_text_splitting():
         print("Could not import required modules for text splitting demo")
         return
 
-    processor = DocumentProcessor(use_langchain=True)
+    DocumentProcessor(use_langchain=True)
 
     # Create sample documents
     long_text = """This is a very long document that needs to be split into smaller chunks for processing.

@@ -1,7 +1,7 @@
 """Base document loader interface."""
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from langchain_core.documents import Document
 
@@ -21,10 +21,10 @@ class BaseDocumentLoader(ABC):
     async def load_document(
         self,
         file_path: str,
-        password: Optional[str] = None,
+        password: str | None = None,
         preserve_layout: bool = True,
-        encoding_info: Optional[Dict[str, Any]] = None,
-    ) -> List[Document]:
+        encoding_info: dict[str, Any] | None = None,
+    ) -> list[Document]:
         """Load a document from the given file path.
 
         Args:
@@ -38,7 +38,7 @@ class BaseDocumentLoader(ABC):
         """
 
     @abstractmethod
-    def get_supported_mime_types(self) -> List[str]:
+    def get_supported_mime_types(self) -> list[str]:
         """Get the MIME types supported by this loader.
 
         Returns:
@@ -46,7 +46,7 @@ class BaseDocumentLoader(ABC):
         """
 
     @abstractmethod
-    def get_supported_extensions(self) -> List[str]:
+    def get_supported_extensions(self) -> list[str]:
         """Get the file extensions supported by this loader.
 
         Returns:

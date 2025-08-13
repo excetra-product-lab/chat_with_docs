@@ -117,7 +117,7 @@ class DocumentParser:
             CorruptedDocumentError,
         ) as e:
             # Report and convert domain exceptions to HTTP exceptions
-            if isinstance(e, (DocumentValidationError, FileTooLargeError)):
+            if isinstance(e, DocumentValidationError | FileTooLargeError):
                 report_validation_error(e, filename=file.filename, file_size=file.size)
             else:
                 report_processing_error(

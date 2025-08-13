@@ -1155,7 +1155,7 @@ class HierarchicalChunker(RecursiveCharacterTextSplitter):
             }
 
         # Get hierarchy path
-        hierarchy_path = element.get_hierarchy_path()
+        element.get_hierarchy_path()
 
         # Find parent elements
         parent_elements = []

@@ -53,7 +53,7 @@ This will:
 
 The evaluation will display results like:
 
-```
+```text
 📊 EVALUATION RESULTS SUMMARY
 =====================================
 📈 Average Keyword Coverage: 85.00%
@@ -128,7 +128,7 @@ python backend/setup_legalbench_data.py --create-sample
 
 ## File Structure
 
-```
+```text
 backend/
 ├── app/services/
 │   └── evaluation_service.py          # Core evaluation logic
@@ -237,20 +237,20 @@ python backend/setup_legalbench_data.py --download
 
 ### Common Issues
 
-**❌ Missing API Key**
+#### ❌ Missing API Key
 
 ```bash
 export OPENAI_API_KEY="your-key-here"
 ```
 
-**❌ Missing Dependencies**
+#### ❌ Missing Dependencies
 
 ```bash
 cd backend
 uv pip install faiss-cpu langchain-openai requests
 ```
 
-**❌ Virtual Environment Issues**
+#### ❌ Virtual Environment Issues
 
 ```bash
 cd backend
@@ -258,7 +258,7 @@ uv venv
 uv pip install -r requirements.txt
 ```
 
-**❌ Low Scores**
+#### ❌ Low Scores
 
 - Try different chunk sizes (400-800 tokens)
 - Experiment with different embedding models

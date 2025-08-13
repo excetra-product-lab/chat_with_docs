@@ -220,7 +220,7 @@ class TestEnhancedVectorStore:
             ):
                 with patch.object(vector_store, "_add_hierarchical_context"):
                     with patch.object(vector_store, "_add_relationship_context"):
-                        citations = await vector_store.enhanced_similarity_search(
+                        await vector_store.enhanced_similarity_search(
                             query="test query",
                             user_id=1,
                             k=5,
@@ -271,7 +271,7 @@ class TestEnhancedVectorStore:
             ):
                 with patch.object(vector_store, "_add_hierarchical_context"):
                     with patch.object(vector_store, "_add_relationship_context"):
-                        citations = await vector_store.enhanced_similarity_search(
+                        await vector_store.enhanced_similarity_search(
                             query="test query",
                             user_id=1,
                             k=5,
@@ -414,24 +414,23 @@ class TestUtilityFunctions:
             "Test disabled - enhanced_search_with_context function was removed with citations"
         )
         # Citations removed - enhanced_similarity_search no longer exists
-        mock_results = []
-
-        with patch(
-            "app.services.enhanced_vectorstore.EnhancedVectorStore"
-        ) as mock_store_class:
-            mock_store = Mock()
-            # enhanced_similarity_search method removed
-            mock_store_class.return_value = mock_store
-
-            result = await enhanced_search_with_context(
-                query="test query",
-                user_id=1,
-                k=5,
-                include_hierarchy=True,
-            )
-
-            # Citation assertion removed - function no longer works
-            mock_store.enhanced_similarity_search.assert_called_once()
+        #
+        # with patch(
+        #     "app.services.enhanced_vectorstore.EnhancedVectorStore"
+        # ) as mock_store_class:
+        #     mock_store = Mock()
+        #     # enhanced_similarity_search method removed
+        #     mock_store_class.return_value = mock_store
+        #
+        #     await enhanced_search_with_context(
+        #         query="test query",
+        #         user_id=1,
+        #         k=5,
+        #         include_hierarchy=True,
+        #     )
+        #
+        #     # Citation assertion removed - function no longer works
+        #     mock_store.enhanced_similarity_search.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_create_langchain_retriever(self):
@@ -472,9 +471,9 @@ class TestUtilityFunctions:
 
         # Test sync method error handling
         try:
-            sync_documents = retriever.get_relevant_documents("test query")
+            retriever.get_relevant_documents("test query")
             # Should raise NotImplementedError in test context
-            assert False, "Expected NotImplementedError"
+            raise AssertionError("Expected NotImplementedError")
         except NotImplementedError:
             # Expected behavior in test context
             pass

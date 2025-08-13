@@ -677,7 +677,7 @@ class TestDocumentStructure:
             end_position=4,
         )
 
-        numbering = NumberingSystem(
+        NumberingSystem(
             numbering_type=NumberingType.DECIMAL, level=0, value="1", raw_text="1."
         )
 

@@ -16,7 +16,7 @@ const mockDocuments: Document[] = [
     pages: 12,
   },
   {
-    id: '2', 
+    id: '2',
     filename: 'Legal_Brief_Summary.docx',
     user_id: 'user1',
     status: 'processing',
@@ -29,7 +29,7 @@ const mockDocuments: Document[] = [
   {
     id: '3',
     filename: 'Case_Notes.txt',
-    user_id: 'user1', 
+    user_id: 'user1',
     status: 'ready',
     created_at: '2024-12-27T09:45:00Z',
     file_size: 54000,
@@ -49,7 +49,7 @@ export const useDocuments = () => {
   const fetchDocuments = useCallback(async () => {
     setIsLoading(true)
     setError(null)
-    
+
     try {
       await delay(500) // Simulate network delay
       setDocuments([...mockDocuments])
@@ -63,7 +63,7 @@ export const useDocuments = () => {
   // Status polling for processing documents
   useEffect(() => {
     const processingDocs = documents.filter(doc => doc.status === 'processing')
-    
+
     if (processingDocs.length > 0) {
       const pollInterval = setInterval(async () => {
         // Mock status updates - randomly complete processing documents
@@ -172,4 +172,4 @@ export const useDocumentDelete = () => {
     isDeleting,
     error,
   }
-} 
+}

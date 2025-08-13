@@ -3,7 +3,7 @@
 import asyncio
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from langchain_community.document_loaders import UnstructuredWordDocumentLoader
 from langchain_core.documents import Document
@@ -28,10 +28,10 @@ class WordDocumentLoader(BaseDocumentLoader):
     async def load_document(
         self,
         file_path: str,
-        password: Optional[str] = None,
+        password: str | None = None,
         preserve_layout: bool = True,
-        encoding_info: Optional[Dict[str, Any]] = None,
-    ) -> List[Document]:
+        encoding_info: dict[str, Any] | None = None,
+    ) -> list[Document]:
         """Load a Word document.
 
         Args:
@@ -50,7 +50,7 @@ class WordDocumentLoader(BaseDocumentLoader):
         else:
             return await self._load_word_standard_mode(file_path)
 
-    async def _load_word_with_elements_mode(self, file_path: str) -> List[Document]:
+    async def _load_word_with_elements_mode(self, file_path: str) -> list[Document]:
         """Load Word document with element-based processing for layout preservation."""
         try:
             # Try using python-docx for better structure extraction
@@ -76,11 +76,15 @@ class WordDocumentLoader(BaseDocumentLoader):
             return sections
 
         except Exception as e:
-            self.logger.error(f"Error loading Word document with elements mode: {str(e)}")
+            self.logger.error(
+                f"Error loading Word document with elements mode: {str(e)}"
+            )
             # Final fallback to standard mode
             return await self._load_word_standard_mode(file_path)
 
-    def _create_section_documents(self, elements: List[Document], file_path: str) -> List[Document]:
+    def _create_section_documents(
+        self, elements: list[Document], file_path: str
+    ) -> list[Document]:
         """Create section-based documents from unstructured elements."""
         sections = []
         current_section = {
@@ -89,7 +93,12 @@ class WordDocumentLoader(BaseDocumentLoader):
                 "source": file_path,
                 "file_type": "word",
                 "layout_preserved": True,
-                "formatting": {"headings": [], "lists": [], "tables": [], "text_blocks": []},
+                "formatting": {
+                    "headings": [],
+                    "lists": [],
+                    "tables": [],
+                    "text_blocks": [],
+                },
             },
         }
 
@@ -103,9 +112,13 @@ class WordDocumentLoader(BaseDocumentLoader):
                 continue
 
             # Start new section on major headings
-            if element_type == "Title" or (element_type == "Header" and current_section["content"]):
+            if element_type == "Title" or (
+                element_type == "Header" and current_section["content"]
+            ):
                 if current_section["content"]:
-                    sections.append(self._finalize_section_document(current_section, section_index))
+                    sections.append(
+                        self._finalize_section_document(current_section, section_index)
+                    )
                     section_index += 1
 
                 current_section = {
@@ -145,7 +158,9 @@ class WordDocumentLoader(BaseDocumentLoader):
                     }
                 )
             elif element_type == "Table":
-                table_data = self._process_table_element(element, len(formatting["tables"]))
+                table_data = self._process_table_element(
+                    element, len(formatting["tables"])
+                )
                 formatting["tables"].append(table_data)
             else:
                 formatting["text_blocks"].append(
@@ -158,11 +173,13 @@ class WordDocumentLoader(BaseDocumentLoader):
 
         # Add final section
         if current_section["content"]:
-            sections.append(self._finalize_section_document(current_section, section_index))
+            sections.append(
+                self._finalize_section_document(current_section, section_index)
+            )
 
         return sections
 
-    def _finalize_section_document(self, section: Dict, section_index: int) -> Document:
+    def _finalize_section_document(self, section: dict, section_index: int) -> Document:
         """Finalize a section into a Document object."""
         content = "\n".join(section["content"])
         metadata = section["metadata"].copy()
@@ -176,7 +193,9 @@ class WordDocumentLoader(BaseDocumentLoader):
 
         return Document(page_content=content, metadata=metadata)
 
-    def _process_table_element(self, element: Document, table_index: int) -> Dict[str, Any]:
+    def _process_table_element(
+        self, element: Document, table_index: int
+    ) -> dict[str, Any]:
         """Process a table element and extract structured data."""
         content = element.page_content
 
@@ -203,7 +222,7 @@ class WordDocumentLoader(BaseDocumentLoader):
             "raw_content": content,
         }
 
-    async def _load_word_standard_mode(self, file_path: str) -> List[Document]:
+    async def _load_word_standard_mode(self, file_path: str) -> list[Document]:
         """Load Word document using standard unstructured loader."""
         try:
             loader = UnstructuredWordDocumentLoader(file_path)
@@ -226,9 +245,9 @@ class WordDocumentLoader(BaseDocumentLoader):
 
         except Exception as e:
             self.logger.error(f"Error loading Word document: {str(e)}")
-            raise ValueError(f"Failed to load Word document: {str(e)}")
+            raise ValueError(f"Failed to load Word document: {str(e)}") from e
 
-    async def _load_word_with_python_docx(self, file_path: str) -> List[Document]:
+    async def _load_word_with_python_docx(self, file_path: str) -> list[Document]:
         """Load Word document using python-docx for better structure extraction."""
         try:
             from docx import Document as DocxDocument
@@ -243,7 +262,7 @@ class WordDocumentLoader(BaseDocumentLoader):
             structured_elements = await self._extract_structured_word_content(doc)
 
             # Group into sections
-            sections = group_word_content_into_sections(structured_elements)
+            sections = self._group_word_content_into_sections(structured_elements)
 
             # Convert to Document objects
             documents = []
@@ -258,7 +277,9 @@ class WordDocumentLoader(BaseDocumentLoader):
                     "char_count": section["char_count"],
                 }
 
-                documents.append(Document(page_content=section["content"], metadata=metadata))
+                documents.append(
+                    Document(page_content=section["content"], metadata=metadata)
+                )
 
             # Extract document metadata
             doc_metadata = await self._extract_word_metadata(file_path)
@@ -274,7 +295,7 @@ class WordDocumentLoader(BaseDocumentLoader):
             self.logger.error(f"Error loading Word document with python-docx: {str(e)}")
             return []
 
-    async def _extract_structured_word_content(self, doc) -> List[Dict[str, Any]]:
+    async def _extract_structured_word_content(self, doc) -> list[dict[str, Any]]:
         """Extract structured content from python-docx Document."""
         elements = []
 
@@ -282,8 +303,8 @@ class WordDocumentLoader(BaseDocumentLoader):
             if not paragraph.text.strip():
                 continue
 
-            element_type = determine_word_element_type(paragraph)
-            formatting = extract_paragraph_formatting(paragraph)
+            element_type = self._determine_word_element_type(paragraph)
+            formatting = self._extract_paragraph_formatting(paragraph)
 
             elements.append(
                 {
@@ -295,7 +316,7 @@ class WordDocumentLoader(BaseDocumentLoader):
 
         # Process tables
         for table_idx, table in enumerate(doc.tables):
-            table_content = extract_table_content(table)
+            table_content = self._extract_table_content(table)
             elements.append(
                 {
                     "type": "table",
@@ -307,7 +328,7 @@ class WordDocumentLoader(BaseDocumentLoader):
 
         return elements
 
-    async def _extract_word_metadata(self, file_path: str) -> Dict[str, Any]:
+    async def _extract_word_metadata(self, file_path: str) -> dict[str, Any]:
         """Extract metadata from Word document."""
         try:
             from docx import Document as DocxDocument
@@ -335,8 +356,8 @@ class WordDocumentLoader(BaseDocumentLoader):
             return {"error": str(e)}
 
     async def extract_word_with_batch_processing(
-        self, file_paths: List[str], max_concurrent: int = 3
-    ) -> List[List[Document]]:
+        self, file_paths: list[str], max_concurrent: int = 3
+    ) -> list[list[Document]]:
         """Process multiple Word documents concurrently.
 
         Args:
@@ -348,14 +369,14 @@ class WordDocumentLoader(BaseDocumentLoader):
         """
         semaphore = asyncio.Semaphore(max_concurrent)
 
-        async def process_single_file(file_path: str) -> List[Document]:
+        async def process_single_file(file_path: str) -> list[Document]:
             try:
                 return await self.load_document(file_path)
             except Exception as e:
                 self.logger.error(f"Error processing {file_path}: {str(e)}")
                 return []
 
-        async def process_with_semaphore(file_path: str) -> List[Document]:
+        async def process_with_semaphore(file_path: str) -> list[Document]:
             async with semaphore:
                 return await process_single_file(file_path)
 
@@ -373,7 +394,7 @@ class WordDocumentLoader(BaseDocumentLoader):
 
         return processed_results
 
-    def get_word_processing_stats(self) -> Dict[str, Any]:
+    def get_word_processing_stats(self) -> dict[str, Any]:
         """Get statistics about Word processing capabilities.
 
         Returns:
@@ -395,7 +416,7 @@ class WordDocumentLoader(BaseDocumentLoader):
 
         return stats
 
-    def get_supported_mime_types(self) -> List[str]:
+    def get_supported_mime_types(self) -> list[str]:
         """Get the MIME types supported by this loader.
 
         Returns:
@@ -406,10 +427,129 @@ class WordDocumentLoader(BaseDocumentLoader):
             "application/msword",
         ]
 
-    def get_supported_extensions(self) -> List[str]:
+    def get_supported_extensions(self) -> list[str]:
         """Get the file extensions supported by this loader.
 
         Returns:
             List of supported file extensions
         """
         return [".docx", ".doc"]
+
+    def _determine_word_element_type(self, paragraph) -> str:
+        """Determine the type of a Word paragraph element.
+
+        Args:
+            paragraph: python-docx paragraph object
+
+        Returns:
+            String indicating the element type
+        """
+        # Basic heuristics for element type detection
+        paragraph.text.strip()
+
+        # Check for heading style
+        if paragraph.style.name.startswith("Heading"):
+            return "heading"
+
+        # Check for list items
+        if (
+            hasattr(paragraph, "paragraph_format")
+            and paragraph.paragraph_format.left_indent
+        ):
+            return "list_item"
+
+        # Default to paragraph
+        return "paragraph"
+
+    def _extract_paragraph_formatting(self, paragraph) -> dict[str, Any]:
+        """Extract formatting information from a Word paragraph.
+
+        Args:
+            paragraph: python-docx paragraph object
+
+        Returns:
+            Dictionary containing formatting information
+        """
+        formatting = {}
+
+        try:
+            # Extract basic formatting
+            if hasattr(paragraph, "style"):
+                formatting["style_name"] = paragraph.style.name
+
+            if hasattr(paragraph, "paragraph_format"):
+                fmt = paragraph.paragraph_format
+                if fmt.alignment is not None:
+                    formatting["alignment"] = str(fmt.alignment)
+                if fmt.left_indent is not None:
+                    formatting["left_indent"] = fmt.left_indent
+                if fmt.right_indent is not None:
+                    formatting["right_indent"] = fmt.right_indent
+
+        except Exception as e:
+            self.logger.warning(f"Error extracting paragraph formatting: {e}")
+
+        return formatting
+
+    def _extract_table_content(self, table) -> list[list[str]]:
+        """Extract content from a Word table.
+
+        Args:
+            table: python-docx table object
+
+        Returns:
+            List of rows, where each row is a list of cell contents
+        """
+        table_data = []
+
+        try:
+            for row in table.rows:
+                row_data = []
+                for cell in row.cells:
+                    row_data.append(cell.text.strip())
+                table_data.append(row_data)
+        except Exception as e:
+            self.logger.warning(f"Error extracting table content: {e}")
+            table_data = [["Error extracting table content"]]
+
+        return table_data
+
+    def _group_word_content_into_sections(
+        self, structured_elements: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        """Group structured Word content into logical sections.
+
+        Args:
+            structured_elements: List of structured elements from Word document
+
+        Returns:
+            List of section dictionaries
+        """
+        if not structured_elements:
+            return []
+
+        sections = []
+        current_section = {"content": "", "formatting": {}, "elements": []}
+
+        for element in structured_elements:
+            # Start new section on headings
+            if element.get("type") == "heading":
+                if current_section["content"]:
+                    sections.append(current_section)
+                    current_section = {"content": "", "formatting": {}, "elements": []}
+
+            # Add element to current section
+            if current_section["content"]:
+                current_section["content"] += "\n\n"
+            current_section["content"] += element.get("content", "")
+            current_section["elements"].append(element)
+
+            # Merge formatting information
+            if element.get("formatting"):
+                current_section["formatting"].update(element["formatting"])
+
+        # Add the last section
+        if current_section["content"]:
+            sections.append(current_section)
+
+        return sections if sections else [current_section]

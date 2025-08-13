@@ -2,7 +2,7 @@ import json
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 from app.services.document_parser import DocumentMetadata
 
@@ -33,7 +33,7 @@ class MetadataRepository:
     # Internal helpers
     # ---------------------------------------------------------------------
 
-    def _to_dict(self, metadata: DocumentMetadata) -> Dict[str, Any]:
+    def _to_dict(self, metadata: DocumentMetadata) -> dict[str, Any]:
         """Serialize DocumentMetadata to a JSON-serialisable dict."""
         return {
             "filename": metadata.filename,
