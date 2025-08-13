@@ -561,7 +561,7 @@ class EnhancedVectorStore:
     async def _get_element_path(self, db, element_id: int) -> list[dict[str, Any]]:
         """Get the path from element to root."""
         path = []
-        current_id = element_id
+        current_id: int | None = element_id
         visited = set()
 
         while current_id and current_id not in visited:
@@ -626,7 +626,7 @@ class EnhancedVectorStore:
             )
             db.add(new_doc)
             db.flush()  # Get the ID
-            return new_doc.id
+            return int(new_doc.id)
 
     async def _count_tokens(self, text: str) -> int:
         """Count tokens in text using proper tokenizer."""

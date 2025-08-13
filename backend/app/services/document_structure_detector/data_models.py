@@ -7,7 +7,7 @@ document structure elements, numbering systems, and hierarchical relationships.
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +77,7 @@ class DocumentElement:
     numbering: NumberingSystem | None = None
     parent: Optional["DocumentElement"] = None
     children: list["DocumentElement"] = field(default_factory=list)
-    metadata: dict[str, any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
         """Validate element after initialization."""
@@ -103,8 +103,8 @@ class DocumentElement:
 
     def get_hierarchy_path(self) -> list[str]:
         """Get the path from root to this element."""
-        path = []
-        current = self
+        path: list[str] = []
+        current: DocumentElement | None = self
         while current:
             if current.numbering:
                 path.insert(0, current.numbering.get_full_number())
@@ -163,7 +163,7 @@ class DocumentStructure:
         default_factory=list
     )  # Add explicit headings field
     numbering_systems: list[NumberingSystem] = field(default_factory=list)
-    metadata: dict[str, any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def add_element(self, element: DocumentElement) -> None:
         """Add an element to the document structure."""
@@ -177,19 +177,11 @@ class DocumentStructure:
 
     def get_sections(self) -> list[Section]:
         """Get all sections in the document."""
-        return [
-            elem
-            for elem in self.elements
-            if isinstance(elem, Section) or elem.element_type == ElementType.SECTION
-        ]
+        return [elem for elem in self.elements if isinstance(elem, Section)]
 
     def get_headings(self) -> list[Heading]:
         """Get all headings in the document."""
-        return [
-            elem
-            for elem in self.elements
-            if isinstance(elem, Heading) or elem.element_type == ElementType.HEADING
-        ]
+        return [elem for elem in self.elements if isinstance(elem, Heading)]
 
     def get_element_by_numbering(self, numbering: str) -> DocumentElement | None:
         """Find an element by its numbering."""

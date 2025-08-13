@@ -315,7 +315,7 @@ class DocumentTransformer:
             return documents
 
         merged_documents = []
-        current_merge_group = []
+        current_merge_group: list[Document] = []
         current_merge_length = 0
 
         for doc in documents:
@@ -407,7 +407,7 @@ class DocumentTransformer:
 
     def _clean_metadata_dict(self, metadata: dict[str, Any]) -> dict[str, Any]:
         """Clean and normalize a metadata dictionary."""
-        cleaned = {}
+        cleaned: dict[str, Any] = {}
 
         for key, value in metadata.items():
             # Normalize key names

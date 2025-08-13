@@ -269,7 +269,7 @@ class DocumentPipeline:
         }
 
         # Recommend optimal chunk size based on content analysis
-        avg_length = content_analysis["avg_document_length"]
+        avg_length = float(content_analysis["avg_document_length"])
         optimal_chunk_size = min(800, max(400, int(avg_length * 0.3)))
         content_analysis["recommended_chunk_size"] = optimal_chunk_size
 

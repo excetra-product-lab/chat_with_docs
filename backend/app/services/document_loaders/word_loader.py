@@ -87,7 +87,7 @@ class WordDocumentLoader(BaseDocumentLoader):
     ) -> list[Document]:
         """Create section-based documents from unstructured elements."""
         sections = []
-        current_section = {
+        current_section: dict[str, Any] = {
             "content": [],
             "metadata": {
                 "source": file_path,
@@ -384,7 +384,7 @@ class WordDocumentLoader(BaseDocumentLoader):
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # Handle exceptions
-        processed_results = []
+        processed_results: list[list[Document]] = []
         for i, result in enumerate(results):
             if isinstance(result, Exception):
                 self.logger.error(f"Failed to process {file_paths[i]}: {str(result)}")
@@ -529,7 +529,11 @@ class WordDocumentLoader(BaseDocumentLoader):
             return []
 
         sections = []
-        current_section = {"content": "", "formatting": {}, "elements": []}
+        current_section: dict[str, Any] = {
+            "content": "",
+            "formatting": {},
+            "elements": [],
+        }
 
         for element in structured_elements:
             # Start new section on headings

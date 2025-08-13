@@ -252,7 +252,7 @@ class PatternHandler:
         return patterns
 
     def find_pattern_matches(
-        self, text: str, category: str, pattern_name: str = None
+        self, text: str, category: str, pattern_name: str | None = None
     ) -> list[tuple[int, str, tuple]]:
         """Find all matches for a specific pattern category or individual pattern.
 
@@ -264,7 +264,7 @@ class PatternHandler:
         Returns:
             List of tuples: (start_position, matched_text, groups)
         """
-        matches = []
+        matches: list[tuple[int, str, tuple]] = []
 
         if category not in self.patterns:
             self.logger.warning("Pattern category '%s' not found", category)
@@ -460,7 +460,7 @@ class PatternHandler:
         # Sort by start position, then by length (descending)
         sorted_matches = sorted(matches, key=lambda x: (x[1], -(x[2] - x[1])))
 
-        result = []
+        result: list[tuple[int, int, str, str]] = []
         for match in sorted_matches:
             # Check if this match overlaps with any already selected match
             overlaps = False
@@ -550,7 +550,7 @@ class PatternHandler:
         coverage["total_patterns_tested"] = total_patterns
         coverage["matched_patterns"] = matched_patterns
         coverage["coverage_percentage"] = (
-            (matched_patterns / total_patterns * 100) if total_patterns > 0 else 0
+            int(matched_patterns / total_patterns * 100) if total_patterns > 0 else 0
         )
 
         return coverage

@@ -343,8 +343,8 @@ class NumberingSystemHandler:
             numbering_systems.append(num_sys)
 
         # Analyze distribution
-        type_counts = {}
-        level_counts = {}
+        type_counts: dict[str, int] = {}
+        level_counts: dict[int, int] = {}
 
         for num_sys in numbering_systems:
             type_name = num_sys.numbering_type.value
@@ -465,7 +465,7 @@ class NumberingSystemHandler:
         numbering_type: NumberingType,
         value: str,
         raw_text: str,
-        pattern: str = None,
+        pattern: str | None = None,
     ) -> NumberingSystem:
         """Create a NumberingSystem object from parsed components.
 
@@ -600,7 +600,7 @@ class NumberingSystemHandler:
         Returns:
             Dict containing validation results and issues
         """
-        validation_result = {
+        validation_result: dict[str, Any] = {
             "is_valid": True,
             "issues": [],
             "gaps": [],
@@ -613,7 +613,7 @@ class NumberingSystemHandler:
             return validation_result
 
         # Group by level
-        levels = {}
+        levels: dict[int, list[NumberingSystem]] = {}
         for num_sys in numbering_systems:
             level = num_sys.level
             if level not in levels:
@@ -687,7 +687,7 @@ class NumberingSystemHandler:
     ):
         """Validate sub-level numbering sequences."""
         # Group by parent
-        parent_groups = {}
+        parent_groups: dict[str, list[NumberingSystem]] = {}
         for sys in systems:
             parent_key = (
                 sys.parent_numbering.value if sys.parent_numbering else "orphan"
@@ -768,7 +768,7 @@ class NumberingSystemHandler:
         if not numbering_systems:
             return {"total": 0, "total_count": 0}
 
-        stats = {
+        stats: dict[str, Any] = {
             "total": len(numbering_systems),
             "total_count": len(
                 numbering_systems

@@ -31,7 +31,7 @@ class HeadingCandidate:
     confidence_score: float
     heading_type: ElementType
     numbering: NumberingSystem | None = None
-    format_indicators: list[str] = None
+    format_indicators: list[str] | None = None
 
     def __post_init__(self):
         if self.format_indicators is None:
@@ -458,7 +458,7 @@ class HeadingDetector:
         if not candidates:
             return []
 
-        resolved = []
+        resolved: list[HeadingCandidate] = []
 
         # Sort by position to process in order
         position_sorted = sorted(candidates, key=lambda c: c.start_position)
@@ -561,7 +561,9 @@ class HeadingDetector:
 
         return prev_empty and next_empty
 
-    def _extract_numbering_from_match(self, match_info: dict) -> NumberingSystem | None:
+    def _extract_numbering_from_match(
+        self, match_info: tuple[int, str, tuple]
+    ) -> NumberingSystem | None:
         """Extract numbering system from a pattern match."""
         # This would integrate with the numbering handler
         # Implementation depends on the match_info structure

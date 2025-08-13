@@ -133,7 +133,8 @@ class LayoutTree:
         """
         for listener in self._change_listeners:
             try:
-                listener(event_type, node)
+                if node is not None:
+                    listener(event_type, node)
             except Exception as e:
                 self.logger.error("Error in change listener: %s", e)
 
@@ -148,7 +149,7 @@ class LayoutTree:
             self._node_registry[key] = node
 
         # Register by element type and position if available
-        if node.value:
+        if node.value and node.element_type:
             type_key = f"{node.element_type.value}_{id(node)}"
             self._node_registry[type_key] = node
 
@@ -379,8 +380,8 @@ class LayoutTree:
             return stats
 
         # Count nodes and analyze structure
-        level_counts = {}
-        element_type_counts = {}
+        level_counts: dict[int, int] = {}
+        element_type_counts: dict[str, int] = {}
         non_leaf_children_counts = []
 
         for node in self.traverse_preorder():
@@ -518,7 +519,7 @@ class LayoutTree:
         if self.is_empty:
             return "LayoutTree(empty)"
 
-        return f"LayoutTree(size={self.size}, height={self.height}, root_type={self._root.element_type})"
+        return f"LayoutTree(size={self.size}, height={self.height}, root_type={self._root.element_type if self._root else None})"
 
     def __repr__(self) -> str:
         """Detailed string representation of the tree."""

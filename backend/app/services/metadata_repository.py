@@ -42,6 +42,5 @@ class MetadataRepository:
             "total_chars": metadata.total_chars,
             "total_tokens": metadata.total_tokens,
             "sections": metadata.sections,
-            "encoding_info": metadata.encoding_info,
             "saved_at": datetime.utcnow().isoformat(),
         }

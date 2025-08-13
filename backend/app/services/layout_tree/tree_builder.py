@@ -164,7 +164,7 @@ class TreeBuilder:
         self,
         tree: LayoutTree,
         elements: list[DocumentElement],
-        parent_finder: Callable[[DocumentElement], TreeNode | None] = None,
+        parent_finder: Callable[[DocumentElement], TreeNode | None] | None = None,
     ) -> int:
         """Perform bulk insertion of elements into an existing tree.
 
@@ -182,7 +182,7 @@ class TreeBuilder:
             try:
                 # Find parent node
                 parent = None
-                if parent_finder:
+                if parent_finder is not None:
                     parent = parent_finder(element)
                 elif element.parent:
                     # Find parent by line number or other criteria
@@ -226,7 +226,7 @@ class TreeBuilder:
 
         if merge_strategy == "append":
             # Add tree2's root as a child of tree1's root
-            if tree2.root:
+            if tree2.root and tree1.root:
                 tree1.root.add_child(tree2.root)
             return tree1
 
@@ -234,8 +234,10 @@ class TreeBuilder:
             # Create new root and balance the trees
             new_root = TreeNode()
             new_root.metadata["synthetic"] = True
-            new_root.add_child(tree1.root)
-            new_root.add_child(tree2.root)
+            if tree1.root:
+                new_root.add_child(tree1.root)
+            if tree2.root:
+                new_root.add_child(tree2.root)
 
             result_tree = LayoutTree(root=new_root)
             return self.rebalance_tree(result_tree)
@@ -424,7 +426,7 @@ class TreeBuilder:
         sorted_elements = sorted(elements, key=lambda e: (e.level, e.line_number))
 
         tree = LayoutTree()
-        stack = []
+        stack: list[TreeNode] = []
 
         for element in sorted_elements:
             node = TreeNode(value=element)
@@ -560,7 +562,7 @@ class TreeBuilder:
 
     def _validate_tree_structure(self, tree: LayoutTree) -> None:
         """Validate the constructed tree structure."""
-        if tree.is_empty:
+        if tree.is_empty or tree.root is None:
             return
 
         validation_result = self.metadata_manager.validate_metadata(

@@ -78,7 +78,7 @@ class ErrorReporter:
         if filename:
             context["filename"] = filename
         if file_size:
-            context["file_size"] = file_size
+            context["file_size"] = str(file_size)
 
         self.report_error(
             error,

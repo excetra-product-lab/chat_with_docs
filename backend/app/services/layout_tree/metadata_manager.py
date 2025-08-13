@@ -261,7 +261,7 @@ class MetadataManager:
             node: Node where changes occurred
             changed_fields: Specific fields that changed (None for all)
         """
-        current = node
+        current: TreeNode | None = node
         while current:
             self.invalidate_node_cache(current)
 
@@ -372,7 +372,7 @@ class MetadataManager:
 
     def _calculate_element_type_distribution(self, node: TreeNode) -> dict[str, int]:
         """Calculate element type distribution in the subtree."""
-        distribution = {}
+        distribution: dict[str, int] = {}
         stack = [node]
 
         while stack:

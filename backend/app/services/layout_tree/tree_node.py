@@ -172,7 +172,7 @@ class TreeNode:
             List[TreeNode]: Path from this node to root (inclusive)
         """
         path = []
-        current = self
+        current: TreeNode | None = self
         while current is not None:
             path.append(current)
             current = current.parent
@@ -252,7 +252,7 @@ class TreeNode:
         Returns:
             Dict: Dictionary representation of the node
         """
-        result = {
+        result: dict[str, Any] = {
             "element_type": self.element_type.value if self.element_type else None,
             "text": self.text,
             "level": self.level,

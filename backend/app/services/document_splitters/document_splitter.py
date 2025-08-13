@@ -134,6 +134,7 @@ class DocumentSplitter:
         chunk_overlap: int,
         strategy: str,
         use_token_counting: bool,
+        model_name: str,
     ) -> list[Document]:
         """Split document while preserving structural elements."""
         content = document.page_content
@@ -143,15 +144,30 @@ class DocumentSplitter:
 
         if structure_info["has_headings"]:
             return await self._split_by_headings(
-                document, chunk_size, chunk_overlap, strategy, use_token_counting
+                document,
+                chunk_size,
+                chunk_overlap,
+                strategy,
+                use_token_counting,
+                model_name,
             )
         elif structure_info["has_paragraphs"]:
             return await self._split_by_paragraphs(
-                document, chunk_size, chunk_overlap, strategy, use_token_counting
+                document,
+                chunk_size,
+                chunk_overlap,
+                strategy,
+                use_token_counting,
+                model_name,
             )
         else:
             return await self._split_document_basic(
-                document, chunk_size, chunk_overlap, strategy, use_token_counting
+                document,
+                chunk_size,
+                chunk_overlap,
+                strategy,
+                use_token_counting,
+                model_name,
             )
 
     def _analyze_document_structure(self, content: str) -> dict[str, Any]:
@@ -188,6 +204,7 @@ class DocumentSplitter:
         chunk_overlap: int,
         strategy: str,
         use_token_counting: bool,
+        model_name: str,
     ) -> list[Document]:
         """Split document by heading structure."""
         content = document.page_content
@@ -211,15 +228,22 @@ class DocumentSplitter:
 
         if not headings:
             return await self._split_document_basic(
-                document, chunk_size, chunk_overlap, strategy, use_token_counting
+                document,
+                chunk_size,
+                chunk_overlap,
+                strategy,
+                use_token_counting,
+                model_name,
             )
 
         # Create sections based on headings
         sections = []
         for i, heading in enumerate(headings):
-            start_pos = heading["start_pos"]
+            start_pos = int(heading["start_pos"])
             end_pos = (
-                headings[i + 1]["start_pos"] if i + 1 < len(headings) else len(content)
+                int(headings[i + 1]["start_pos"])
+                if i + 1 < len(headings)
+                else len(content)
             )
 
             section_content = content[start_pos:end_pos].strip()
@@ -237,7 +261,7 @@ class DocumentSplitter:
         chunks = []
         for section in sections:
             section_length = self._get_content_length(
-                section["content"], use_token_counting
+                str(section["content"]), use_token_counting
             )
 
             if section_length <= chunk_size:
@@ -254,17 +278,23 @@ class DocumentSplitter:
                 )
 
                 chunk = Document(
-                    page_content=section["content"], metadata=chunk_metadata
+                    page_content=str(section["content"]), metadata=chunk_metadata
                 )
                 chunks.append(chunk)
             else:
                 # Split large section
                 section_doc = Document(
-                    page_content=section["content"], metadata=document.metadata.copy()
+                    page_content=str(section["content"]),
+                    metadata=document.metadata.copy(),
                 )
 
                 section_chunks = await self._split_document_basic(
-                    section_doc, chunk_size, chunk_overlap, strategy, use_token_counting
+                    section_doc,
+                    chunk_size,
+                    chunk_overlap,
+                    strategy,
+                    use_token_counting,
+                    model_name,
                 )
 
                 # Add heading context to each chunk
@@ -300,7 +330,7 @@ class DocumentSplitter:
             paragraphs = content.split("\n\n")
 
             chunks = []
-            current_chunk_parts = []
+            current_chunk_parts: list[str] = []
             current_chunk_length = 0
 
             for paragraph in paragraphs:
@@ -433,6 +463,7 @@ class DocumentSplitter:
             )
 
         # Create appropriate splitter based on strategy
+        splitter: RecursiveCharacterTextSplitter | CharacterTextSplitter
         if strategy == "recursive":
             splitter = RecursiveCharacterTextSplitter(
                 chunk_size=chunk_size,
@@ -553,7 +584,7 @@ class DocumentSplitter:
             sentences = self._split_into_sentences(content)
 
             chunks = []
-            current_chunk_sentences = []
+            current_chunk_sentences: list[str] = []
             current_chunk_length = 0
 
             for sentence in sentences:
@@ -668,7 +699,7 @@ class DocumentSplitter:
         return cleaned_sentences
 
     def _get_content_length(
-        self, content: str, use_token_counting: bool, model_name: str = None
+        self, content: str, use_token_counting: bool, model_name: str | None = None
     ) -> int:
         """Get the length of content (characters or tokens)."""
         if use_token_counting and model_name:
@@ -745,8 +776,8 @@ class DocumentSplitter:
             total_characters = sum(chunk_sizes)
 
             # Calculate chunk type distribution
-            chunk_types = {}
-            chunk_strategies = {}
+            chunk_types: dict[str, int] = {}
+            chunk_strategies: dict[str, int] = {}
 
             # Estimate tokens per chunk (using character-based estimation if token count not available)
             total_estimated_tokens = 0
@@ -776,7 +807,7 @@ class DocumentSplitter:
             )
 
             # Analyze metadata patterns
-            metadata_keys = set()
+            metadata_keys: set[str] = set()
             for chunk in chunks:
                 metadata_keys.update(chunk.metadata.keys())
 
