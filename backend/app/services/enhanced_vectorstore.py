@@ -207,7 +207,7 @@ class EnhancedVectorStore:
                     existing_hierarchy.total_elements = hierarchy.total_elements  # type: ignore[assignment]
                     existing_hierarchy.updated_at = datetime.utcnow()  # type: ignore[assignment]
                     db.commit()
-                    hierarchy_id = existing_hierarchy.hierarchy_id
+                    hierarchy_id = str(existing_hierarchy.hierarchy_id)
                 else:
                     # Create new hierarchy record
                     db_hierarchy = DBDocumentHierarchy(
@@ -530,7 +530,7 @@ class EnhancedVectorStore:
             for ref in chunk.chunk_references:
                 if ref in hierarchy.elements:
                     element = hierarchy.elements[ref]
-                    metadata["hierarchy_element"] = {
+                    metadata["hierarchy_element"] = {  # type: ignore[dict-item]
                         "element_type": str(element.element_type.element_type.value),
                         "semantic_role": str(element.semantic_role)
                         if element.semantic_role is not None
