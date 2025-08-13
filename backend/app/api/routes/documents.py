@@ -243,9 +243,37 @@ async def upload_document(
             processing_result = await _process_document_internal(file)
 
             # Convert to enhanced document for storage
+            # Convert service types to schema types
+            from app.models.schemas import DocumentChunk as BaseDocumentChunk
+            from app.models.schemas import DocumentMetadata as BaseDocumentMetadata
+
+            base_metadata = BaseDocumentMetadata(
+                filename=processing_result.parsed_content.metadata.filename,
+                file_type=processing_result.parsed_content.metadata.file_type,
+                total_pages=processing_result.parsed_content.metadata.total_pages,
+                total_chars=processing_result.parsed_content.metadata.total_chars,
+                total_tokens=processing_result.parsed_content.metadata.total_tokens,
+                sections=processing_result.parsed_content.metadata.sections,
+            )
+
+            base_chunks = [
+                BaseDocumentChunk(
+                    text=chunk.text,
+                    chunk_index=chunk.chunk_index,
+                    document_filename=chunk.document_filename,
+                    page_number=chunk.page_number,
+                    section_title=chunk.section_title,
+                    start_char=chunk.start_char,
+                    end_char=chunk.end_char,
+                    char_count=chunk.char_count,
+                    metadata=chunk.metadata,
+                )
+                for chunk in processing_result.chunks
+            ]
+
             enhanced_doc = convert_to_enhanced_document(
-                processing_result.parsed_content.metadata,
-                processing_result.chunks,
+                base_metadata,
+                base_chunks,
                 status="completed",
                 content=processing_result.parsed_content.text,
                 processing_stats=processing_result.processing_stats,
@@ -311,12 +339,13 @@ async def list_documents(current_user: dict = Depends(get_current_user)):
             # Count chunks for this document
             chunk_count = len(db_doc.chunks) if db_doc.chunks else 0
 
+            # Note: db_doc attributes are already the values, not Column objects
             document = Document(
                 id=str(db_doc.id),
-                filename=db_doc.filename,
-                user_id=db_doc.user_id,
-                status=db_doc.status,
-                storage_key=db_doc.storage_key,
+                filename=str(db_doc.filename),
+                user_id=int(db_doc.user_id),
+                status=str(db_doc.status),
+                storage_key=str(db_doc.storage_key) if db_doc.storage_key else None,
                 created_at=db_doc.created_at,
                 chunk_count=chunk_count,
             )
@@ -389,7 +418,7 @@ async def delete_document(
 @router.get("/chunks/{chunk_id}/related")
 async def get_related_chunks(
     chunk_id: str,
-    relation_types: str = None,  # comma-separated list
+    relation_types: str | None = None,  # comma-separated list
     max_distance: int = 2,
     current_user: dict = Depends(get_current_user),
 ) -> list[dict]:

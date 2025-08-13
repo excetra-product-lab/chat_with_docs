@@ -14,6 +14,8 @@ from app.models.langchain_models import (
     convert_to_enhanced_document,
     integrate_with_langchain_pipeline,
 )
+from app.models.schemas import DocumentChunk as BaseDocumentChunk
+from app.models.schemas import DocumentMetadata as BaseDocumentMetadata
 from app.services.document_processor import DocumentProcessor
 
 logger = logging.getLogger(__name__)
@@ -87,6 +89,8 @@ class EnhancedDocumentService:
 
                 # Process with Langchain pipeline
                 # Now using improved HTML processing that's markdown-aware
+                if self.langchain_processor is None:
+                    raise ValueError("Langchain processor not initialized")
                 langchain_docs = await self.langchain_processor.process_single_file(
                     temp_file.name,
                     preserve_structure=preserve_structure,
@@ -109,7 +113,9 @@ class EnhancedDocumentService:
                 # Update chunk hashes and token counts
                 for chunk in enhanced_doc.chunks:
                     chunk.generate_chunk_hash()
-                    if hasattr(self.langchain_processor, "token_counter"):
+                    if self.langchain_processor is not None and hasattr(
+                        self.langchain_processor, "token_counter"
+                    ):
                         chunk.token_count = (
                             self.langchain_processor.token_counter.count_tokens(
                                 chunk.text
@@ -135,9 +141,34 @@ class EnhancedDocumentService:
         processing_result = await self.document_processor.process_document(file)
 
         # Convert to enhanced models
+        # Convert service types to schema types
+        base_metadata = BaseDocumentMetadata(
+            filename=processing_result.parsed_content.metadata.filename,
+            file_type=processing_result.parsed_content.metadata.file_type,
+            total_pages=processing_result.parsed_content.metadata.total_pages,
+            total_chars=processing_result.parsed_content.metadata.total_chars,
+            total_tokens=processing_result.parsed_content.metadata.total_tokens,
+            sections=processing_result.parsed_content.metadata.sections,
+        )
+
+        base_chunks = [
+            BaseDocumentChunk(
+                text=chunk.text,
+                chunk_index=chunk.chunk_index,
+                document_filename=chunk.document_filename,
+                page_number=chunk.page_number,
+                section_title=chunk.section_title,
+                start_char=chunk.start_char,
+                end_char=chunk.end_char,
+                char_count=chunk.char_count,
+                metadata=chunk.metadata,
+            )
+            for chunk in processing_result.chunks
+        ]
+
         enhanced_doc = convert_to_enhanced_document(
-            processing_result.parsed_content.metadata,
-            processing_result.chunks,
+            base_metadata,
+            base_chunks,
             status="completed",
             content=processing_result.parsed_content.text,
             processing_stats=processing_result.processing_stats,

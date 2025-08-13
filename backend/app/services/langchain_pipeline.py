@@ -133,14 +133,8 @@ class DocumentPipeline:
                 doc_chunks = self.splitter.chunk_document(doc)
                 chunks.extend(doc_chunks)
         else:
-            # Fallback for standard LangChain splitters
-            chunks = await self.splitter.split_documents(
-                documents=transformed_documents,
-                chunk_size=chunk_size,
-                chunk_overlap=chunk_overlap,
-                strategy=splitting_strategy,
-                use_token_counting=use_token_counting,
-            )
+            # Fallback for standard LangChain splitters - split_documents is not async
+            chunks = self.splitter.split_documents(transformed_documents)
 
         self.logger.info(f"Split into {len(chunks)} chunks")
 
@@ -206,7 +200,7 @@ class DocumentPipeline:
 
             # Load document
             loader = self.loaders[loader_type]
-            documents = await loader.load_document(file_path)
+            documents = await loader.load_document(str(file_path))
 
             self.logger.debug(f"Loaded {len(documents)} documents from {file_path}")
             return documents
@@ -242,7 +236,7 @@ class DocumentPipeline:
         self, documents: list[Document], **split_kwargs
     ) -> list[Document]:
         """Split documents without loading or transformation."""
-        return await self.splitter.split_documents(documents, **split_kwargs)
+        return self.splitter.split_documents(documents)
 
     async def get_supported_file_types(self) -> dict[str, list[str]]:
         """Get information about supported file types."""
@@ -274,14 +268,29 @@ class DocumentPipeline:
             ),
         }
 
-        # Recommend optimal chunk size
-        optimal_chunk_size = await self.splitter.calculate_optimal_chunk_size(documents)
+        # Recommend optimal chunk size based on content analysis
+        avg_length = content_analysis["avg_document_length"]
+        optimal_chunk_size = min(800, max(400, int(avg_length * 0.3)))
         content_analysis["recommended_chunk_size"] = optimal_chunk_size
 
-        # Analyze structure
+        # Analyze structure - simplified version
         structure_info = []
         for doc in documents[:5]:  # Sample first 5 documents
-            structure = self.splitter._analyze_document_structure(doc.page_content)
+            content = doc.page_content
+            heading_count = len(
+                [
+                    line
+                    for line in content.split("\n")
+                    if line.strip() and (line.isupper() or line.startswith("#"))
+                ]
+            )
+            paragraph_count = len([p for p in content.split("\n\n") if p.strip()])
+            structure = {
+                "heading_count": heading_count,
+                "paragraph_count": paragraph_count,
+                "has_headings": heading_count > 0,
+                "has_paragraphs": paragraph_count > 1,
+            }
             structure_info.append(structure)
 
         if structure_info:
@@ -302,7 +311,7 @@ class DocumentPipeline:
     ) -> dict[str, Any]:
         """Estimate processing time and resource requirements."""
         total_size = 0
-        file_types = {}
+        file_types: dict[str, int] = {}
 
         for file_path in file_paths:
             try:
@@ -335,7 +344,7 @@ class DocumentPipeline:
 
     async def validate_files(self, file_paths: list[str | Path]) -> dict[str, Any]:
         """Validate files before processing."""
-        results = {
+        results: dict[str, list[str]] = {
             "valid_files": [],
             "invalid_files": [],
             "unsupported_files": [],

@@ -332,6 +332,8 @@ class DocumentProcessor:
 
             try:
                 # Process with refactored processor
+                if self.langchain_processor is None:
+                    raise ValueError("Langchain processor not initialized")
                 documents = await self.langchain_processor.process_single_file(
                     temp_file.name,
                     chunk_size=self.chunker.chunk_size,
