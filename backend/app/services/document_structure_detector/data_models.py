@@ -179,9 +179,13 @@ class DocumentStructure:
         """Get all sections in the document."""
         return [elem for elem in self.elements if isinstance(elem, Section)]
 
-    def get_headings(self) -> list[Heading]:
+    def get_headings(self) -> list["DocumentElement"]:
         """Get all headings in the document."""
-        return [elem for elem in self.elements if isinstance(elem, Heading)]
+        return [
+            elem
+            for elem in self.elements
+            if isinstance(elem, Heading) or elem.element_type == ElementType.HEADING
+        ]
 
     def get_element_by_numbering(self, numbering: str) -> DocumentElement | None:
         """Find an element by its numbering."""
