@@ -390,7 +390,12 @@ class WordDocumentLoader(BaseDocumentLoader):
                 self.logger.error(f"Failed to process {file_paths[i]}: {str(result)}")
                 processed_results.append([])
             else:
-                processed_results.append(result)
+                # result is guaranteed to be list[Document] here
+                if isinstance(result, list):
+                    processed_results.append(result)
+                else:
+                    # Fallback - this shouldn't happen but ensures type safety
+                    processed_results.append([])
 
         return processed_results
 

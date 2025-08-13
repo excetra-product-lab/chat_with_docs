@@ -183,8 +183,8 @@ class EnhancedDocumentElement(BaseModel):
         self, element_registry: dict[str, "EnhancedDocumentElement"]
     ) -> list[str]:
         """Get the hierarchical path from root to this element."""
-        path = []
-        current_id = self.element_id
+        path: list[str] = []
+        current_id: str | None = self.element_id
 
         while current_id:
             if current_id not in element_registry:
@@ -208,6 +208,7 @@ class EnhancedDocumentElement(BaseModel):
         enhanced_type = EnhancedElementType(
             element_type=base_element.element_type,
             detection_method="structure_detector",
+            confidence_score=0.8,  # Default confidence for structure detector
         )
 
         enhanced_numbering = None
@@ -391,8 +392,8 @@ class DocumentHierarchy(BaseModel):
 
     def get_path_to_root(self, element_id: str) -> list[EnhancedDocumentElement]:
         """Get the path from an element to the root."""
-        path = []
-        current_id = element_id
+        path: list[EnhancedDocumentElement] = []
+        current_id: str | None = element_id
         visited = set()  # Track visited elements to detect circular references
 
         while current_id and current_id in self.elements:
@@ -411,7 +412,7 @@ class DocumentHierarchy(BaseModel):
     def _has_circular_reference(self, element_id: str) -> bool:
         """Check if an element has a circular reference in its parent chain."""
         visited = set()
-        current_id = element_id
+        current_id: str | None = element_id
 
         while current_id and current_id in self.elements:
             if current_id in visited:
@@ -531,7 +532,12 @@ class DocumentHierarchy(BaseModel):
         cls, base_elements: list[DocumentElement], document_filename: str
     ) -> "DocumentHierarchy":
         """Create hierarchy from base DocumentElement list."""
-        hierarchy = cls(document_filename=document_filename)
+        hierarchy = cls(
+            document_filename=document_filename,
+            max_depth=0,
+            total_elements=0,
+            structure_confidence=0.0,
+        )
 
         # Convert base elements to enhanced elements
         for base_element in base_elements:
@@ -561,6 +567,8 @@ class DocumentHierarchy(BaseModel):
                         relationship_type="parent_child",
                         confidence_score=0.95,
                         bidirectional=True,
+                        distance=0,  # Parent-child are directly connected
+                        semantic_similarity=0.9,  # High similarity for parent-child
                     )
                     hierarchy.add_relationship(relationship)
 
@@ -582,7 +590,10 @@ def merge_hierarchies(hierarchies: list[DocumentHierarchy]) -> DocumentHierarchy
     # Create new merged hierarchy
     merged = DocumentHierarchy(
         document_filename="merged_"
-        + "_".join(h.document_filename for h in hierarchies[:3])
+        + "_".join(h.document_filename for h in hierarchies[:3]),
+        max_depth=0,
+        total_elements=0,
+        structure_confidence=0.0,
     )
 
     # Merge all elements and relationships

@@ -5,6 +5,7 @@ the document structure detection process using various specialized handlers.
 """
 
 import logging
+from typing import Any
 
 from .data_models import (
     DocumentElement,
@@ -170,7 +171,7 @@ class StructureDetector:
         """
         return self.heading_detector.detect_headings(text)
 
-    def analyze_numbering_patterns(self, text: str) -> dict[str, any]:
+    def analyze_numbering_patterns(self, text: str) -> dict[str, Any]:
         """Analyze numbering patterns and provide detailed statistics.
 
         Args:
@@ -181,7 +182,7 @@ class StructureDetector:
         """
         numbering_systems = self.parse_all_numbering_systems(text)
 
-        analysis = {
+        analysis: dict[str, Any] = {
             "total_numbering_systems": len(numbering_systems),
             "numbering_types": {},
             "level_distribution": {},
@@ -301,7 +302,7 @@ class StructureDetector:
         return self.pattern_handler.extract_headings_by_format(text)
 
     def find_pattern_matches(
-        self, text: str, category: str, pattern_name: str = None
+        self, text: str, category: str, pattern_name: str | None = None
     ) -> list[tuple]:
         """Find all matches for a specific pattern category or individual pattern.
 
@@ -345,7 +346,7 @@ class StructureDetector:
 
     def get_numbering_statistics(
         self, numbering_systems: list[NumberingSystem]
-    ) -> dict[str, any]:
+    ) -> dict[str, Any]:
         """Get detailed statistics about numbering systems.
 
         Args:

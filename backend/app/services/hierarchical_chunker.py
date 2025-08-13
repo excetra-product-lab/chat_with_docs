@@ -281,7 +281,7 @@ class HierarchicalChunker(RecursiveCharacterTextSplitter):
         return token_counts
 
     def _calculate_optimal_overlap(
-        self, chunk_size: int, model_name: str = None
+        self, chunk_size: int, model_name: str | None = None
     ) -> int:
         """Calculate optimal overlap based on TokenCounter insights.
 
@@ -406,7 +406,7 @@ class HierarchicalChunker(RecursiveCharacterTextSplitter):
             return chunks
 
         optimized_chunks = []
-        small_chunks_buffer = []
+        small_chunks_buffer: list[str] = []
 
         for chunk in chunks:
             token_count = self._count_tokens_with_tracking(chunk)
@@ -524,7 +524,7 @@ class HierarchicalChunker(RecursiveCharacterTextSplitter):
         # Create a temporary splitter with smaller chunk size
         temp_splitter = RecursiveCharacterTextSplitter(
             chunk_size=target_size,
-            chunk_overlap=self.chunk_overlap,
+            chunk_overlap=self._chunk_overlap,
             length_function=self._create_token_length_function(),
             separators=self._separators,
         )
@@ -631,7 +631,11 @@ class HierarchicalChunker(RecursiveCharacterTextSplitter):
             boundaries.append(boundary)
 
         # Sort boundaries by position
-        boundaries.sort(key=lambda x: x["start_position"])
+        boundaries.sort(
+            key=lambda x: int(x["start_position"])
+            if isinstance(x["start_position"], int | str)
+            else 0
+        )
 
         return boundaries
 
@@ -779,7 +783,7 @@ class HierarchicalChunker(RecursiveCharacterTextSplitter):
             return None
 
         # Analyze detected patterns by hierarchy level
-        hierarchy_patterns = {}  # level -> set of patterns
+        hierarchy_patterns: dict[int, set[str]] = {}  # level -> set of patterns
         numbering_types = set()
 
         for element in structure.elements:
@@ -1158,7 +1162,7 @@ class HierarchicalChunker(RecursiveCharacterTextSplitter):
         element.get_hierarchy_path()
 
         # Find parent elements
-        parent_elements = []
+        parent_elements: list[str] = []
         current = element.parent
         while current:
             if current.numbering:
@@ -1295,8 +1299,8 @@ class HierarchicalChunker(RecursiveCharacterTextSplitter):
         total_chars = sum(chunk.char_count for chunk in chunks)
 
         # Analyze hierarchy levels
-        hierarchy_levels = {}
-        element_types = {}
+        hierarchy_levels: dict[int, int] = {}
+        element_types: dict[str, int] = {}
 
         for chunk in chunks:
             # Count by hierarchy level
@@ -1421,7 +1425,7 @@ class HierarchicalChunker(RecursiveCharacterTextSplitter):
         Returns:
             Dictionary with token usage analytics
         """
-        stats = self.token_usage_stats.copy()
+        stats: dict[str, Any] = self.token_usage_stats.copy()
 
         # Calculate derived metrics
         if stats["total_chunks_created"] > 0:
@@ -1464,7 +1468,7 @@ class HierarchicalChunker(RecursiveCharacterTextSplitter):
 
     def estimate_processing_cost(
         self, text: str, cost_per_1k_tokens: float = 0.002
-    ) -> dict[str, float]:
+    ) -> dict[str, Any]:
         """Estimate the cost of processing text with the current model.
 
         Args:
@@ -1512,7 +1516,7 @@ class HierarchicalChunker(RecursiveCharacterTextSplitter):
             Dictionary with optimization recommendations
         """
         # Model-specific recommendations
-        recommendations = {
+        recommendations: dict[str, Any] = {
             "model_name": model_name,
             "current_config": {
                 "chunk_size": self._chunk_size,

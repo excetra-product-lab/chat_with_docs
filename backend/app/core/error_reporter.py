@@ -35,7 +35,7 @@ class ErrorReporter:
             operation: Description of what operation was being performed
             user_id: Optional user identifier for correlation
         """
-        error_data = {
+        error_data: dict[str, Any] = {
             "timestamp": datetime.utcnow().isoformat(),
             "error_type": error.__class__.__name__,
             "error_message": str(error),

@@ -428,7 +428,7 @@ class HeadingDetector:
                 candidate.confidence_score += 0.15
 
             # Multiple format indicators bonus
-            if len(candidate.format_indicators) > 1:
+            if candidate.format_indicators and len(candidate.format_indicators) > 1:
                 candidate.confidence_score += 0.1
 
             # Element type adjustment

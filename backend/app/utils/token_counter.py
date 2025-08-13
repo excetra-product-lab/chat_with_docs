@@ -56,7 +56,7 @@ class TokenCounter:
         self.model_name = model_name
         self.legal_specific = legal_specific
         self._encoding = None
-        self._langchain_splitter = None
+        self._langchain_splitter: TokenTextSplitter | None = None
         self.logger = logging.getLogger(__name__)
 
         # Set encoding based on model if provided
@@ -145,8 +145,9 @@ class TokenCounter:
                 )
 
                 # Store metadata for future reference
-                self._langchain_splitter._effective_model = effective_model
-                self._langchain_splitter._splitter_key = splitter_key
+                if self._langchain_splitter is not None:
+                    self._langchain_splitter._effective_model = effective_model  # type: ignore
+                    self._langchain_splitter._splitter_key = splitter_key  # type: ignore
 
             except Exception as e:
                 self.logger.warning(
@@ -161,8 +162,17 @@ class TokenCounter:
                     chunk_size=chunk_size,
                     chunk_overlap=safe_overlap,
                 )
-                self._langchain_splitter._effective_model = effective_model
-                self._langchain_splitter._splitter_key = splitter_key
+                if self._langchain_splitter is not None:
+                    self._langchain_splitter._effective_model = effective_model  # type: ignore
+                    self._langchain_splitter._splitter_key = splitter_key  # type: ignore
+
+        if self._langchain_splitter is None:
+            # Fallback creation if everything failed
+            self._langchain_splitter = TokenTextSplitter(
+                model_name="gpt-4",
+                chunk_size=1000,
+                chunk_overlap=200,
+            )
 
         return self._langchain_splitter
 
@@ -175,14 +185,14 @@ class TokenCounter:
 
             if self.legal_specific:
                 # Adjust token count for legal patterns
-                legal_adjustments = 0
+                legal_adjustments: float = 0.0
 
                 for _pattern_name, pattern in self.LEGAL_PATTERNS.items():
                     matches = pattern.findall(text)
                     # Legal terms tend to be tokenized differently, add small adjustment
                     legal_adjustments += len(matches) * 0.5
 
-                return int(base_tokens + legal_adjustments)
+                return int(base_tokens + int(legal_adjustments))
 
             return base_tokens
 
@@ -241,15 +251,15 @@ class TokenCounter:
             if pattern_name == "legal_citations":
                 adjustments += len(matches) * 2  # Citations tend to use more tokens
             elif pattern_name == "statute_references":
-                adjustments += len(matches) * 1.5  # Section references are compact
+                adjustments += int(len(matches) * 1.5)  # Section references are compact
             elif pattern_name == "legal_terms":
-                adjustments += (
+                adjustments += int(
                     len(matches) * 0.5
                 )  # Legal terms might be tokenized specially
             elif pattern_name == "case_law":
-                adjustments += len(matches) * 2.5  # Case citations are token-heavy
+                adjustments += int(len(matches) * 2.5)  # Case citations are token-heavy
             elif pattern_name == "legal_abbreviations":
-                adjustments -= len(matches) * 0.5  # Abbreviations save tokens
+                adjustments -= int(len(matches) * 0.5)  # Abbreviations save tokens
 
         return int(base_tokens + adjustments)
 

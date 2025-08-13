@@ -228,16 +228,16 @@ class EnhancedVectorStore:
                             semantic_role=element.semantic_role,
                             importance_score=element.importance_score,
                             level=element.level,
-                            content=element.content,
-                            start_char=element.start_char,
-                            end_char=element.end_char,
-                            page_number=element.page_number,
-                            element_metadata=element.additional_metadata,
+                            content=element.text,
+                            start_char=element.start_position,
+                            end_char=element.end_position,
+                            page_number=getattr(element, "page_number", None),
+                            element_metadata=element.metadata,
                         )
                         db.add(db_element)
 
                     # Store relationships
-                    for relationship in hierarchy.relationships:
+                    for relationship in hierarchy.relationships.values():
                         # Find the database IDs for the elements
                         source_element = (
                             db.query(DBDocumentElement)
@@ -262,9 +262,9 @@ class EnhancedVectorStore:
                             db_relationship = ElementRelationship(
                                 source_element_id=source_element.id,
                                 target_element_id=target_element.id,
-                                relationship_type=relationship.relationship_type.value,
+                                relationship_type=relationship.relationship_type,
                                 confidence_score=relationship.confidence_score,
-                                relationship_metadata=relationship.additional_metadata,
+                                relationship_metadata=relationship.metadata,
                             )
                             db.add(db_relationship)
 
@@ -345,16 +345,36 @@ class EnhancedVectorStore:
                     if chunk:
                         # Convert to EnhancedDocumentChunk
                         enhanced_chunk = EnhancedDocumentChunk(
-                            text=chunk.content,
-                            chunk_index=chunk.id,
-                            page_number=chunk.page or 0,
-                            start_char=chunk.start_char or 0,
-                            end_char=chunk.end_char or len(chunk.content),
-                            chunk_hash=chunk.chunk_hash or "",
-                            chunk_type=chunk.chunk_type or "text",
-                            hierarchical_level=chunk.hierarchical_level or 0,
-                            token_count=chunk.token_count or 0,
-                            quality_score=chunk.quality_score or 1.0,
+                            text=str(chunk.content),
+                            chunk_index=int(chunk.id),
+                            document_filename=getattr(
+                                chunk, "document_filename", "unknown"
+                            ),
+                            section_title=getattr(chunk, "section_title", None),
+                            page_number=int(chunk.page) if chunk.page else None,
+                            start_char=int(chunk.start_char) if chunk.start_char else 0,
+                            end_char=int(chunk.end_char)
+                            if chunk.end_char
+                            else len(str(chunk.content)),
+                            char_count=len(str(chunk.content)),
+                            chunk_hash=str(chunk.chunk_hash)
+                            if chunk.chunk_hash
+                            else None,
+                            chunk_type=str(chunk.chunk_type)
+                            if chunk.chunk_type
+                            else "text",
+                            hierarchical_level=int(chunk.hierarchical_level)
+                            if chunk.hierarchical_level
+                            else 0,
+                            langchain_source=False,
+                            token_count=int(chunk.token_count)
+                            if chunk.token_count
+                            else 0,
+                            quality_score=float(chunk.quality_score)
+                            if chunk.quality_score
+                            else None,
+                            embedding_model=None,
+                            parent_section=None,
                             chunk_references=[str(chunk_ref.element_id)],
                         )
                         related_chunks.append(enhanced_chunk)

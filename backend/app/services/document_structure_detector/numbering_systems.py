@@ -625,7 +625,7 @@ class NumberingSystemHandler:
         }
 
         # Check for format inconsistencies
-        type_counts = {}
+        type_counts: dict[str, int] = {}
         for num_sys in numbering_systems:
             type_name = num_sys.numbering_type.value
             type_counts[type_name] = type_counts.get(type_name, 0) + 1

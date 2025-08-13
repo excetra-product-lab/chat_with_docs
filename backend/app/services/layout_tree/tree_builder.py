@@ -345,7 +345,7 @@ class TreeBuilder:
         sorted_elements = sorted(elements, key=lambda e: (e.level, e.line_number))
 
         # Group by level
-        levels = {}
+        levels: dict[int, list[DocumentElement]] = {}
         for element in sorted_elements:
             level = element.level
             if level not in levels:
@@ -354,7 +354,7 @@ class TreeBuilder:
 
         # Build tree level by level
         tree = LayoutTree()
-        level_nodes = {}
+        level_nodes: dict[int, list[TreeNode]] = {}
 
         for level in sorted(levels.keys()):
             level_nodes[level] = []
@@ -463,7 +463,7 @@ class TreeBuilder:
         sorted_elements = sorted(elements, key=lambda e: (e.level, e.line_number))
 
         tree = LayoutTree()
-        nodes_by_level = {}
+        nodes_by_level: dict[int, list[TreeNode]] = {}
 
         # Group nodes by level
         for element in sorted_elements:

@@ -257,7 +257,7 @@ class DocumentPipeline:
         total_length = sum(doc_lengths)
 
         # Analyze content types
-        content_analysis = {
+        content_analysis: dict[str, Any] = {
             "total_documents": len(documents),
             "total_characters": total_length,
             "avg_document_length": total_length / len(documents),

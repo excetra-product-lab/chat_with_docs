@@ -253,6 +253,10 @@ class EnhancedDocumentChunk(BaseModel):
             hierarchical_level=metadata.pop("hierarchical_level", 0),
             langchain_source=metadata.pop("langchain_source", True),
             token_count=metadata.pop("token_count", 0),
+            chunk_hash=metadata.pop("chunk_hash", None),
+            embedding_model=metadata.pop("embedding_model", None),
+            quality_score=metadata.pop("quality_score", None),
+            parent_section=metadata.pop("parent_section", None),
             metadata=metadata,
         )
 
@@ -387,6 +391,11 @@ class EnhancedDocument(BaseModel):
             filename=filename,
             file_type=cls._detect_file_type(filename),
             total_chars=total_chars,
+            total_pages=None,  # Cannot determine from text documents
+            total_tokens=0,  # Will be calculated later
+            document_hash=None,  # Will be generated if needed
+            content_language=None,  # Could be detected later
+            extraction_quality=None,  # Could be calculated later
             langchain_source=True,
             structure_detected=any("section" in doc.metadata for doc in documents),
         )
@@ -416,7 +425,7 @@ class EnhancedDocument(BaseModel):
 
     def calculate_processing_stats(self) -> dict[str, Any]:
         """Calculate comprehensive processing statistics."""
-        stats = {
+        stats: dict[str, Any] = {
             "document": {
                 "filename": self.filename,
                 "total_chunks": len(self.chunks),
@@ -446,7 +455,7 @@ class EnhancedDocument(BaseModel):
         }
 
         # Calculate chunk type distribution
-        chunk_types = {}
+        chunk_types: dict[str, int] = {}
         for chunk in self.chunks:
             chunk_types[chunk.chunk_type] = chunk_types.get(chunk.chunk_type, 0) + 1
         stats["chunks"]["chunks_by_type"] = chunk_types
