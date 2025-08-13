@@ -346,7 +346,7 @@ async def list_documents(current_user: dict = Depends(get_current_user)):
                 user_id=int(db_doc.user_id),
                 status=str(db_doc.status),
                 storage_key=str(db_doc.storage_key) if db_doc.storage_key else None,
-                created_at=db_doc.created_at,
+                created_at=db_doc.created_at,  # type: ignore[arg-type]
                 chunk_count=chunk_count,
             )
             documents.append(document)

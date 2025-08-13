@@ -211,7 +211,7 @@ class DocumentSplitter:
 
         # Find all headings with their positions
         heading_pattern = r"^(#{1,6})\s+(.+)$"
-        headings = []
+        headings: list[dict[str, Any]] = []
 
         for match in re.finditer(heading_pattern, content, re.MULTILINE):
             level = len(match.group(1))
@@ -237,7 +237,7 @@ class DocumentSplitter:
             )
 
         # Create sections based on headings
-        sections = []
+        sections: list[dict[str, Any]] = []
         for i, heading in enumerate(headings):
             start_pos = int(heading["start_pos"])
             end_pos = (

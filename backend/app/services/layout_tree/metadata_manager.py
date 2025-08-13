@@ -133,7 +133,7 @@ class MetadataManager:
     propagation, caching, and performance optimization for tree operations.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the metadata manager."""
         self.logger = logging.getLogger(__name__)
         self._validators: list[MetadataValidator] = [
@@ -338,7 +338,7 @@ class MetadataManager:
         Returns:
             Dict[str, Any]: Comprehensive metadata summary
         """
-        summary = {
+        summary: dict[str, Any] = {
             "basic_properties": {
                 "depth": node.depth,
                 "height": node.height,

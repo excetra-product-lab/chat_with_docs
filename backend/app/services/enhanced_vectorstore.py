@@ -203,9 +203,9 @@ class EnhancedVectorStore:
 
                 if existing_hierarchy:
                     # Update existing hierarchy
-                    existing_hierarchy.hierarchy_data = hierarchy_data
-                    existing_hierarchy.total_elements = hierarchy.total_elements
-                    existing_hierarchy.updated_at = datetime.utcnow()
+                    existing_hierarchy.hierarchy_data = hierarchy_data  # type: ignore[assignment]
+                    existing_hierarchy.total_elements = hierarchy.total_elements  # type: ignore[assignment]
+                    existing_hierarchy.updated_at = datetime.utcnow()  # type: ignore[assignment]
                     db.commit()
                     hierarchy_id = existing_hierarchy.hierarchy_id
                 else:
@@ -269,13 +269,13 @@ class EnhancedVectorStore:
                             db.add(db_relationship)
 
                     db.commit()
-                    hierarchy_id = hierarchy.hierarchy_id
+                    hierarchy_id = str(hierarchy.hierarchy_id)
 
                 self.logger.info(
                     f"Successfully stored hierarchy {hierarchy_id}: "
                     f"{hierarchy.total_elements} elements, {len(hierarchy.relationships)} relationships"
                 )
-                return hierarchy_id
+                return str(hierarchy_id)
 
             finally:
                 db.close()
@@ -320,7 +320,7 @@ class EnhancedVectorStore:
 
                 # For each element referenced by the chunk, find related elements
                 for chunk_ref in chunk_refs:
-                    element_id = chunk_ref.element_id
+                    element_id = int(chunk_ref.element_id)
                     related_ids = await self._find_related_elements(
                         db, element_id, relation_types, max_distance, set()
                     )
@@ -531,10 +531,12 @@ class EnhancedVectorStore:
                 if ref in hierarchy.elements:
                     element = hierarchy.elements[ref]
                     metadata["hierarchy_element"] = {
-                        "element_type": element.element_type.element_type.value,
-                        "semantic_role": element.semantic_role,
-                        "importance_score": element.importance_score,
-                        "level": element.level,
+                        "element_type": str(element.element_type.element_type.value),
+                        "semantic_role": str(element.semantic_role)
+                        if element.semantic_role is not None
+                        else None,
+                        "importance_score": float(element.importance_score),
+                        "level": int(element.level),
                     }
                     break
 
