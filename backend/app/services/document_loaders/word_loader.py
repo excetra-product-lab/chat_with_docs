@@ -450,8 +450,6 @@ class WordDocumentLoader(BaseDocumentLoader):
             String indicating the element type
         """
         # Basic heuristics for element type detection
-        paragraph.text.strip()
-
         # Check for heading style
         if paragraph.style.name.startswith("Heading"):
             return "heading"

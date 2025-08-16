@@ -84,9 +84,6 @@ class EnhancedDocumentService:
             temp_file.flush()
 
             try:
-                # Determine file type and appropriate HTML handling
-                Path(file.filename or "").suffix.lower()
-
                 # Process with Langchain pipeline
                 # Now using improved HTML processing that's markdown-aware
                 if self.langchain_processor is None:

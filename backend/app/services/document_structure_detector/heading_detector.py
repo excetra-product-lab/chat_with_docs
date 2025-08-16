@@ -305,7 +305,6 @@ class HeadingDetector:
             for numbering_info in numbering_matches:
                 # numbering_info is a tuple: (numbering_type, value, start_pos, end_pos)
                 match_start = numbering_info[2]
-                numbering_info[3]
 
                 # Check if numbering is at the start of this line
                 if line_start_pos <= match_start < line_start_pos + len(line):
