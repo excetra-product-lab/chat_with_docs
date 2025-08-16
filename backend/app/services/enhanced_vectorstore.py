@@ -530,7 +530,8 @@ class EnhancedVectorStore:
             for ref in chunk.chunk_references:
                 if ref in hierarchy.elements:
                     element = hierarchy.elements[ref]
-                    metadata["hierarchy_element"] = {  # type: ignore[dict-item]
+                    # Create hierarchy element metadata with proper typing
+                    hierarchy_element: dict[str, Any] = {
                         "element_type": str(element.element_type.element_type.value),
                         "semantic_role": str(element.semantic_role)
                         if element.semantic_role is not None
@@ -538,6 +539,7 @@ class EnhancedVectorStore:
                         "importance_score": float(element.importance_score),
                         "level": int(element.level),
                     }
+                    metadata["hierarchy_element"] = hierarchy_element
                     break
 
         return metadata
