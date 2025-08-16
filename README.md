@@ -272,18 +272,18 @@ The system now creates chunks while preserving document structure:
 ```mermaid
 graph LR
     subgraph "Chunk 1: Article I"
-        A1[📋 ARTICLE I - DEFINITIONS<br/>1.1 "Employee" means John Smith...<br/>1.2 "Company" means TechCorp Inc...<br/>1.3 "Effective Date" means...]
-        A2[🏷️ Metadata:<br/>• hierarchy_level: 1<br/>• element_type: ARTICLE<br/>• numbering: "I"<br/>• section_title: "DEFINITIONS"]
+        A1[📋 ARTICLE I - DEFINITIONS\n1.1 "Employee" means John Smith...\n1.2 "Company" means TechCorp Inc...\n1.3 "Effective Date" means...]
+        A2[🏷️ Metadata:\n• hierarchy_level: 1\n• element_type: ARTICLE\n• numbering: "I"\n• section_title: "DEFINITIONS"]
     end
 
     subgraph "Chunk 2: Article II"
-        B1[📋 ARTICLE II - POSITION AND DUTIES<br/>2.1 The Employee shall serve...<br/>2.2 The Employee shall report...<br/>2.3 The Employee shall perform...]
-        B2[🏷️ Metadata:<br/>• hierarchy_level: 1<br/>• element_type: ARTICLE<br/>• numbering: "II"<br/>• section_title: "POSITION AND DUTIES"]
+        B1[📋 ARTICLE II - POSITION AND DUTIES\n2.1 The Employee shall serve...\n2.2 The Employee shall report...\n2.3 The Employee shall perform...]
+        B2[🏷️ Metadata:\n• hierarchy_level: 1\n• element_type: ARTICLE\n• numbering: "II"\n• section_title: "POSITION AND DUTIES"]
     end
 
     subgraph "Chunk 3: Article III"
-        C1[📋 ARTICLE III - COMPENSATION<br/>3.1 Base Salary: $120,000...<br/>3.2 Benefits: Health, dental...<br/>3.3 Bonus: Up to 20%...]
-        C2[🏷️ Metadata:<br/>• hierarchy_level: 1<br/>• element_type: ARTICLE<br/>• numbering: "III"<br/>• section_title: "COMPENSATION"]
+        C1[📋 ARTICLE III - COMPENSATION\n3.1 Base Salary: $120,000...\n3.2 Benefits: Health, dental...\n3.3 Bonus: Up to 20%...]
+        C2[🏷️ Metadata:\n• hierarchy_level: 1\n• element_type: ARTICLE\n• numbering: "III"\n• section_title: "COMPENSATION"]
     end
 
     style A1 fill:#e3f2fd
