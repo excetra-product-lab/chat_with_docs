@@ -4,8 +4,8 @@ import { Document } from '../types'
 
 interface DocumentTableProps {
   documents: Document[]
-  onDelete: (id: string) => Promise<void>
-  isDeleting?: string | null
+  onDelete: (id: number) => Promise<void>
+  isDeleting?: number | null
 }
 
 export const DocumentTable: React.FC<DocumentTableProps> = ({
@@ -13,7 +13,7 @@ export const DocumentTable: React.FC<DocumentTableProps> = ({
   onDelete,
   isDeleting
 }) => {
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null)
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes'
@@ -60,11 +60,11 @@ export const DocumentTable: React.FC<DocumentTableProps> = ({
     }
   }
 
-  const handleDeleteClick = (id: string) => {
+  const handleDeleteClick = (id: number) => {
     setShowDeleteConfirm(id)
   }
 
-  const handleDeleteConfirm = async (id: string) => {
+  const handleDeleteConfirm = async (id: number) => {
     try {
       await onDelete(id)
       setShowDeleteConfirm(null)

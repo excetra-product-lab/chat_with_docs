@@ -307,7 +307,7 @@ async def upload_document(
 
         # Create response document
         document = Document(
-            id=document_id,  # Use int directly to match schema
+            id=int(document_id),  # Explicitly cast to int to match schema
             filename=file.filename,
             user_id=user_id,
             status="processed",
@@ -345,7 +345,7 @@ async def list_documents(current_user: dict = Depends(get_current_user)):
 
             # Note: db_doc attributes are already the values, not Column objects
             document = Document(
-                id=db_doc.id,  # Use int directly to match schema
+                id=int(db_doc.id),  # Explicitly cast to int to match schema
                 filename=str(db_doc.filename),
                 user_id=int(db_doc.user_id),
                 status=str(db_doc.status),

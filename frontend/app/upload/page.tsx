@@ -31,7 +31,7 @@ export default function UploadPage() {
     }
   }
 
-  const handleDeleteDocument = async (id: string) => {
+  const handleDeleteDocument = async (id: number) => {
     try {
       await deleteDocument(id)
       // Refetch documents to update the list

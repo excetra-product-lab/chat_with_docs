@@ -15,8 +15,8 @@ interface AppContextType {
   documents: DocumentWithProgress[]
   setDocuments: (documents: DocumentWithProgress[]) => void
   addDocument: (document: DocumentWithProgress) => void
-  updateDocument: (id: string, updates: Partial<DocumentWithProgress>) => void
-  deleteDocument: (id: string) => void
+  updateDocument: (id: number, updates: Partial<DocumentWithProgress>) => void
+  deleteDocument: (id: number) => void
 
   // Chat state
   messages: Message[]
@@ -39,13 +39,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setDocuments(prev => [...prev, document])
   }
 
-  const updateDocument = (id: string, updates: Partial<DocumentWithProgress>) => {
+  const updateDocument = (id: number, updates: Partial<DocumentWithProgress>) => {
     setDocuments(prev =>
       prev.map(doc => doc.id === id ? { ...doc, ...updates } : doc)
     )
   }
 
-  const deleteDocument = (id: string) => {
+  const deleteDocument = (id: number) => {
     setDocuments(prev => prev.filter(doc => doc.id !== id))
     // Citation filtering removed - messages are no longer linked to documents via citations
   }

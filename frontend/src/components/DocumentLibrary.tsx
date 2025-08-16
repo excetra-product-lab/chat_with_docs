@@ -6,7 +6,7 @@ import { DocumentUpload } from './DocumentUpload';
 interface DocumentLibraryProps {
   documents: Document[];
   onUpload: (file: File) => void;
-  onDelete: (id: string) => void;
+  onDelete: (id: number) => void;
   isUploading: boolean;
   uploadProgress: number;
   isCollapsed: boolean;
