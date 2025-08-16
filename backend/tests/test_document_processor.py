@@ -178,13 +178,20 @@ class TestDocumentProcessor:
         assert is_valid is False
 
     def test_validate_processing_result_invalid_empty_chunk(self):
-        """Test validation fails when chunk has no text."""
+        """Test validation fails when chunk has no text content."""
         from app.services.document_parser import DocumentMetadata, ParsedContent
         from app.services.text_chunker import DocumentChunk
 
         metadata = DocumentMetadata("test.txt", "txt")
         parsed_content = ParsedContent("Valid text content", metadata)
-        chunks = [DocumentChunk("", 0, "test.txt")]  # Empty chunk text
+
+        # Create a chunk with minimal text content to test validation
+        # The DocumentChunk constructor now prevents empty/whitespace-only text,
+        # so we test with a single character that gets stripped to empty
+        chunks = [DocumentChunk("a", 0, "test.txt")]
+        # Manually modify the text to simulate an edge case that might occur
+        chunks[0].text = ""
+
         result = ProcessingResult(
             parsed_content, chunks, {"processing": {"success": True}}
         )
@@ -199,7 +206,12 @@ class TestDocumentProcessor:
 
         metadata = DocumentMetadata("test.txt", "txt")
         parsed_content = ParsedContent("Valid text content", metadata)
-        chunks = [DocumentChunk("Valid text", 0, "")]  # Empty filename
+
+        # Create a chunk with valid filename first
+        chunks = [DocumentChunk("Valid text", 0, "test.txt")]
+        # Manually modify the filename to simulate an edge case that might occur
+        chunks[0].document_filename = ""
+
         result = ProcessingResult(
             parsed_content, chunks, {"processing": {"success": True}}
         )

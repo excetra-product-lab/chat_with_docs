@@ -1,7 +1,7 @@
 export interface Document {
-  id: string;
+  id: number;  // Changed from string to number to match backend
   filename: string;
-  user_id: string;
+  user_id: number;  // Changed from string to number to match backend
   status: 'processing' | 'ready' | 'failed';
   created_at: string;
   file_size: number;
@@ -11,8 +11,8 @@ export interface Document {
 }
 
 export interface DocumentChunk {
-  id: string;
-  documentId: string;
+  id: number;  // Changed from string to number to match backend
+  documentId: number;  // Changed from string to number to match backend
   content: string;
   page?: number;
   section?: string;

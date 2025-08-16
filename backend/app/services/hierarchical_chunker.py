@@ -234,9 +234,34 @@ class HierarchicalChunker(RecursiveCharacterTextSplitter):
             self.logger.warning(
                 f"Token counting failed for text of length {len(text)}: {e}"
             )
-            # Fallback to character-based estimation (rough approximation: ~4 chars per token)
-            fallback_count = max(1, len(text) // 4)
-            self.logger.info(f"Using fallback token count: {fallback_count}")
+            # Better approximation for legal documents (typically 3-3.5 chars per token)
+            # Legal text often has complex terminology and formatting
+            fallback_count = max(1, len(text) // 3)
+
+            # Apply legal-specific adjustments if enabled
+            if self.legal_specific:
+                # Legal documents often have more complex tokens
+                import re
+
+                # Count legal-specific patterns that typically use more tokens
+                legal_patterns = [
+                    r"\b(?:§|Section|Sec\.?)\s*\d+(?:\.\d+)*\b",  # Section references
+                    r"\b\d+\s+[A-Z][a-z]+\.?\s+\d+\b",  # Citations
+                    r"\([a-z]\)|(\([ivx]+\))",  # Subsection markers
+                ]
+                extra_tokens = 0
+                for pattern in legal_patterns:
+                    matches = re.findall(pattern, text, re.IGNORECASE)
+                    extra_tokens += len(matches)
+
+                fallback_count = (
+                    int(fallback_count * 1.1) + extra_tokens
+                )  # Add 10% for legal complexity
+
+            self.logger.info(
+                f"Using improved fallback token count: {fallback_count} "
+                f"(legal_specific={self.legal_specific})"
+            )
             return fallback_count
 
     async def _count_tokens_async_with_tracking(self, text: str) -> int:
@@ -662,16 +687,21 @@ class HierarchicalChunker(RecursiveCharacterTextSplitter):
 
         # Check each chunk for boundary violations and adjust if necessary
         refined_chunks = []
+        last_found_position = 0  # Track position to handle duplicate text
 
         for chunk_text in initial_chunks:
-            # Find the chunk's position in the original text
-            chunk_start = text.find(chunk_text)
+            # Find the chunk's position in the original text, starting from last position
+            chunk_start = text.find(chunk_text, last_found_position)
             if chunk_start == -1:
-                # Fallback if exact match not found
-                refined_chunks.append(chunk_text)
-                continue
+                # If not found from last position, try from beginning (may be overlap)
+                chunk_start = text.find(chunk_text)
+                if chunk_start == -1:
+                    # Fallback if exact match not found
+                    refined_chunks.append(chunk_text)
+                    continue
 
             chunk_end = chunk_start + len(chunk_text)
+            last_found_position = chunk_start  # Update for next iteration
 
             # Check if this chunk violates any important boundaries
             violating_boundaries = self._find_boundary_violations(
@@ -1053,11 +1083,17 @@ class HierarchicalChunker(RecursiveCharacterTextSplitter):
         current_position = 0
 
         for i, chunk_text in enumerate(text_chunks):
-            # Find chunk position in original text
+            # Find chunk position in original text, avoiding duplicate matches
             start_pos = original_text.find(chunk_text, current_position)
             if start_pos == -1:
-                # If exact match not found, use current position as fallback
-                start_pos = current_position
+                # Try from beginning if not found from current position (may be overlap)
+                start_pos = original_text.find(chunk_text)
+                if start_pos == -1:
+                    # If still not found, use current position as fallback and log warning
+                    self.logger.warning(
+                        f"Could not find exact position for chunk {i}, using estimated position {current_position}"
+                    )
+                    start_pos = current_position
             end_pos = start_pos + len(chunk_text)
 
             # Count tokens in chunk

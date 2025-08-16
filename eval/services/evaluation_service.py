@@ -101,11 +101,13 @@ class LegalBenchRAGEvaluator:
         vector_store: EnhancedVectorStore,
         llm_service: Any = None,
         corpus_path: str = "data/corpus",
-        benchmarks_path: str = "data/benchmarks"
+        benchmarks_path: str = "data/benchmarks",
+        debug_mode: bool = False
     ):
         self.document_service = document_service
         self.vector_store = vector_store
         self.llm_service = llm_service
+        self.debug_mode = debug_mode  # Enable verbose debugging output
 
         # Handle relative paths by calculating from project root
         if not Path(corpus_path).is_absolute():
@@ -226,17 +228,49 @@ class LegalBenchRAGEvaluator:
                     file_path = gt_data.get('file_path', '')
                     start_char = gt_data.get('start_char', 0)
                     end_char = gt_data.get('end_char', 0)
+                    expected_text = gt_data.get('text', '')
 
-                    # Extract text from corpus
+                    # Extract text from corpus - try different path resolutions
                     text = ""
+                    document_found = False
+
+                    # Try direct lookup first
                     if file_path in self.corpus_documents:
                         text = self.corpus_documents[file_path][start_char:end_char]
+                        document_found = True
+                    else:
+                        # Try to find by filename only (in case of subdirectory mismatch)
+                        filename = Path(file_path).name
+                        for doc_path, doc_content in self.corpus_documents.items():
+                            if Path(doc_path).name == filename:
+                                text = doc_content[start_char:end_char]
+                                document_found = True
+                                logger.debug(f"Found document by filename: {filename} -> {doc_path}")
+                                break
+
+                    # Validate extraction if we have expected text
+                    if document_found and expected_text:
+                        if text.strip() != expected_text.strip():
+                            logger.warning(
+                                f"Ground truth extraction mismatch for {file_path}:\n"
+                                f"  Expected: '{expected_text[:50]}...'\n"
+                                f"  Extracted: '{text[:50]}...'\n"
+                                f"  Positions: {start_char}-{end_char}"
+                            )
+                        elif self.debug_mode:
+                            logger.info(
+                                f"✓ Ground truth verified for {file_path} at positions {start_char}-{end_char}"
+                            )
+                    elif not document_found:
+                        logger.warning(f"Document not found in corpus: {file_path}")
+                        if self.debug_mode:
+                            logger.debug(f"Available corpus documents: {list(self.corpus_documents.keys())}")
 
                     snippet = GroundTruthSnippet(
                         file_path=file_path,
                         start_char=start_char,
                         end_char=end_char,
-                        text=text
+                        text=text if text else expected_text  # Use expected text as fallback
                     )
                     ground_truth_snippets.append(snippet)
 

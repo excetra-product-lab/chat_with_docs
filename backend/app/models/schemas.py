@@ -3,13 +3,30 @@ from datetime import datetime
 from pydantic import BaseModel
 
 
+# Authentication schemas
+class UserCreate(BaseModel):
+    email: str
+    password: str
+
+
+class User(BaseModel):
+    id: int
+    email: str
+    created_at: datetime
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
 # Document schemas
 class DocumentCreate(BaseModel):
     filename: str
 
 
 class Document(BaseModel):
-    id: str
+    id: int  # Changed from str to int to match database model
     filename: str
     user_id: int
     status: str

@@ -298,12 +298,16 @@ async def upload_document(
                 document_to_update.status = "processed"  # type: ignore[assignment]
                 document_to_update.updated_at = datetime.utcnow()  # type: ignore[assignment]
                 db.commit()
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Failed to update document status: {str(e)}")
+            # Don't raise here as the main processing succeeded
         finally:
             db.close()
 
         # Create response document
         document = Document(
-            id=str(document_id),  # Same ID used everywhere
+            id=document_id,  # Use int directly to match schema
             filename=file.filename,
             user_id=user_id,
             status="processed",
@@ -341,7 +345,7 @@ async def list_documents(current_user: dict = Depends(get_current_user)):
 
             # Note: db_doc attributes are already the values, not Column objects
             document = Document(
-                id=str(db_doc.id),
+                id=db_doc.id,  # Use int directly to match schema
                 filename=str(db_doc.filename),
                 user_id=int(db_doc.user_id),
                 status=str(db_doc.status),

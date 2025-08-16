@@ -273,8 +273,8 @@ Date: March 1, 2024"""
                     "ground_truth": [
                         {
                             "file_path": "contract_001.txt",
-                            "start_char": 507,
-                            "end_char": 577,
+                            "start_char": 591,
+                            "end_char": 652,
                             "text": "Company shall pay Employee an annual base salary of $120,000."
                         }
                     ],
@@ -285,8 +285,8 @@ Date: March 1, 2024"""
                     "ground_truth": [
                         {
                             "file_path": "nda_002.txt",
-                            "start_char": 892,
-                            "end_char": 958,
+                            "start_char": 973,
+                            "end_char": 1045,
                             "text": "This Agreement remains in effect for 3 years from the date of execution."
                         }
                     ],
@@ -297,9 +297,9 @@ Date: March 1, 2024"""
                     "ground_truth": [
                         {
                             "file_path": "license_003.txt",
-                            "start_char": 520,
-                            "end_char": 650,
-                            "text": "No modification or reverse engineering\n- No redistribution or sublicensing\n- No use for competitive products"
+                            "start_char": 502,
+                            "end_char": 612,
+                            "text": "- No modification or reverse engineering\n- No redistribution or sublicensing\n- No use for competitive products"
                         }
                     ],
                     "expected_answer": "The license restricts modification, reverse engineering, redistribution, sublicensing, and use for competitive products."
@@ -309,9 +309,9 @@ Date: March 1, 2024"""
                     "ground_truth": [
                         {
                             "file_path": "contract_001.txt",
-                            "start_char": 600,
-                            "end_char": 759,
-                            "text": "Health insurance with 90% company contribution\n- 401(k) plan with 4% company match\n- 15 days paid vacation annually\n- Stock option plan participation"
+                            "start_char": 694,
+                            "end_char": 845,
+                            "text": "- Health insurance with 90% company contribution\n- 401(k) plan with 4% company match\n- 15 days paid vacation annually\n- Stock option plan participation"
                         }
                     ],
                     "expected_answer": "Benefits include health insurance with 90% company contribution, 401(k) with 4% match, 15 days vacation, and stock options."
@@ -321,8 +321,8 @@ Date: March 1, 2024"""
                     "ground_truth": [
                         {
                             "file_path": "license_003.txt",
-                            "start_char": 695,
-                            "end_char": 740,
+                            "start_char": 658,
+                            "end_char": 694,
                             "text": "Licensee shall pay $50,000 annually."
                         }
                     ],

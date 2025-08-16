@@ -1,0 +1,66 @@
+{
+  "name": "sample_contracts_benchmark",
+  "description": "Sample legal document Q&A benchmark for testing",
+  "test_cases": [
+    {
+      "query": "What is the base salary mentioned in the employment agreement?",
+      "ground_truth": [
+        {
+          "file_path": "contract_001.txt",
+          "start_char": 591,
+          "end_char": 652,
+          "text": "Company shall pay Employee an annual base salary of $120,000."
+        }
+      ],
+      "expected_answer": "The base salary is $120,000 annually."
+    },
+    {
+      "query": "How long does the non-disclosure agreement remain in effect?",
+      "ground_truth": [
+        {
+          "file_path": "nda_002.txt",
+          "start_char": 973,
+          "end_char": 1045,
+          "text": "This Agreement remains in effect for 3 years from the date of execution."
+        }
+      ],
+      "expected_answer": "The non-disclosure agreement remains in effect for 3 years."
+    },
+    {
+      "query": "What are the restrictions on the software license?",
+      "ground_truth": [
+        {
+          "file_path": "license_003.txt",
+          "start_char": 502,
+          "end_char": 612,
+          "text": "- No modification or reverse engineering\n- No redistribution or sublicensing\n- No use for competitive products"
+        }
+      ],
+      "expected_answer": "The license restricts modification, reverse engineering, redistribution, sublicensing, and use for competitive products."
+    },
+    {
+      "query": "What benefits are available to the employee?",
+      "ground_truth": [
+        {
+          "file_path": "contract_001.txt",
+          "start_char": 694,
+          "end_char": 845,
+          "text": "- Health insurance with 90% company contribution\n- 401(k) plan with 4% company match\n- 15 days paid vacation annually\n- Stock option plan participation"
+        }
+      ],
+      "expected_answer": "Benefits include health insurance with 90% company contribution, 401(k) with 4% match, 15 days vacation, and stock options."
+    },
+    {
+      "query": "What is the annual license fee for the software?",
+      "ground_truth": [
+        {
+          "file_path": "license_003.txt",
+          "start_char": 658,
+          "end_char": 694,
+          "text": "Licensee shall pay $50,000 annually."
+        }
+      ],
+      "expected_answer": "The annual license fee is $50,000."
+    }
+  ]
+}

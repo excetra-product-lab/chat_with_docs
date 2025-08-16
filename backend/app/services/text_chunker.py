@@ -2,6 +2,7 @@
 
 import logging
 import re
+from collections.abc import Generator
 
 from app.services.document_parser import ParsedContent
 
@@ -9,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class DocumentChunk:
-    """Container for a document chunk with metadata."""
+    """Container for a document chunk with metadata and validation."""
 
     def __init__(
         self,
@@ -22,19 +23,54 @@ class DocumentChunk:
         end_char: int = 0,
         metadata: dict | None = None,
     ):
-        self.text = text
+        # Validation
+        if not text or not text.strip():
+            raise ValueError("Chunk text cannot be empty or whitespace-only")
+        if chunk_index < 0:
+            raise ValueError("Chunk index must be non-negative")
+        if start_char < 0:
+            raise ValueError("Start character position must be non-negative")
+        if end_char < start_char:
+            raise ValueError(
+                "End character position must be >= start character position"
+            )
+        if not document_filename or not document_filename.strip():
+            raise ValueError("Document filename cannot be empty")
+
+        self.text = text.strip()  # Always store trimmed text
         self.chunk_index = chunk_index
-        self.document_filename = document_filename
+        self.document_filename = document_filename.strip()
         self.page_number = page_number
-        self.section_title = section_title
+        self.section_title = section_title.strip() if section_title else None
         self.start_char = start_char
         self.end_char = end_char
         self.metadata = metadata or {}
-        self.char_count = len(text)
+        # Calculate char_count from the actual stored (trimmed) text
+        self.char_count = len(self.text)
 
 
 class TextChunker:
     """Service for chunking text content into manageable pieces for RAG."""
+
+    # Pre-compiled regex patterns for performance
+    SENTENCE_PATTERN = re.compile(
+        r"(?<![A-Z][a-z])\. (?=[A-Z])|(?<=[.!?])\s+(?=[A-Z])", re.MULTILINE
+    )
+
+    # More sophisticated sentence boundary detection
+    ADVANCED_SENTENCE_PATTERN = re.compile(
+        r"""
+        (?<!\w\.\w.)        # Not preceded by abbreviation like Dr. or U.S.
+        (?<![A-Z][a-z]\.)   # Not preceded by Name. (like Mr.)
+        (?<![0-9]\.)        # Not preceded by number.
+        (?<=\.|\!|\?)       # Must be preceded by sentence ender
+        \s+                 # One or more whitespace
+        (?=[A-Z])           # Must be followed by capital letter
+        """,
+        re.VERBOSE | re.MULTILINE,
+    )
+
+    OVERLAP_BOUNDARY_PATTERN = re.compile(r"[.!?]\s+")
 
     def __init__(
         self,
@@ -50,6 +86,15 @@ class TextChunker:
             chunk_overlap: Number of characters to overlap between chunks
             min_chunk_size: Minimum size for a chunk to be considered valid
         """
+        if chunk_size <= 0:
+            raise ValueError("Chunk size must be positive")
+        if chunk_overlap < 0:
+            raise ValueError("Chunk overlap must be non-negative")
+        if min_chunk_size <= 0:
+            raise ValueError("Minimum chunk size must be positive")
+        if chunk_overlap >= chunk_size:
+            raise ValueError("Chunk overlap must be less than chunk size")
+
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
         self.min_chunk_size = min_chunk_size
@@ -65,38 +110,59 @@ class TextChunker:
         Returns:
             List[DocumentChunk]: List of document chunks
         """
-        chunks = []
+        if not parsed_content or not parsed_content.text.strip():
+            self.logger.warning(
+                f"Empty document content for {parsed_content.metadata.filename}"
+            )
+            return []
 
         # Use structured content if available for better chunking
         if parsed_content.structured_content:
-            chunks = self._chunk_structured_content(parsed_content)
+            chunks = list(self._chunk_structured_content(parsed_content))
         else:
             # Fallback to simple text chunking
-            chunks = self._chunk_plain_text(parsed_content)
+            chunks = list(self._chunk_plain_text(parsed_content))
 
-        # Filter out chunks that are too small
-        valid_chunks = [
-            chunk for chunk in chunks if len(chunk.text.strip()) >= self.min_chunk_size
-        ]
+        # Filter out chunks that are too small and reassign indices
+        valid_chunks = []
+        for i, chunk in enumerate(chunks):
+            if len(chunk.text.strip()) >= self.min_chunk_size:
+                # Create new chunk with corrected index
+                valid_chunk = DocumentChunk(
+                    text=chunk.text,
+                    chunk_index=i,  # Sequential indexing after filtering
+                    document_filename=chunk.document_filename,
+                    page_number=chunk.page_number,
+                    section_title=chunk.section_title,
+                    start_char=chunk.start_char,
+                    end_char=chunk.end_char,
+                    metadata=chunk.metadata,
+                )
+                valid_chunks.append(valid_chunk)
 
         self.logger.info(
-            f"Created {len(valid_chunks)} chunks from document {parsed_content.metadata.filename}"
+            f"Created {len(valid_chunks)} valid chunks from document {parsed_content.metadata.filename} "
+            f"(filtered {len(chunks) - len(valid_chunks)} chunks below minimum size)"
         )
 
         return valid_chunks
 
     def _chunk_structured_content(
         self, parsed_content: ParsedContent
-    ) -> list[DocumentChunk]:
+    ) -> Generator[DocumentChunk, None, None]:
         """Chunk document using structured content information."""
-        chunks: list[DocumentChunk] = []
-        current_chunk = ""
-        current_page = None
-        current_section = None
-        chunk_start_char = 0
+        current_parts: list[str] = []  # Use list for efficient string building
+        current_page: int | None = None
+        current_section: str | None = None
+        text_position = 0  # Track position in original text
+        chunk_start_pos = 0
+        chunks_created = 0  # Track if any chunks were created
 
         for item in parsed_content.structured_content:
-            item_text = item.get("text", "")
+            item_text = item.get("text", "").strip()
+            if not item_text:
+                continue
+
             item_type = item.get("type", "")
 
             # Track page numbers for PDFs
@@ -107,139 +173,205 @@ class TextChunker:
             if item.get("is_potential_header", False):
                 current_section = item_text
 
+            # Calculate what the new chunk size would be
+            separator = "\n\n" if current_parts else ""
+            potential_addition = separator + item_text
+            current_text = "".join(current_parts)
+            separator_length = len(separator)
+
             # Check if adding this item would exceed chunk size
-            if len(current_chunk) + len(item_text) > self.chunk_size and current_chunk:
+            if (
+                len(current_text) + len(potential_addition) > self.chunk_size
+                and current_parts
+            ):
                 # Create chunk from current content
-                chunk = self._create_chunk(
-                    text=current_chunk.strip(),
-                    chunk_index=len(chunks),
+                chunk_text = current_text.strip()
+                if chunk_text:  # Only create non-empty chunks
+                    chunks_created += 1
+                    yield self._create_chunk(
+                        text=chunk_text,
+                        chunk_index=0,  # Will be reassigned later
+                        filename=parsed_content.metadata.filename,
+                        page_number=current_page,
+                        section_title=current_section,
+                        start_char=chunk_start_pos,
+                        end_char=chunk_start_pos + len(chunk_text),
+                    )
+
+                # Start new chunk with overlap
+                overlap_text = self._get_overlap_text(current_text)
+                current_parts = (
+                    [overlap_text, potential_addition] if overlap_text else [item_text]
+                )
+
+                # Update position tracking with boundary check
+                if overlap_text:
+                    chunk_start_pos = max(0, text_position - len(overlap_text))
+                else:
+                    chunk_start_pos = text_position
+            else:
+                # Add item to current chunk
+                current_parts.append(potential_addition)
+                if not current_parts or len(current_parts) == 1:  # First item
+                    chunk_start_pos = text_position
+
+            # Update text position using actual separator length
+            text_position += len(item_text) + separator_length
+
+        # Add final chunk if there's remaining content
+        if current_parts:
+            final_text = "".join(current_parts).strip()
+            if final_text:
+                chunks_created += 1
+                yield self._create_chunk(
+                    text=final_text,
+                    chunk_index=0,  # Will be reassigned later
                     filename=parsed_content.metadata.filename,
                     page_number=current_page,
                     section_title=current_section,
-                    start_char=chunk_start_char,
-                    end_char=chunk_start_char + len(current_chunk),
+                    start_char=chunk_start_pos,
+                    end_char=chunk_start_pos + len(final_text),
                 )
-                chunks.append(chunk)
 
-                # Start new chunk with overlap
-                overlap_text = self._get_overlap_text(current_chunk)
-                current_chunk = overlap_text + "\n\n" + item_text
-                chunk_start_char += (
-                    len(current_chunk) - len(overlap_text) - len(item_text) - 2
-                )
-            else:
-                # Add item to current chunk
-                if current_chunk:
-                    current_chunk += "\n\n" + item_text
-                else:
-                    current_chunk = item_text
-                    chunk_start_char = 0
-
-        # Add final chunk if there's remaining content
-        if current_chunk.strip():
-            chunk = self._create_chunk(
-                text=current_chunk.strip(),
-                chunk_index=len(chunks),
-                filename=parsed_content.metadata.filename,
-                page_number=current_page,
-                section_title=current_section,
-                start_char=chunk_start_char,
-                end_char=chunk_start_char + len(current_chunk),
+        # Log if no chunks were created from structured content
+        if chunks_created == 0 and parsed_content.structured_content:
+            self.logger.warning(
+                f"No chunks created from {len(parsed_content.structured_content)} structured content items "
+                f"for document {parsed_content.metadata.filename}"
             )
-            chunks.append(chunk)
 
-        return chunks
-
-    def _chunk_plain_text(self, parsed_content: ParsedContent) -> list[DocumentChunk]:
-        """Chunk document using simple text splitting."""
-        text = parsed_content.text
-        chunks: list[DocumentChunk] = []
+    def _chunk_plain_text(
+        self, parsed_content: ParsedContent
+    ) -> Generator[DocumentChunk, None, None]:
+        """Chunk document using simple text splitting with proper position tracking."""
+        text = parsed_content.text.strip()
+        if not text:
+            return
 
         # Split text into sentences for better chunk boundaries
         sentences = self._split_into_sentences(text)
+        if not sentences:
+            return
 
-        current_chunk = ""
-        current_start = 0
+        current_parts: list[str] = []  # Use list for efficient string building
+        current_start_pos = 0
+        text_position = 0  # Track position in original text
 
         for sentence in sentences:
+            sentence = sentence.strip()
+            if not sentence:
+                continue
+
+            # Calculate potential new chunk size
+            separator = " " if current_parts else ""
+            potential_addition = separator + sentence
+            current_text = "".join(current_parts)
+
             # Check if adding this sentence would exceed chunk size
-            if len(current_chunk) + len(sentence) > self.chunk_size and current_chunk:
+            if (
+                len(current_text) + len(potential_addition) > self.chunk_size
+                and current_parts
+            ):
                 # Create chunk from current content
-                chunk = self._create_chunk(
-                    text=current_chunk.strip(),
-                    chunk_index=len(chunks),
-                    filename=parsed_content.metadata.filename,
-                    start_char=current_start,
-                    end_char=current_start + len(current_chunk),
-                )
-                chunks.append(chunk)
+                chunk_text = current_text.strip()
+                if chunk_text:  # Only create non-empty chunks
+                    yield self._create_chunk(
+                        text=chunk_text,
+                        chunk_index=0,  # Will be reassigned later
+                        filename=parsed_content.metadata.filename,
+                        start_char=current_start_pos,
+                        end_char=current_start_pos + len(chunk_text),
+                    )
 
                 # Start new chunk with overlap
-                overlap_text = self._get_overlap_text(current_chunk)
-                current_chunk = overlap_text + " " + sentence
-                current_start += (
-                    len(current_chunk) - len(overlap_text) - len(sentence) - 1
-                )
+                overlap_text = self._get_overlap_text(current_text)
+                if overlap_text:
+                    current_parts = [overlap_text, " " + sentence]
+                    # Find where overlap starts in original text with boundary check
+                    overlap_start_in_chunk = max(
+                        0, len(current_text) - len(overlap_text)
+                    )
+                    current_start_pos = max(
+                        0, current_start_pos + overlap_start_in_chunk
+                    )
+                else:
+                    current_parts = [sentence]
+                    current_start_pos = text_position
             else:
                 # Add sentence to current chunk
-                if current_chunk:
-                    current_chunk += " " + sentence
-                else:
-                    current_chunk = sentence
-                    current_start = 0
+                current_parts.append(potential_addition)
+                if len(current_parts) == 1:  # First sentence
+                    current_start_pos = text_position
+
+            # Update text position (find sentence in original text)
+            sentence_start = text.find(sentence, text_position)
+            if sentence_start != -1:
+                text_position = sentence_start + len(sentence)
 
         # Add final chunk if there's remaining content
-        if current_chunk.strip():
-            chunk = self._create_chunk(
-                text=current_chunk.strip(),
-                chunk_index=len(chunks),
-                filename=parsed_content.metadata.filename,
-                start_char=current_start,
-                end_char=current_start + len(current_chunk),
-            )
-            chunks.append(chunk)
-
-        return chunks
+        if current_parts:
+            final_text = "".join(current_parts).strip()
+            if final_text:
+                yield self._create_chunk(
+                    text=final_text,
+                    chunk_index=0,  # Will be reassigned later
+                    filename=parsed_content.metadata.filename,
+                    start_char=current_start_pos,
+                    end_char=current_start_pos + len(final_text),
+                )
 
     def _split_into_sentences(self, text: str) -> list[str]:
-        """Split text into sentences using regex patterns."""
-        # Pattern for sentence boundaries (periods, exclamation marks, question marks)
-        # followed by whitespace and capital letter
-        sentence_pattern = r"(?<=[.!?])\s+(?=[A-Z])"
+        """Split text into sentences using improved regex patterns."""
+        if not text.strip():
+            return []
 
-        sentences = re.split(sentence_pattern, text)
+        # Try advanced pattern first
+        try:
+            sentences = self.ADVANCED_SENTENCE_PATTERN.split(text)
+        except Exception:
+            # Fallback to simple pattern
+            sentences = self.SENTENCE_PATTERN.split(text)
 
-        # Clean up sentences
+        # Clean up sentences and remove empty ones
         cleaned_sentences = []
         for sentence in sentences:
             sentence = sentence.strip()
-            if sentence:
+            if sentence and len(sentence) > 1:  # Avoid single character "sentences"
                 cleaned_sentences.append(sentence)
+
+        # If no sentences found, return the whole text
+        if not cleaned_sentences and text.strip():
+            cleaned_sentences = [text.strip()]
 
         return cleaned_sentences
 
     def _get_overlap_text(self, text: str) -> str:
-        """Get overlap text from the end of a chunk."""
-        if len(text) <= self.chunk_overlap:
+        """Get overlap text from the end of a chunk with improved boundary detection."""
+        if not text or len(text) <= self.chunk_overlap:
             return text
 
-        # Try to find a good break point (sentence boundary) within overlap range
+        # Get the overlap region
         overlap_start = len(text) - self.chunk_overlap
         overlap_text = text[overlap_start:]
 
-        # Look for sentence boundaries in the overlap
-        sentence_boundaries = [
-            m.start() for m in re.finditer(r"[.!?]\s+", overlap_text)
-        ]
+        # Look for sentence boundaries in the overlap using pre-compiled pattern
+        boundaries = list(self.OVERLAP_BOUNDARY_PATTERN.finditer(overlap_text))
 
-        if sentence_boundaries:
+        if boundaries:
             # Use the last sentence boundary as the start of overlap
-            last_boundary = (
-                sentence_boundaries[-1] + 2
-            )  # +2 to include the punctuation and space
-            return overlap_text[last_boundary:]
+            last_boundary = boundaries[-1]
+            boundary_end = last_boundary.end()
+            result = overlap_text[boundary_end:].strip()
+            if result:  # Only return non-empty overlap
+                return result
 
-        # If no sentence boundary found, use the full overlap
+        # If no good boundary found, try to avoid breaking words
+        words = overlap_text.split()
+        if len(words) > 1:
+            # Remove the first partial word to avoid mid-word breaks
+            return " ".join(words[1:])
+
+        # Last resort: use the full overlap
         return overlap_text
 
     def _create_chunk(
@@ -253,8 +385,25 @@ class TextChunker:
         end_char: int = 0,
     ) -> DocumentChunk:
         """Create a DocumentChunk with metadata."""
+        # Ensure positions are valid
+        start_char = max(0, start_char)
+
+        # Ensure end_char matches the actual text length after stripping
+        cleaned_text = text.strip()
+
+        # If end_char was calculated from original text length, adjust for stripped text
+        original_length = len(text)
+        cleaned_length = len(cleaned_text)
+        if end_char == start_char + original_length:
+            # Adjust end_char for stripped text
+            leading_whitespace = len(text) - len(text.lstrip())
+            end_char = start_char + leading_whitespace + cleaned_length
+
+        # Ensure end_char is at least start_char + cleaned_length
+        end_char = max(end_char, start_char + cleaned_length)
+
         return DocumentChunk(
-            text=text,
+            text=cleaned_text,
             chunk_index=chunk_index,
             document_filename=filename,
             page_number=page_number,
@@ -262,9 +411,10 @@ class TextChunker:
             start_char=start_char,
             end_char=end_char,
             metadata={
-                "chunk_size": len(text),
+                "chunk_size": len(cleaned_text),
                 "has_page_number": page_number is not None,
                 "has_section_title": section_title is not None,
+                "chunk_method": "structured" if section_title else "plain_text",
             },
         )
 
