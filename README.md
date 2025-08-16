@@ -3,25 +3,25 @@
 
 # Chat With Docs (RAG)
 
-A sophisticated RAG (Retrieval-Augmented Generation) system designed specifically for legal documents, featuring intelligent hierarchical chunking, semantic search, and AI-powered Q&A capabilities.
+A sophisticated RAG (Retrieval-Augmented Generation) system designed specifically for legal documents, featuring intelligent hierarchical chunking, semantic search, and AI-powered Q\&A capabilities.
 
 ## 📋 Table of Contents
 
-- [Tech Stack](#tech-stack)
-- [Quick Start](#quick-start)
-- [Architecture](#architecture)
-- [Document Chunking Architecture](#document-chunking-architecture)
-- [Deployment](#deployment)
-- [Features](#features)
+* [Tech Stack](#tech-stack)
+* [Quick Start](#quick-start)
+* [Architecture](#architecture)
+* [Document Chunking Architecture](#document-chunking-architecture)
+* [Deployment](#deployment)
+* [Features](#features)
 
 ## Tech Stack
 
-| Layer             | Choice                          | Rationale                           |
-| ----------------- | ------------------------------- | ----------------------------------- |
-| 🗄️ Vector store      | **pgvector (managed Supabase)** | 1-click, UK region, SQL familiarity |
+| Layer                | Choice                          | Rationale                           |
+| -------------------- | ------------------------------- | ----------------------------------- |
+| 🗄️ Vector store     | **pgvector (managed Supabase)** | 1-click, UK region, SQL familiarity |
 | 🧠 Embeddings & chat | Azure OpenAI - gpt-4o/gpt-4.1   | Enterprise SLA, GDPR-aligned        |
 | 🚀 API               | FastAPI                         | Async, quick setup                  |
-| 🖥️ Front-end         | Next.js + shadcn/ui             | Rapid UI, SSR                       |
+| 🖥️ Front-end        | Next.js + shadcn/ui             | Rapid UI, SSR                       |
 | 🔐 Auth              | Clerk.dev free tier             | Offload security; JWT passthrough   |
 | ☁️ Hosting           | Fly.io UK or Railway            | Minutes to deploy, EU data          |
 
@@ -29,11 +29,11 @@ A sophisticated RAG (Retrieval-Augmented Generation) system designed specificall
 
 ### Prerequisites
 
-- 🐍 Python 3.11+
-- 📦 Node.js 18+
-- 🗄️ PostgreSQL with pgvector extension (or Supabase account)
-- 🧠 Azure OpenAI API access
-- 🔐 Clerk.dev account
+* 🐍 Python 3.11+
+* 📦 Node.js 18+
+* 🗄️ PostgreSQL with pgvector extension (or Supabase account)
+* 🧠 Azure OpenAI API access
+* 🔐 Clerk.dev account
 
 ## 🔧 Backend Setup
 
@@ -58,7 +58,7 @@ A sophisticated RAG (Retrieval-Augmented Generation) system designed specificall
    ```
 
    > 💡 **Tip**: Pre-commit hooks catch formatting/linting issues before you commit, saving you from CI failures.
-   If you skip this step, CI will still catch issues, but you'll need to fix them in a separate commit.
+   > If you skip this step, CI will still catch issues, but you'll need to fix them in a separate commit.
 
 4. **Copy and customize the env files**
 
@@ -99,9 +99,9 @@ A sophisticated RAG (Retrieval-Augmented Generation) system designed specificall
 
 Both servers should now be running:
 
-- 🚀 **Backend API**: <http://localhost:8000>
-- 🖥️ **Frontend**: <http://localhost:3000>
-- 📚 **API docs**: <http://localhost:8000/docs>
+* 🚀 **Backend API**: [http://localhost:8000](http://localhost:8000)
+* 🖥️ **Frontend**: [http://localhost:3000](http://localhost:3000)
+* 📚 **API docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
 
 ## Architecture
 
@@ -272,18 +272,18 @@ The system now creates chunks while preserving document structure:
 ```mermaid
 graph LR
     subgraph "Chunk 1: Article I"
-        A1[📋 ARTICLE I - DEFINITIONS\n1.1 "Employee" means John Smith...\n1.2 "Company" means TechCorp Inc...\n1.3 "Effective Date" means...]
-        A2[🏷️ Metadata:\n• hierarchy_level: 1\n• element_type: ARTICLE\n• numbering: "I"\n• section_title: "DEFINITIONS"]
+        A1["📋 ARTICLE I - DEFINITIONS<br/>1.1 &quot;Employee&quot; means John Smith...<br/>1.2 &quot;Company&quot; means TechCorp Inc...<br/>1.3 &quot;Effective Date&quot; means..."]
+        A2["🏷️ Metadata:<br/>• hierarchy_level: 1<br/>• element_type: ARTICLE<br/>• numbering: I<br/>• section_title: DEFINITIONS"]
     end
 
     subgraph "Chunk 2: Article II"
-        B1[📋 ARTICLE II - POSITION AND DUTIES\n2.1 The Employee shall serve...\n2.2 The Employee shall report...\n2.3 The Employee shall perform...]
-        B2[🏷️ Metadata:\n• hierarchy_level: 1\n• element_type: ARTICLE\n• numbering: "II"\n• section_title: "POSITION AND DUTIES"]
+        B1["📋 ARTICLE II - POSITION AND DUTIES<br/>2.1 The Employee shall serve...<br/>2.2 The Employee shall report...<br/>2.3 The Employee shall perform..."]
+        B2["🏷️ Metadata:<br/>• hierarchy_level: 1<br/>• element_type: ARTICLE<br/>• numbering: II<br/>• section_title: POSITION AND DUTIES"]
     end
 
     subgraph "Chunk 3: Article III"
-        C1[📋 ARTICLE III - COMPENSATION\n3.1 Base Salary: $120,000...\n3.2 Benefits: Health, dental...\n3.3 Bonus: Up to 20%...]
-        C2[🏷️ Metadata:\n• hierarchy_level: 1\n• element_type: ARTICLE\n• numbering: "III"\n• section_title: "COMPENSATION"]
+        C1["📋 ARTICLE III - COMPENSATION<br/>3.1 Base Salary: $120,000...<br/>3.2 Benefits: Health, dental...<br/>3.3 Bonus: Up to 20%..."]
+        C2["🏷️ Metadata:<br/>• hierarchy_level: 1<br/>• element_type: ARTICLE<br/>• numbering: III<br/>• section_title: COMPENSATION"]
     end
 
     style A1 fill:#e3f2fd
@@ -324,29 +324,29 @@ graph TD
 
 #### 1. **🏗️ Structure Preservation**
 
-- Legal sections stay together
-- Hierarchical relationships maintained
-- Numbering systems preserved
+* Legal sections stay together
+* Hierarchical relationships maintained
+* Numbering systems preserved
 
 #### 2. **🎯 Optimal Retrieval**
 
-- Related content in same chunk
-- Context-aware search results
-- Better RAG performance
+* Related content in same chunk
+* Context-aware search results
+* Better RAG performance
 
 #### 3. **🔄 Flexible Fallback**
 
-- Works with any document type
-- Gracefully degrades for simple docs
-- Maintains quality across formats
+* Works with any document type
+* Gracefully degrades for simple docs
+* Maintains quality across formats
 
 ### Technical Implementation
 
 #### 📝 Basic Text Chunker Features
 
-- **Sentence-based splitting**: Uses regex patterns for natural boundaries
-- **Size-based chunking**: Target 1000 characters with 100 character overlap
-- **Overlap strategy**: Preserves sentence boundaries in overlaps
+* **Sentence-based splitting**: Uses regex patterns for natural boundaries
+* **Size-based chunking**: Target 1000 characters with 100 character overlap
+* **Overlap strategy**: Preserves sentence boundaries in overlaps
 
 #### ⚡ Hierarchical Chunker Algorithm
 
@@ -433,10 +433,11 @@ The `DocumentPipeline` orchestrates the entire process:
 1. **📥 Loading**: Different loaders for PDF, Word, text files
 2. **🔄 Transformation**: Clean HTML, normalize text
 3. **✂️ Splitting**: Choose between strategies:
-   - `"recursive"`: RecursiveCharacterTextSplitter
-   - `"character"`: CharacterTextSplitter
-   - `"semantic"`: Semantic-based splitting
-   - `"hierarchical"`: Custom hierarchical chunker
+
+   * `"recursive"`: RecursiveCharacterTextSplitter
+   * `"character"`: CharacterTextSplitter
+   * `"semantic"`: Semantic-based splitting
+   * `"hierarchical"`: Custom hierarchical chunker
 
 ### 🎯 Why This Matters for RAG
 
@@ -450,9 +451,9 @@ Chunk 3: "a Delaware corporation. 1.3 'Effective Date' means January 1..."
 
 **Problems:**
 
-- ❌ Definitions split across chunks
-- ❌ Context lost between related items
-- ❌ Poor search relevance
+* ❌ Definitions split across chunks
+* ❌ Context lost between related items
+* ❌ Poor search relevance
 
 #### After (Hierarchical Chunking):
 
@@ -462,10 +463,10 @@ Chunk 1: "ARTICLE I - DEFINITIONS\n1.1 'Employee' means John Smith, residing at 
 
 **Benefits:**
 
-- ✅ Complete definitions in single chunks
-- ✅ Context preserved
-- ✅ Better search accuracy
-- ✅ Hierarchical metadata for filtering
+* ✅ Complete definitions in single chunks
+* ✅ Context preserved
+* ✅ Better search accuracy
+* ✅ Hierarchical metadata for filtering
 
 This chunking strategy ensures that when users ask questions like "What are the employee's duties?" or "What is the compensation structure?", the RAG system can retrieve complete, contextually relevant sections rather than fragmented pieces of information.
 
@@ -484,18 +485,18 @@ def _create_token_length_function(self):
 
 **Chunk Size Optimization:**
 
-- **Target range**: 400-800 tokens (configurable)
-- **Minimum**: 100 tokens
-- **Maximum**: 1024 tokens (forced split)
-- **Overlap**: 100 tokens with intelligent boundary preservation
+* **Target range**: 400-800 tokens (configurable)
+* **Minimum**: 100 tokens
+* **Maximum**: 1024 tokens (forced split)
+* **Overlap**: 100 tokens with intelligent boundary preservation
 
 ### 🔍 Document Structure Detection Elements
 
 The system identifies and tracks various document elements:
 
-- **ElementType**: `HEADING`, `SECTION`, `SUBSECTION`, `CLAUSE`, `PARAGRAPH`, `ARTICLE`, `CHAPTER`
-- **NumberingType**: `DECIMAL` (1.2.3), `ROMAN_UPPER` (I, II), `SECTION_SYMBOL` (§), etc.
-- **Hierarchy Levels**: 0=root, 1=section, 2=subsection, etc.
+* **ElementType**: `HEADING`, `SECTION`, `SUBSECTION`, `CLAUSE`, `PARAGRAPH`, `ARTICLE`, `CHAPTER`
+* **NumberingType**: `DECIMAL` (1.2.3), `ROMAN_UPPER` (I, II), `SECTION_SYMBOL` (§), etc.
+* **Hierarchy Levels**: 0=root, 1=section, 2=subsection, etc.
 
 The system is designed specifically for legal documents but gracefully falls back to simpler strategies for other document types, making it robust and versatile.
 
@@ -518,10 +519,10 @@ vercel
 
 ## Features
 
-- 🔒 Secure authentication with Clerk
-- 📄 Multi-format document upload (PDF, DOCX, TXT)
-- 🔍 Semantic search with pgvector
-- 💬 AI-powered Q&A with GPT-4o/GPT-4.1
-- 📚 Document-aware responses
-- ✅ Source verification
-- 🇪🇺 GDPR compliant hosting
+* 🔒 Secure authentication with Clerk
+* 📄 Multi-format document upload (PDF, DOCX, TXT)
+* 🔍 Semantic search with pgvector
+* 💬 AI-powered Q\&A with GPT-4o/GPT-4.1
+* 📚 Document-aware responses
+* ✅ Source verification
+* 🇪🇺 GDPR compliant hosting
