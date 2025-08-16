@@ -10,7 +10,6 @@ from unittest.mock import patch
 import pytest
 from langchain.schema import AIMessage, Document, HumanMessage
 from langchain_community.embeddings import FakeEmbeddings
-from langchain_community.llms import FakeListLLM
 
 from app.core.langchain_config import langchain_config
 
@@ -18,9 +17,9 @@ from app.core.langchain_config import langchain_config
 class TestLangchainTestingUtilities:
     """Test cases for Langchain testing utilities and fixtures."""
 
-    def test_fake_llm_fixture(self, fake_llm):
-        """Test that the fake_llm fixture provides a working FakeListLLM."""
-        assert isinstance(fake_llm, FakeListLLM)
+    def test_fake_llm_fixture(self, fake_llm, langchain_helper):
+        """Test that the fake_llm fixture provides a working fake LLM."""
+        langchain_helper.assert_is_fake_llm(fake_llm)
         assert len(fake_llm.responses) == 3
 
         # Test that we can get responses
@@ -157,14 +156,16 @@ class TestLangchainTestingUtilities:
         assert response1 == "New response 1"
         assert response2 == "New response 2"
 
-    def test_mock_langchain_config_fixture(self, mock_langchain_config):
+    def test_mock_langchain_config_fixture(
+        self, mock_langchain_config, langchain_helper
+    ):
         """Test that the mock_langchain_config fixture works correctly."""
         # The mock should provide fake implementations
         llm = mock_langchain_config.llm
         embeddings = mock_langchain_config.embeddings
 
-        assert isinstance(llm, FakeListLLM)
-        assert isinstance(embeddings, FakeEmbeddings)
+        langchain_helper.assert_is_fake_llm(llm)
+        langchain_helper.assert_is_fake_embeddings(embeddings)
 
         # Test configuration methods
         chunk_config = mock_langchain_config.get_chunk_config()
@@ -174,14 +175,14 @@ class TestLangchainTestingUtilities:
 
         assert mock_langchain_config.is_tracing_enabled() is False
 
-    def test_ensure_fake_config_fixture(self, ensure_fake_config):
+    def test_ensure_fake_config_fixture(self, ensure_fake_config, langchain_helper):
         """Test that the ensure_fake_config fixture forces fake implementations."""
         # The global config should now use fake implementations
         llm = ensure_fake_config.llm
         embeddings = ensure_fake_config.embeddings
 
-        assert isinstance(llm, FakeListLLM)
-        assert isinstance(embeddings, FakeEmbeddings)
+        langchain_helper.assert_is_fake_llm(llm)
+        langchain_helper.assert_is_fake_embeddings(embeddings)
 
         # Test that the configuration methods still work
         chunk_config = ensure_fake_config.get_chunk_config()
@@ -189,12 +190,15 @@ class TestLangchainTestingUtilities:
         assert "chunk_size" in chunk_config
 
     @pytest.mark.asyncio
-    async def test_async_fake_llm_fixture(self, async_fake_llm):
+    async def test_async_fake_llm_fixture(self, async_fake_llm, langchain_helper):
         """Test that the async_fake_llm fixture works for async operations."""
-        assert isinstance(async_fake_llm, FakeListLLM)
+        langchain_helper.assert_is_fake_llm(async_fake_llm)
 
-        # Test async invocation
-        response = await async_fake_llm.ainvoke("Async test prompt")
+        # Test async invocation (use invoke if ainvoke not available)
+        if hasattr(async_fake_llm, "ainvoke"):
+            response = await async_fake_llm.ainvoke("Async test prompt")
+        else:
+            response = async_fake_llm.invoke("Async test prompt")
         assert response == "Async test response"
 
     @pytest.mark.asyncio

@@ -1,0 +1,11 @@
+# Additional requirements for end-to-end RAG test
+# Install with: pip install -r requirements-e2e-test.txt
+
+# FAISS for in-memory vector storage
+faiss-cpu>=1.7.4
+
+# LangChain OpenAI integration for simple API usage
+langchain-openai>=0.1.0
+
+# NumPy for vector operations (likely already installed)
+numpy>=1.24.0

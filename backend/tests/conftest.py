@@ -13,10 +13,74 @@ import pytest
 from langchain.schema import AIMessage, BaseMessage, HumanMessage
 from langchain.schema.document import Document
 from langchain_community.embeddings import FakeEmbeddings
-from langchain_community.llms import FakeListLLM
 from langchain_openai import AzureChatOpenAI, AzureOpenAIEmbeddings
 
 from app.core.langchain_config import langchain_config
+
+
+# Patch the embedding service before any imports that might use it
+@pytest.fixture(scope="session", autouse=True)
+def mock_embedding_service_for_collection():
+    """
+    Session-scoped fixture that mocks the embedding service during test collection.
+
+    This prevents the embedding service from being initialized with real Azure credentials
+    during test collection, which would fail in environments without those credentials.
+    """
+    # Mock the embedding service to return a fake implementation
+    with patch(
+        "app.services.embedding_service.get_embedding_service"
+    ) as mock_get_service:
+        mock_service = Mock()
+        mock_service.generate_embedding.return_value = [0.1] * 1536
+        mock_service.generate_embeddings_batch.return_value = [
+            [0.1] * 1536 for _ in range(10)
+        ]
+        mock_get_service.return_value = mock_service
+
+        # Also patch the EmbeddingService class to prevent direct instantiation issues
+        with patch("app.services.embedding_service.EmbeddingService") as mock_class:
+            mock_class.return_value = mock_service
+            yield
+
+
+# Fix LangChain compatibility issues by creating simple mock replacements
+class SimpleFakeLLM:
+    """Simple mock LLM that avoids Pydantic validation issues."""
+
+    def __init__(self, responses=None):
+        self.responses = responses or ["Test response"]
+        self.i = 0
+
+    def __call__(self, *args, **kwargs):
+        response = self.responses[self.i % len(self.responses)]
+        self.i += 1
+        return response
+
+    def invoke(self, *args, **kwargs):
+        return self.__call__(*args, **kwargs)
+
+
+# Try to use the real FakeListLLM, fall back to our simple version
+try:
+    from langchain_community.llms import FakeListLLM
+
+    # Try to create a test instance to see if it works
+    test_llm = FakeListLLM(responses=["test"])
+
+    # If we get here, FakeListLLM works
+    USE_REAL_FAKE_LLM = True
+except Exception:
+    # FakeListLLM has issues, use our simple version
+    FakeListLLM = SimpleFakeLLM
+    USE_REAL_FAKE_LLM = False
+
+# Similar approach for other models if needed
+try:
+    FakeEmbeddings.model_rebuild()
+    AzureChatOpenAI.model_rebuild()
+except Exception:
+    pass  # These might work without rebuilding
 
 
 @pytest.fixture
@@ -122,6 +186,7 @@ def mock_azure_credentials():
         {
             "AZURE_OPENAI_API_KEY": "test-api-key",  # pragma: allowlist secret
             "AZURE_OPENAI_ENDPOINT": "https://test.openai.azure.com/",
+            "AZURE_OPENAI_API_VERSION": "2024-08-01-preview",
             "AZURE_OPENAI_DEPLOYMENT_NAME": "test-deployment",
             "AZURE_OPENAI_EMBEDDING_DEPLOYMENT": "test-embedding-deployment",
         },
@@ -139,7 +204,14 @@ class LangchainTestHelper:
     @staticmethod
     def assert_is_fake_llm(llm: Any) -> None:
         """Assert that the provided LLM is a fake implementation."""
-        assert isinstance(llm, FakeListLLM), f"Expected FakeListLLM, got {type(llm)}"
+        if USE_REAL_FAKE_LLM:
+            assert isinstance(llm, FakeListLLM), (
+                f"Expected FakeListLLM, got {type(llm)}"
+            )
+        else:
+            assert isinstance(llm, SimpleFakeLLM), (
+                f"Expected SimpleFakeLLM, got {type(llm)}"
+            )
 
     @staticmethod
     def assert_is_azure_llm(llm: Any) -> None:
@@ -251,3 +323,227 @@ def ensure_fake_config():
         # Restore original instances
         langchain_config._llm = original_llm
         langchain_config._embeddings = original_embeddings
+
+
+# =============================================================================
+# Database Testing Fixtures
+# =============================================================================
+
+
+@pytest.fixture(scope="function")
+def test_db():
+    """Create an in-memory SQLite database for testing."""
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    from app.models.database import Base
+
+    # Create in-memory SQLite database
+    engine = create_engine("sqlite:///:memory:", echo=False)
+    TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+    # Create all tables
+    Base.metadata.create_all(bind=engine)
+
+    try:
+        yield TestSessionLocal
+    finally:
+        Base.metadata.drop_all(bind=engine)
+
+
+@pytest.fixture(scope="function")
+def test_db_session(test_db):
+    """Provide a database session for testing."""
+    session = test_db()
+    try:
+        yield session
+    finally:
+        session.close()
+
+
+@pytest.fixture(scope="function", autouse=True)
+def mock_database_settings(monkeypatch):
+    """Mock database settings to use in-memory SQLite for testing."""
+    # Override the DATABASE_URL environment variable
+    monkeypatch.setenv("DATABASE_URL", "sqlite:///:memory:")
+
+    # Also patch the settings object directly to ensure tests use SQLite
+    from app.core.settings import settings
+
+    monkeypatch.setattr(settings, "DATABASE_URL", "sqlite:///:memory:")
+
+    # Patch the enhanced_vectorstore module's engine and session
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    from app.models.database import Base
+
+    # Create test engine and session
+    test_engine = create_engine("sqlite:///:memory:", echo=False)
+    TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+
+    # Create all tables in the test database
+    Base.metadata.create_all(bind=test_engine)
+
+    # Patch the enhanced_vectorstore module
+    try:
+        import app.services.enhanced_vectorstore
+
+        monkeypatch.setattr(app.services.enhanced_vectorstore, "engine", test_engine)
+        monkeypatch.setattr(
+            app.services.enhanced_vectorstore, "SessionLocal", TestSessionLocal
+        )
+    except ImportError:
+        pass  # Module not imported yet
+
+    yield
+
+    # Clean up
+    Base.metadata.drop_all(bind=test_engine)
+
+
+@pytest.fixture(scope="function")
+def mock_enhanced_vectorstore(test_db_session):
+    """Mock EnhancedVectorStore to use test database."""
+    from unittest.mock import AsyncMock, Mock, patch
+
+    from app.services.enhanced_vectorstore import EnhancedVectorStore
+    # EnhancedCitation import removed
+
+    with patch("app.services.enhanced_vectorstore.SessionLocal") as mock_session:
+        mock_session.return_value = test_db_session
+
+        # Mock the embedding service to avoid API calls
+        mock_embedding_service = Mock()
+        mock_embedding_service.generate_embeddings_batch.return_value = [
+            [0.1] * 1536
+            for _ in range(10)  # Return fake embeddings
+        ]
+
+        with patch(
+            "app.services.enhanced_vectorstore.get_embedding_service"
+        ) as mock_get_embedding:
+            mock_get_embedding.return_value = mock_embedding_service
+
+            # Create the vector store instance
+            vector_store = EnhancedVectorStore(embedding_service=mock_embedding_service)
+
+            # Mock the vector search methods to avoid PostgreSQL-specific operations
+            async def mock_enhanced_similarity_search(
+                query,
+                user_id=None,
+                k=5,
+                include_hierarchy=True,
+                include_relationships=True,
+                confidence_threshold=0.7,
+                **kwargs,
+            ):
+                """Mock enhanced similarity search - citations removed."""
+                # Return empty list since citations were removed
+                return []
+
+            async def mock_store_enhanced_document(enhanced_doc):
+                """Mock document storage to avoid database operations."""
+                return {"document_id": "test-doc-123", "chunks_stored": 5}
+
+            # Patch the methods
+            vector_store.enhanced_similarity_search = AsyncMock(
+                side_effect=mock_enhanced_similarity_search
+            )
+            vector_store.store_enhanced_document = AsyncMock(
+                side_effect=mock_store_enhanced_document
+            )
+
+            yield vector_store
+
+
+@pytest.fixture(scope="function")
+def mock_vector_operations():
+    """Mock PostgreSQL vector operations for SQLite compatibility."""
+    # This fixture is available if needed, but the enhanced_vectorstore fixture
+    # handles all the vector operation mocking we need
+    yield
+
+
+@pytest.fixture(scope="function")
+def performance_embedding_service():
+    """
+    Fixture that provides a mock embedding service for performance testing.
+
+    This fixture provides a mock embedding service that simulates realistic
+    performance characteristics for benchmarking tests.
+    """
+    import asyncio
+    import random
+    from unittest.mock import AsyncMock, Mock
+
+    mock_service = Mock()
+
+    async def mock_generate_embedding(text: str) -> list[float]:
+        """Mock embedding generation with simulated delay."""
+        # Simulate realistic API delay
+        await asyncio.sleep(random.uniform(0.01, 0.05))
+        return [random.random() for _ in range(1536)]
+
+    async def mock_generate_embeddings_batch(texts: list[str]) -> list[list[float]]:
+        """Mock batch embedding generation with simulated delay."""
+        # Simulate batch processing delay
+        await asyncio.sleep(random.uniform(0.1, 0.3))
+        return [[random.random() for _ in range(1536)] for _ in texts]
+
+    mock_service.generate_embedding = AsyncMock(side_effect=mock_generate_embedding)
+    mock_service.generate_embeddings_batch = AsyncMock(
+        side_effect=mock_generate_embeddings_batch
+    )
+
+    return mock_service
+
+
+@pytest.fixture(scope="function")
+def mock_encoding_detector():
+    """
+    Fixture that provides a mock text encoding detector for testing.
+
+    This addresses the skipped tests for text encoding detection architecture.
+    """
+    from unittest.mock import Mock
+
+    mock_detector = Mock()
+    mock_detector.detect_encoding.return_value = {
+        "encoding": "utf-8",
+        "confidence": 0.99,
+        "language": "en",
+    }
+    mock_detector.is_valid_encoding.return_value = True
+    mock_detector.convert_encoding.return_value = "converted text content"
+
+    return mock_detector
+
+
+@pytest.fixture(scope="function")
+def mock_pdf_layout_analyzer():
+    """
+    Fixture that provides a mock PDF layout preservation analyzer for testing.
+
+    This addresses the skipped tests for PDF layout preservation architecture.
+    """
+    from unittest.mock import Mock
+
+    mock_analyzer = Mock()
+    mock_analyzer.analyze_layout.return_value = {
+        "columns": 2,
+        "headers": ["Header 1", "Header 2"],
+        "tables": [{"rows": 5, "cols": 3, "position": (10, 20, 100, 200)}],
+        "images": [{"bbox": (50, 60, 150, 160), "alt_text": "Chart showing data"}],
+        "text_blocks": [
+            {"text": "Sample text block", "bbox": (0, 0, 200, 50), "font_size": 12}
+        ],
+    }
+    mock_analyzer.preserve_layout.return_value = "Layout-preserved text content"
+    mock_analyzer.extract_structured_data.return_value = {
+        "paragraphs": ["Paragraph 1", "Paragraph 2"],
+        "lists": ["Item 1", "Item 2"],
+        "headings": {"h1": ["Main Title"], "h2": ["Subtitle"]},
+    }
+
+    return mock_analyzer

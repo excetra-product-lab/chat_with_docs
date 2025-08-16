@@ -6,9 +6,9 @@ import { Document } from '../types'
 // Mock API responses
 const mockDocuments: Document[] = [
   {
-    id: '1',
+    id: 1,
     filename: 'Contract_Analysis_2024.pdf',
-    user_id: 'user1',
+    user_id: 1,
     status: 'ready',
     created_at: '2024-12-27T10:30:00Z',
     file_size: 2547829,
@@ -16,9 +16,9 @@ const mockDocuments: Document[] = [
     pages: 12,
   },
   {
-    id: '2', 
+    id: 2,
     filename: 'Legal_Brief_Summary.docx',
-    user_id: 'user1',
+    user_id: 1,
     status: 'processing',
     created_at: '2024-12-27T11:15:00Z',
     file_size: 1024000,
@@ -27,9 +27,9 @@ const mockDocuments: Document[] = [
     upload_progress: 75,
   },
   {
-    id: '3',
+    id: 3,
     filename: 'Case_Notes.txt',
-    user_id: 'user1', 
+    user_id: 1,
     status: 'ready',
     created_at: '2024-12-27T09:45:00Z',
     file_size: 54000,
@@ -49,7 +49,7 @@ export const useDocuments = () => {
   const fetchDocuments = useCallback(async () => {
     setIsLoading(true)
     setError(null)
-    
+
     try {
       await delay(500) // Simulate network delay
       setDocuments([...mockDocuments])
@@ -63,7 +63,7 @@ export const useDocuments = () => {
   // Status polling for processing documents
   useEffect(() => {
     const processingDocs = documents.filter(doc => doc.status === 'processing')
-    
+
     if (processingDocs.length > 0) {
       const pollInterval = setInterval(async () => {
         // Mock status updates - randomly complete processing documents
@@ -117,9 +117,9 @@ export const useDocumentUpload = () => {
 
       // Create mock uploaded document
       const newDocument: Document = {
-        id: Date.now().toString(),
+        id: Date.now(), // Use number instead of string
         filename: file.name,
-        user_id: 'user1',
+        user_id: 1, // Use number instead of string
         status: 'processing',
         created_at: new Date().toISOString(),
         file_size: file.size,
@@ -147,11 +147,11 @@ export const useDocumentUpload = () => {
 }
 
 export const useDocumentDelete = () => {
-  const [isDeleting, setIsDeleting] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   // Mock DELETE /api/documents/{id}
-  const deleteDocument = useCallback(async (id: string): Promise<void> => {
+  const deleteDocument = useCallback(async (id: number): Promise<void> => {
     setIsDeleting(id)
     setError(null)
 
@@ -172,4 +172,4 @@ export const useDocumentDelete = () => {
     isDeleting,
     error,
   }
-} 
+}

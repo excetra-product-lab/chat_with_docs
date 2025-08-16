@@ -189,6 +189,9 @@ Thumbs.db
 # Testing
 coverage/
 .nyc_output/
+
+# Ignore metadata store JSON artifacts
+metadata_store/
 .ignore/
 
 .secrets
@@ -213,3 +216,8 @@ tasks/
 
 # Scripts directory (contains local development files)
 scripts/
+# But allow eval/scripts for evaluation system
+!eval/scripts/
+
+# Local data directory for end-to-end testing
+data/

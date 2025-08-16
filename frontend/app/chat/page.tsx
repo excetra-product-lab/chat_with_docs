@@ -6,7 +6,7 @@ import { useAppContext } from '../../src/context/AppContext'
 
 export default function ChatPage() {
   const { messages, isLoading, addMessage, documents } = useAppContext()
-  
+
   const hasReadyDocuments = documents.some(doc => doc.status === 'ready')
 
   const sendMessage = async (content: string) => {
@@ -24,15 +24,9 @@ export default function ChatPage() {
       const aiMessage = {
         id: (Date.now() + 1).toString(),
         type: 'assistant' as const,
-        content: `I understand you're asking about: "${content}". I would analyze your uploaded documents and provide relevant information with citations here.`,
-        timestamp: new Date(),
-        citations: documents.slice(0, 2).map(doc => ({
-          documentId: doc.id,
-          documentName: doc.filename,
-          page: Math.floor(Math.random() * (doc.pages || 1)) + 1,
-          excerpt: `Relevant excerpt from ${doc.filename}...`,
-          confidence: 0.9
-        }))
+        content: `I understand you're asking about: "${content}". I would analyze your uploaded documents and provide relevant information here.`,
+        timestamp: new Date()
+        // citations field removed
       }
       addMessage(aiMessage)
     }, 1000)
@@ -48,4 +42,4 @@ export default function ChatPage() {
       />
     </div>
   )
-} 
+}

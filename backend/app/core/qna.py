@@ -1,5 +1,5 @@
 from app.core.vectorstore import similarity_search
-from app.models.schemas import Answer, Citation
+from app.models.schemas import Answer
 
 
 async def answer_question(question: str, user_id: int) -> Answer:
@@ -15,14 +15,13 @@ async def answer_question(question: str, user_id: int) -> Answer:
     # TODO: Generate answer using LLM
     answer_text = await generate_answer(question, context)
 
-    # TODO: Extract citations
-    citations = extract_citations(answer_text, relevant_chunks)
+    # Citations removed
 
-    return Answer(answer=answer_text, citations=citations, confidence=0.95)
+    return Answer(answer=answer_text, confidence=0.95)
 
 
 def build_context(chunks: list[dict]) -> str:
-    """Build context from retrieved chunks"""
+    """Combine chunks into context"""
     # TODO: Format chunks into context
     return "Context from documents"
 
@@ -33,7 +32,4 @@ async def generate_answer(question: str, context: str) -> str:
     return "This is a generated answer based on the documents."
 
 
-def extract_citations(answer: str, chunks: list[dict]) -> list[Citation]:
-    """Extract citations from answer"""
-    # TODO: Parse citations from answer
-    return []
+# Citation extraction function removed

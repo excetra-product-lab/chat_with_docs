@@ -2,6 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import auth, chat, documents
+
+# Initialize global logging configuration before anything else
+from app.core import logger_config  # noqa: F401  # pylint: disable=unused-import
 from app.core.settings import settings
 
 app = FastAPI(

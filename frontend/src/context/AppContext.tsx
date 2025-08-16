@@ -15,14 +15,14 @@ interface AppContextType {
   documents: DocumentWithProgress[]
   setDocuments: (documents: DocumentWithProgress[]) => void
   addDocument: (document: DocumentWithProgress) => void
-  updateDocument: (id: string, updates: Partial<DocumentWithProgress>) => void
-  deleteDocument: (id: string) => void
-  
+  updateDocument: (id: number, updates: Partial<DocumentWithProgress>) => void
+  deleteDocument: (id: number) => void
+
   // Chat state
   messages: Message[]
   setMessages: (messages: Message[]) => void
   addMessage: (message: Message) => void
-  
+
   // UI state
   isLoading: boolean
   setIsLoading: (loading: boolean) => void
@@ -39,18 +39,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setDocuments(prev => [...prev, document])
   }
 
-  const updateDocument = (id: string, updates: Partial<DocumentWithProgress>) => {
-    setDocuments(prev => 
+  const updateDocument = (id: number, updates: Partial<DocumentWithProgress>) => {
+    setDocuments(prev =>
       prev.map(doc => doc.id === id ? { ...doc, ...updates } : doc)
     )
   }
 
-  const deleteDocument = (id: string) => {
+  const deleteDocument = (id: number) => {
     setDocuments(prev => prev.filter(doc => doc.id !== id))
-    // Also remove related chat messages if needed
-    setMessages(prev => prev.filter(msg => 
-      !msg.citations?.some(citation => citation.documentId === id)
-    ))
+    // Citation filtering removed - messages are no longer linked to documents via citations
   }
 
   const addMessage = (message: Message) => {
@@ -64,12 +61,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     addDocument,
     updateDocument,
     deleteDocument,
-    
+
     // Chat state
     messages,
     setMessages,
     addMessage,
-    
+
     // UI state
     isLoading,
     setIsLoading,
@@ -88,4 +85,4 @@ export function useAppContext() {
     throw new Error('useAppContext must be used within an AppProvider')
   }
   return context
-} 
+}

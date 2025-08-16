@@ -8,7 +8,7 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'Excetera - Chat with Your Legal Documents',
-  description: 'AI-powered legal document analysis with precise citations. Upload your legal documents and get instant, accurate answers.',
+  description: 'AI-powered legal document analysis with precise sources. Upload your legal documents and get instant, accurate answers.',
   keywords: 'legal, AI, document analysis, citations, law firm, legal research',
 }
 
@@ -26,4 +26,4 @@ export default function RootLayout({
       </body>
     </html>
   )
-} 
+}

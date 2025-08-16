@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     AZURE_OPENAI_API_VERSION: str | None = None
 
     # Azure OpenAI Model Configuration
-    OPENAI_MODEL: str = "gpt-4o-mini"  # Default deployment name
+    OPENAI_MODEL: str = "gpt-4o"  # Default deployment name
     OPENAI_TEMPERATURE: float = 0.1
 
     # Langchain Configuration
@@ -38,6 +38,8 @@ class Settings(BaseSettings):
     CHUNK_SIZE: int = 1000
     CHUNK_OVERLAP: int = 200
     MAX_TOKENS_PER_CHUNK: int = 8000
+
+    USE_OPENAI_EMBEDDINGS: bool = False  # Gate expensive network calls in processing
 
     # File upload settings
     MAX_FILE_SIZE_MB: int = 10

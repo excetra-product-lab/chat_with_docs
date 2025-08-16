@@ -8,6 +8,16 @@ import pypdf
 from docx import Document as DocxDocument
 from fastapi import HTTPException, UploadFile
 
+from app.core.error_reporter import report_processing_error, report_validation_error
+from app.core.exceptions import (
+    CorruptedDocumentError,
+    DocumentParsingError,
+    DocumentValidationError,
+    EmptyDocumentError,
+    FileTooLargeError,
+    UnsupportedFormatError,
+    to_http_exception,
+)
 from app.utils.token_counter import TokenCounter
 
 logger = logging.getLogger(__name__)
@@ -96,25 +106,43 @@ class DocumentParser:
             elif file_type == "txt":
                 return await self._parse_text(content, file.filename or "")
             else:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Unsupported file format: {file.content_type}",
+                raise UnsupportedFormatError(
+                    f"Unsupported file format: {file.content_type}"
                 )
+        except (
+            DocumentValidationError,
+            UnsupportedFormatError,
+            FileTooLargeError,
+            EmptyDocumentError,
+            CorruptedDocumentError,
+        ) as e:
+            # Report and convert domain exceptions to HTTP exceptions
+            if isinstance(e, DocumentValidationError | FileTooLargeError):
+                report_validation_error(e, filename=file.filename, file_size=file.size)
+            else:
+                report_processing_error(
+                    e,
+                    filename=file.filename,
+                    file_type=file_type,
+                    processing_step="parsing",
+                )
+            raise to_http_exception(e) from e
         except Exception as e:
-            self.logger.error(f"Error parsing document {file.filename}: {str(e)}")
-            raise HTTPException(
-                status_code=500, detail=f"Failed to parse document: {str(e)}"
-            ) from e
+            # Handle unexpected errors
+            error = DocumentParsingError(f"Failed to parse document: {str(e)}")
+            report_processing_error(
+                error, filename=file.filename, processing_step="parsing"
+            )
+            raise to_http_exception(error) from e
 
     def _validate_file(self, file: UploadFile) -> None:
         """Validate uploaded file."""
         if not file.filename:
-            raise HTTPException(status_code=400, detail="No filename provided")
+            raise DocumentValidationError("No filename provided")
 
         if file.size and file.size > self.MAX_FILE_SIZE:
-            raise HTTPException(
-                status_code=400,
-                detail=f"File too large. Maximum size: {self.MAX_FILE_SIZE / 1024 / 1024}MB",
+            raise FileTooLargeError(
+                f"File too large. Maximum size: {self.MAX_FILE_SIZE / 1024 / 1024}MB"
             )
 
     def _get_file_type(self, content_type: str | None, filename: str) -> str:
@@ -134,9 +162,8 @@ class DocumentParser:
         if extension in extension_map:
             return extension_map[extension]
 
-        raise HTTPException(
-            status_code=400,
-            detail=f"Unsupported file format: {content_type or extension}",
+        raise UnsupportedFormatError(
+            f"Unsupported file format: {content_type or extension}"
         )
 
     async def _parse_pdf(self, content: bytes, filename: str) -> ParsedContent:
@@ -146,9 +173,7 @@ class DocumentParser:
             reader = pypdf.PdfReader(pdf_file)
 
             if reader.is_encrypted:
-                raise HTTPException(
-                    status_code=400, detail="Encrypted PDFs are not supported"
-                )
+                raise CorruptedDocumentError("Encrypted PDFs are not supported")
 
             page_texts = []
             full_text = ""
@@ -166,9 +191,7 @@ class DocumentParser:
                     continue
 
             if not full_text.strip():
-                raise HTTPException(
-                    status_code=400, detail="No text content found in PDF"
-                )
+                raise EmptyDocumentError("No text content found in PDF")
 
             # Create metadata
             metadata = self._create_metadata_with_tokens(
@@ -230,9 +253,7 @@ class DocumentParser:
                         sections.append(text)
 
             if not full_text.strip():
-                raise HTTPException(
-                    status_code=400, detail="No text content found in document"
-                )
+                raise EmptyDocumentError("No text content found in document")
 
             # Create metadata
             metadata = self._create_metadata_with_tokens(
@@ -289,15 +310,12 @@ class DocumentParser:
                     continue
 
             if text is None:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Unable to decode text file with supported encodings",
+                raise CorruptedDocumentError(
+                    "Unable to decode text file with supported encodings"
                 )
 
             if not text.strip():
-                raise HTTPException(
-                    status_code=400, detail="No text content found in file"
-                )
+                raise EmptyDocumentError("No text content found in file")
 
             # Split into paragraphs
             paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]

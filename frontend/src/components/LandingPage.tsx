@@ -50,7 +50,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
               </span>
             </h1>
             <p className="text-xl text-slate-300 mb-8 max-w-3xl mx-auto leading-relaxed font-light">
-              Upload your legal documents and get instant, accurate answers with precise citations. 
+              Upload your legal documents and get instant, accurate answers with precise sources.
               Excetera transforms how legal professionals interact with their document libraries.
             </p>
           </div>
@@ -72,7 +72,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
             <div className="text-center">
               <div className="text-3xl font-bold text-violet-400 mb-2">99.9%</div>
-              <div className="text-slate-400">Citation Accuracy</div>
+              <div className="text-slate-400">Source Accuracy</div>
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold text-electric-400 mb-2">10x</div>
@@ -124,10 +124,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                 Why Legal Professionals Choose Excetera
               </h2>
               <p className="text-xl text-slate-400 mb-8 font-light">
-                Transform your document workflow with AI-powered analysis that delivers precise, 
+                Transform your document workflow with AI-powered analysis that delivers precise,
                 reliable results every time.
               </p>
-              
+
               <div className="space-y-4">
                 {benefits.map((benefit, index) => (
                   <div key={index} className="flex items-center space-x-3">
@@ -155,7 +155,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                 <div className="space-y-4">
                   <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50">
                     <p className="text-slate-300 italic mb-2 font-light">
-                      "Excetera has revolutionized how we handle document review. 
+                      "Excetera has revolutionized how we handle document review.
                       What used to take hours now takes minutes."
                     </p>
                     <div className="text-sm text-slate-400">
@@ -164,7 +164,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                   </div>
                   <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50">
                     <p className="text-slate-300 italic mb-2 font-light">
-                      "The citation accuracy is incredible. We can trust the AI to find 
+                      "The citation accuracy is incredible. We can trust the AI to find
                       exactly what we need with perfect references."
                     </p>
                     <div className="text-sm text-slate-400">
@@ -185,7 +185,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
             Ready to Transform Your Legal Research?
           </h2>
           <p className="text-xl text-slate-400 mb-8 font-light">
-            Join hundreds of legal professionals who trust Excetera for accurate, 
+            Join hundreds of legal professionals who trust Excetera for accurate,
             fast document analysis.
           </p>
           <button

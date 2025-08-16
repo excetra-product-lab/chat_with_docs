@@ -17,9 +17,10 @@ dependencies = [
   "langchain>=0.3.0",
   "langchain-openai[azure]>=0.2.0",
   "pypdf>=3.17.4",
+  "pdfplumber>=0.11.0",
   "python-docx>=1.1.0",
   "tiktoken>=0.9.0",
-  "supabase>=2.0.0",
+  "beautifulsoup4>=4.12.0",
   # dev & test
   "pytest>=7.4.4",
   "pytest-cov>=4.1.0",
@@ -27,6 +28,8 @@ dependencies = [
   "pre-commit>=4.2.0",
   "email-validator>=2.2.0",
   "langchain-community>=0.3.24",
+  "chardet>=5.2.0",
+  "passlib>=1.7.4",
   # Make sure you update the values of these dependencies in the .pre-commit-config.yaml file as well to the exact versions
   "fastapi==0.115.13",
   "pydantic[email]==2.11.7",
@@ -34,6 +37,10 @@ dependencies = [
   "ruff==0.12.0",
   "mypy==1.16.1",
   # end of dependencies you need to update in .pre-commit-config.yaml file
+  "websockets>=13.0",
+  "supabase>=2.17.0",
+  "pytest-mock>=3.14.1",
+  "psutil>=7.0.0",
 ]
 
 [tool.uv]
@@ -46,23 +53,20 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = [
-  "E",   # pycodestyle errors
-  "W",   # pycodestyle warnings
-  "F",   # pyflakes
-  "I",   # isort
-  "B",   # flake8-bugbear
-  "C4",  # flake8-comprehensions
-  "UP",  # pyupgrade
+  "E",  # pycodestyle errors
+  "W",  # pycodestyle warnings
+  "F",  # pyflakes
+  "I",  # isort
+  "B",  # flake8-bugbear
+  "C4", # flake8-comprehensions
+  "UP", # pyupgrade
 ]
 ignore = [
-  "E203",  # whitespace before ':' (conflicts with black/ruff formatter)
-  "E501",  # line too long
-  "B008",  # do not perform function calls in argument defaults (FastAPI Depends)
+  "E203", # whitespace before ':' (conflicts with black/ruff formatter)
+  "E501", # line too long
+  "B008", # do not perform function calls in argument defaults (FastAPI Depends)
 ]
-
-[tool.ruff.format]
-quote-style = "double"
-indent-style = "space"
+fixable = ["ALL"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
