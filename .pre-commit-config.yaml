@@ -5,8 +5,6 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
-      - id: trailing-whitespace
-      - id: end-of-file-fixer
       - id: check-yaml
       - id: check-added-large-files
         args: ['--maxkb=1000']
@@ -14,31 +12,7 @@ repos:
       - id: check-merge-conflict
       - id: check-toml
       - id: debug-statements
-      - id: mixed-line-ending
 
-  # Python specific hooks - Ruff (replaces black, isort, flake8, autoflake)
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.12.0
-    hooks:
-      # Run the linter
-      - id: ruff
-        files: ^backend/
-        args: [--fix]
-      # Run the formatter
-      - id: ruff-format
-        files: ^backend/
-
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.16.1
-    hooks:
-      - id: mypy
-        files: ^backend/
-        args: ['--ignore-missing-imports', '--explicit-package-bases']
-        # Removed stages: [manual] so it runs on every commit
-        additional_dependencies:
-          - 'pydantic==2.11.7'
-          - 'fastapi==0.115.13'
-          - 'sqlalchemy==2.0.41'
 
   # JavaScript/TypeScript specific hooks
   - repo: https://github.com/pre-commit/mirrors-eslint
@@ -90,12 +64,13 @@ repos:
 # Local hooks
   - repo: local
     hooks:
-      - id: pytest
-        name: pytest
-        entry: bash -c 'cd backend && if [ -f "pyproject.toml" ]; then PYTHONPATH=. uv run pytest; else PYTHONPATH=. python -m pytest; fi'
+      - id: backend-ci
+        name: backend ci
+        entry: bash -c 'cd backend && make ci'
         language: system
         pass_filenames: false
-        files: ^backend/.*\.py$
+        files: ^backend/
+        stages: [pre-push]
 
       - id: npm-test
         name: npm test

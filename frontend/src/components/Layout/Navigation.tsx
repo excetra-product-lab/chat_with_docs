@@ -3,6 +3,13 @@
 import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import {
+  SignInButton,
+  SignUpButton,
+  SignedIn,
+  SignedOut,
+  UserButton,
+} from '@clerk/nextjs'
 
 export function Navigation() {
   const pathname = usePathname()
@@ -16,28 +23,49 @@ export function Navigation() {
           </div>
           <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Excetera</h1>
         </Link>
-        <nav className="flex space-x-2">
-          <Link
-            href="/upload"
-            className={`px-5 py-2.5 font-medium rounded-xl transition-all duration-300 ${
-              pathname === '/upload'
-                ? 'text-violet-300 bg-gradient-to-r from-violet-600/20 to-electric-600/20 border border-violet-500/30 shadow-glow-sm'
-                : 'text-slate-300 hover:text-white hover:bg-slate-800/50 border border-transparent hover:border-slate-700/50'
-            }`}
-          >
-            Upload
-          </Link>
-          <Link
-            href="/chat"
-            className={`px-5 py-2.5 font-medium rounded-xl transition-all duration-300 ${
-              pathname === '/chat'
-                ? 'text-violet-300 bg-gradient-to-r from-violet-600/20 to-electric-600/20 border border-violet-500/30 shadow-glow-sm'
-                : 'text-slate-300 hover:text-white hover:bg-slate-800/50 border border-transparent hover:border-slate-700/50'
-            }`}
-          >
-            Chat
-          </Link>
-        </nav>
+
+        <div className="flex items-center space-x-4">
+          <SignedIn>
+            <nav className="flex space-x-2">
+              <Link
+                href="/upload"
+                className={`px-5 py-2.5 font-medium rounded-xl transition-all duration-300 ${
+                  pathname === '/upload'
+                    ? 'text-violet-300 bg-gradient-to-r from-violet-600/20 to-electric-600/20 border border-violet-500/30 shadow-glow-sm'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/50 border border-transparent hover:border-slate-700/50'
+                }`}
+              >
+                Upload
+              </Link>
+              <Link
+                href="/chat"
+                className={`px-5 py-2.5 font-medium rounded-xl transition-all duration-300 ${
+                  pathname === '/chat'
+                    ? 'text-violet-300 bg-gradient-to-r from-violet-600/20 to-electric-600/20 border border-violet-500/30 shadow-glow-sm'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/50 border border-transparent hover:border-slate-700/50'
+                }`}
+              >
+                Chat
+              </Link>
+            </nav>
+            <UserButton />
+          </SignedIn>
+
+          <SignedOut>
+            <div className="flex space-x-3">
+              <SignInButton>
+                <button className="px-5 py-2.5 font-medium rounded-xl transition-all duration-300 text-slate-300 hover:text-white hover:bg-slate-800/50 border border-transparent hover:border-slate-700/50">
+                  Sign In
+                </button>
+              </SignInButton>
+              <SignUpButton>
+                <button className="px-5 py-2.5 font-medium rounded-xl transition-all duration-300 text-white bg-gradient-to-r from-violet-600 to-electric-600 hover:from-violet-700 hover:to-electric-700 border border-violet-500/30 shadow-glow-sm hover:shadow-glow">
+                  Sign Up
+                </button>
+              </SignUpButton>
+            </div>
+          </SignedOut>
+        </div>
       </div>
     </header>
   )
