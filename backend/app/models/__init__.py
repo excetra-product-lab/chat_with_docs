@@ -36,7 +36,6 @@ from .langchain_models import (
 from .schemas import (
     Answer,
     DocumentChunk,
-    DocumentCreate,
     DocumentMetadata,
     DocumentProcessingResult,
     ProcessingConfig,
@@ -58,7 +57,6 @@ __all__ = [
     "ChunkElementReference",
     "ElementRelationship",
     # Schema models
-    "DocumentCreate",
     "DocumentSchema",
     "DocumentMetadata",
     "DocumentChunk",
