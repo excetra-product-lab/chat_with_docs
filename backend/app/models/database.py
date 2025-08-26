@@ -52,6 +52,7 @@ class Document(Base):
     status = Column(String, default="processing")
     storage_key = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow)
 
     chunks = relationship("Chunk", back_populates="document")
     user = relationship("User", back_populates="documents")
