@@ -20,11 +20,20 @@ export interface DocumentChunk {
   endIndex: number;
 }
 
+export interface Citation {
+  document_name: string;
+  page_number?: number;
+  chunk_text: string;
+  chunk_index?: number;
+}
+
 export interface Message {
   id: string;
   type: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  confidence?: number; // For assistant messages from RAG API
+  citations?: Citation[]; // Source document references
 }
 
 export interface ChatState {
