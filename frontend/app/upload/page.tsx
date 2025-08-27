@@ -5,6 +5,7 @@ import { useAuth } from '@clerk/nextjs'
 import { DocumentUpload } from '../../src/components/DocumentUpload'
 import { DocumentTable } from '../../src/components/DocumentTable'
 import { useDocuments, useDocumentUpload, useDocumentDelete } from '../../src/hooks/useDocuments'
+import { DocumentErrorBoundary } from '../../src/components/ErrorBoundary'
 import { AlertCircle, CheckCircle, UserCheck } from 'lucide-react'
 
 export default function UploadPage() {
@@ -87,31 +88,33 @@ export default function UploadPage() {
       {/* Upload Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Document Upload */}
-        <div className="glass-effect rounded-2xl p-4">
-          <h2 className="text-xl font-semibold text-slate-200 mb-3">Upload Documents</h2>
-          <DocumentUpload
-            onUpload={handleFileUpload}
-            isUploading={isUploading}
-            uploadProgress={uploadProgress}
-          />
+        <DocumentErrorBoundary>
+          <div className="glass-effect rounded-2xl p-4">
+            <h2 className="text-xl font-semibold text-slate-200 mb-3">Upload Documents</h2>
+            <DocumentUpload
+              onUpload={handleFileUpload}
+              isUploading={isUploading}
+              uploadProgress={uploadProgress}
+            />
 
-          {/* Upload Status Messages */}
-          <div className="mt-3 min-h-[50px]">
-            {uploadError && (
-              <div className="flex items-center space-x-2 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
-                <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
-                <span className="text-red-300 text-sm">{uploadError}</span>
-              </div>
-            )}
+            {/* Upload Status Messages */}
+            <div className="mt-3 min-h-[50px]">
+              {uploadError && (
+                <div className="flex items-center space-x-2 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                  <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+                  <span className="text-red-300 text-sm">{uploadError}</span>
+                </div>
+              )}
 
-            {uploadSuccess && (
-              <div className="flex items-center space-x-2 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
-                <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
-                <span className="text-green-300 text-sm">{uploadSuccess}</span>
-              </div>
-            )}
+              {uploadSuccess && (
+                <div className="flex items-center space-x-2 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+                  <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
+                  <span className="text-green-300 text-sm">{uploadSuccess}</span>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        </DocumentErrorBoundary>
 
         {/* Upload Guidelines */}
         <div className="glass-effect rounded-2xl p-4">
@@ -176,11 +179,13 @@ export default function UploadPage() {
         )}
 
         {/* Document Table */}
-        <DocumentTable
-          documents={documents}
-          onDelete={handleDeleteDocument}
-          isDeleting={isDeleting}
-        />
+        <DocumentErrorBoundary>
+          <DocumentTable
+            documents={documents}
+            onDelete={handleDeleteDocument}
+            isDeleting={isDeleting}
+          />
+        </DocumentErrorBoundary>
       </div>
     </div>
   )

@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { ChatInterface } from '../../src/components/ChatInterface'
 import { useAppContext } from '../../src/context/AppContext'
 import { useApi } from '../../src/lib/api'
+import { ChatErrorBoundary } from '../../src/components/ErrorBoundary'
 
 export default function ChatPage() {
   const { messages, isLoading, addMessage, documents } = useAppContext()
@@ -87,12 +88,14 @@ export default function ChatPage() {
 
   return (
     <div className="h-screen px-6">
-      <ChatInterface
-        messages={messages}
-        isLoading={isLoading || isSending}
-        onSendMessage={sendMessage}
-        hasDocuments={hasReadyDocuments}
-      />
+      <ChatErrorBoundary>
+        <ChatInterface
+          messages={messages}
+          isLoading={isLoading || isSending}
+          onSendMessage={sendMessage}
+          hasDocuments={hasReadyDocuments}
+        />
+      </ChatErrorBoundary>
     </div>
   )
 }
