@@ -6,6 +6,7 @@ import { DocumentUpload } from '../../src/components/DocumentUpload'
 import { DocumentTable } from '../../src/components/DocumentTable'
 import { useDocuments, useDocumentUpload, useDocumentDelete } from '../../src/hooks/useDocuments'
 import { DocumentErrorBoundary } from '../../src/components/ErrorBoundary'
+import { useToastWithErrorHandling } from '../../src/components/Toast'
 import { AlertCircle, CheckCircle, UserCheck } from 'lucide-react'
 
 export default function UploadPage() {
@@ -13,6 +14,7 @@ export default function UploadPage() {
   const { documents, isLoading, error, refetch } = useDocuments()
   const { uploadDocument, isUploading, uploadProgress, error: uploadError } = useDocumentUpload()
   const { deleteDocument, isDeleting, error: deleteError } = useDocumentDelete()
+  const toast = useToastWithErrorHandling()
 
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null)
 
@@ -21,16 +23,19 @@ export default function UploadPage() {
       setUploadSuccess(null)
       const newDocument = await uploadDocument(file)
 
-      setUploadSuccess(`Successfully uploaded: ${file.name}`)
+      toast.showSuccess(
+        'Document uploaded successfully',
+        `${file.name} is being processed and will be available for chat soon.`
+      )
 
       // Refetch documents to get updated list
       setTimeout(() => {
         refetch()
-        setUploadSuccess(null) // Clear success message after showing
       }, 2000)
 
     } catch (error) {
       console.error('Upload failed:', error)
+      toast.showApiError(error, 'Upload')
     }
   }
 
@@ -39,8 +44,14 @@ export default function UploadPage() {
       await deleteDocument(id)
       // Refetch documents to update the list
       refetch()
+      
+      toast.showSuccess(
+        'Document deleted',
+        'The document has been successfully removed.'
+      )
     } catch (error) {
       console.error('Delete failed:', error)
+      toast.showApiError(error, 'Delete')
     }
   }
 
@@ -184,6 +195,7 @@ export default function UploadPage() {
             documents={documents}
             onDelete={handleDeleteDocument}
             isDeleting={isDeleting}
+            isLoading={isLoading}
           />
         </DocumentErrorBoundary>
       </div>

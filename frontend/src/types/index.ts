@@ -2,7 +2,7 @@ export interface Document {
   id: number;  // Changed from string to number to match backend
   filename: string;
   user_id: string;
-  status: 'processing' | 'ready' | 'failed';
+  status: 'processing' | 'processed' | 'failed';
   created_at: string;
   file_size: number;
   file_type: string;

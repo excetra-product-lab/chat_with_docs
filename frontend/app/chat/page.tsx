@@ -5,11 +5,13 @@ import { ChatInterface } from '../../src/components/ChatInterface'
 import { useAppContext } from '../../src/context/AppContext'
 import { useApi } from '../../src/lib/api'
 import { ChatErrorBoundary } from '../../src/components/ErrorBoundary'
+import { useToastWithErrorHandling } from '../../src/components/Toast'
 
 export default function ChatPage() {
   const { messages, isLoading, addMessage, documents } = useAppContext()
   const [isSending, setIsSending] = useState(false)
   const api = useApi()
+  const toast = useToastWithErrorHandling()
 
   const hasReadyDocuments = documents.some(doc => doc.status === 'ready')
 
@@ -81,6 +83,9 @@ export default function ChatPage() {
         confidence: 0
       }
       addMessage(errorMessage)
+      
+      // Also show a toast notification
+      toast.showApiError(error, 'Chat')
     } finally {
       setIsSending(false)
     }

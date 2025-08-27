@@ -34,7 +34,7 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'ready':
+      case 'processed':
         return <CheckCircle className="w-4 h-4 text-emerald-400" />;
       case 'processing':
         return (
@@ -42,7 +42,7 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-violet-400"></div>
           </div>
         );
-      case 'error':
+      case 'failed':
         return <AlertCircle className="w-4 h-4 text-red-400" />;
       default:
         return <Clock className="w-4 h-4 text-slate-400" />;
@@ -131,7 +131,7 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
                 </div>
                 <div className="flex items-center space-x-2">
                   {getStatusIcon(document.status)}
-                  {document.status === 'ready' && (
+                  {document.status === 'processed' && (
                     <button
                       onClick={() => onDelete(document.id)}
                       className="p-1 text-slate-500 hover:text-red-400 transition-colors"
@@ -146,16 +146,16 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
               <div className="flex items-center mt-2">
                 <div className="flex items-center space-x-2">
                   <div className={`w-2 h-2 rounded-full ${
-                    document.status === 'ready' ? 'bg-emerald-400' :
+                    document.status === 'processed' ? 'bg-emerald-400' :
                     document.status === 'processing' ? 'bg-violet-400' :
                     'bg-red-400'
                   }`}></div>
                   <span className={`text-xs capitalize ${
-                    document.status === 'ready' ? 'text-emerald-400' :
+                    document.status === 'processed' ? 'text-emerald-400' :
                     document.status === 'processing' ? 'text-violet-400' :
                     'text-red-400'
                   }`}>
-                    {document.status}
+                    {document.status === 'processed' ? 'ready' : document.status}
                   </span>
                 </div>
               </div>

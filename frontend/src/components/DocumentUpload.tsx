@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { Upload, FileText, AlertCircle, Plus } from 'lucide-react';
+import { ProgressBar, LoadingSpinner } from './Loading';
 
 interface DocumentUploadProps {
   onUpload: (file: File) => void;
@@ -80,21 +81,20 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
       >
         {isUploading ? (
           <div className="space-y-3">
-            <div className="w-10 h-10 mx-auto relative">
-              <div className="absolute inset-0 rounded-full border-2 border-slate-700"></div>
-              <div className="absolute inset-0 rounded-full border-2 border-violet-500 border-t-transparent animate-spin"></div>
+            <div className="w-10 h-10 mx-auto flex items-center justify-center">
+              <LoadingSpinner size="large" color="primary" />
             </div>
             <div className="space-y-1">
               <p className="text-slate-200 font-medium">Uploading document</p>
               <p className="text-slate-400 text-sm">{uploadProgress}% complete</p>
             </div>
             <div className="max-w-xs mx-auto">
-              <div className="w-full bg-slate-700/50 rounded-full h-1.5">
-                <div
-                  className="bg-violet-500 h-1.5 rounded-full transition-all duration-300"
-                  style={{ width: `${uploadProgress}%` }}
-                ></div>
-              </div>
+              <ProgressBar
+                progress={uploadProgress}
+                color="primary"
+                size="medium"
+                showPercentage={false}
+              />
             </div>
           </div>
         ) : (
