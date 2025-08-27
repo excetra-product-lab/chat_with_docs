@@ -13,7 +13,7 @@ export default function ChatPage() {
   const api = useApi()
   const toast = useToastWithErrorHandling()
 
-  const hasReadyDocuments = documents.some(doc => doc.status === 'ready')
+  const hasReadyDocuments = documents.some(doc => doc.status === 'processed')
 
   const sendMessage = async (content: string) => {
     // Add user message

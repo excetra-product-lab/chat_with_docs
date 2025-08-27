@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react'
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info'
@@ -23,6 +23,11 @@ export function Toast({ toast, onRemove }: ToastProps) {
   const [isVisible, setIsVisible] = useState(false)
   const [isLeaving, setIsLeaving] = useState(false)
 
+  const handleRemove = useCallback(() => {
+    setIsLeaving(true)
+    setTimeout(() => onRemove(toast.id), 300) // Allow animation to complete
+  }, [onRemove, toast.id])
+
   useEffect(() => {
     // Trigger entrance animation
     const timer1 = setTimeout(() => setIsVisible(true), 50)
@@ -39,12 +44,7 @@ export function Toast({ toast, onRemove }: ToastProps) {
       clearTimeout(timer1)
       if (timer2) clearTimeout(timer2)
     }
-  }, [toast.duration, toast.persist])
-
-  const handleRemove = () => {
-    setIsLeaving(true)
-    setTimeout(() => onRemove(toast.id), 300) // Allow animation to complete
-  }
+  }, [toast.duration, toast.persist, handleRemove])
 
   const typeConfig = {
     success: {
