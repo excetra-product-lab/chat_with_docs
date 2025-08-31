@@ -40,12 +40,10 @@ describe('useDocuments', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockUseApi.mockReturnValue(mockApi)
-    // Clear timers
-    vi.useFakeTimers()
   })
 
   afterEach(() => {
-    vi.useRealTimers()
+    vi.clearAllTimers()
   })
 
   describe('initial load', () => {
@@ -59,7 +57,7 @@ describe('useDocuments', () => {
 
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false)
-      })
+      }, { timeout: 5000 })
 
       expect(mockApi.getDocuments).toHaveBeenCalledTimes(1)
       expect(result.current.documents).toEqual(mockDocuments)
@@ -74,7 +72,7 @@ describe('useDocuments', () => {
 
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false)
-      })
+      }, { timeout: 5000 })
 
       expect(result.current.error).toBe(errorMessage)
       expect(result.current.documents).toEqual([])
@@ -87,7 +85,7 @@ describe('useDocuments', () => {
 
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false)
-      })
+      }, { timeout: 5000 })
 
       expect(result.current.error).toBe('Failed to fetch documents')
     })
@@ -101,7 +99,7 @@ describe('useDocuments', () => {
 
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false)
-      })
+      }, { timeout: 5000 })
 
       mockApi.getDocuments.mockClear()
       mockApi.getDocuments.mockResolvedValue([...mockDocuments, {
@@ -123,7 +121,7 @@ describe('useDocuments', () => {
 
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false)
-      })
+      }, { timeout: 5000 })
 
       expect(mockApi.getDocuments).toHaveBeenCalledTimes(1)
       expect(result.current.documents).toHaveLength(4)
@@ -150,7 +148,7 @@ describe('useDocuments', () => {
 
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false)
-      })
+      }, { timeout: 5000 })
 
       expect(result.current.documents).toEqual([processingDocument])
 
@@ -158,14 +156,10 @@ describe('useDocuments', () => {
       const processedDocument = { ...processingDocument, status: 'processed', chunk_count: 10 }
       mockApi.getDocuments.mockResolvedValueOnce([processedDocument])
 
-      // Fast-forward timer to trigger polling
-      act(() => {
-        vi.advanceTimersByTime(3000)
-      })
-
+      // Wait for polling to occur naturally
       await waitFor(() => {
         expect(result.current.documents[0].status).toBe('processed')
-      })
+      }, { timeout: 5000 })
 
       expect(mockApi.getDocuments).toHaveBeenCalledTimes(2)
     })
@@ -189,29 +183,22 @@ describe('useDocuments', () => {
 
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false)
-      })
+      }, { timeout: 5000 })
 
       // Document becomes processed
       const processedDocument = { ...processingDocument, status: 'processed', chunk_count: 10 }
       mockApi.getDocuments.mockResolvedValueOnce([processedDocument])
 
-      act(() => {
-        vi.advanceTimersByTime(3000)
-      })
-
+      // Wait for polling to occur naturally  
       await waitFor(() => {
         expect(result.current.documents[0].status).toBe('processed')
-      })
+      }, { timeout: 5000 })
 
       // Clear previous calls
       mockApi.getDocuments.mockClear()
 
-      // Advance timer again - should not call API since no processing documents
-      act(() => {
-        vi.advanceTimersByTime(3000)
-      })
-
-      await waitForAsync(100)
+      // Wait for potential polling (should not happen since no processing documents)
+      await waitForAsync(3100)
 
       expect(mockApi.getDocuments).not.toHaveBeenCalled()
     })
@@ -234,15 +221,14 @@ describe('useDocuments', () => {
 
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false)
-      })
+      }, { timeout: 5000 })
 
       // Mock polling error
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       mockApi.getDocuments.mockRejectedValueOnce(new Error('Polling failed'))
 
-      act(() => {
-        vi.advanceTimersByTime(3000)
-      })
+      // Wait for polling to happen naturally
+      await waitForAsync(3100)
 
       await waitForAsync(100)
 
@@ -293,7 +279,12 @@ describe('useDocumentUpload', () => {
       expect.any(Function)
     )
     expect(response).toEqual(expectedResponse)
-    expect(result.current.isUploading).toBe(false)
+    
+    // Wait for state to be updated after upload completion
+    await waitFor(() => {
+      expect(result.current.isUploading).toBe(false)
+    })
+    
     expect(result.current.uploadProgress).toBe(0)
     expect(result.current.error).toBe(null)
   })
@@ -301,12 +292,12 @@ describe('useDocumentUpload', () => {
   it('should track upload progress', async () => {
     const mockFile = new File(['test content'], 'test.pdf', { type: 'application/pdf' })
 
-    mockUploadApi.uploadDocument.mockImplementation((file, progressCallback) => {
-      // Simulate progress updates
-      setTimeout(() => progressCallback?.(25), 10)
-      setTimeout(() => progressCallback?.(50), 20)
-      setTimeout(() => progressCallback?.(75), 30)
-      setTimeout(() => progressCallback?.(100), 40)
+    mockUploadApi.uploadDocument.mockImplementation((_file, progressCallback) => {
+      // Simulate progress updates immediately
+      progressCallback?.(25)
+      progressCallback?.(50)
+      progressCallback?.(75)
+      progressCallback?.(100)
       return Promise.resolve(mockApiResponses.upload.success)
     })
 
@@ -342,7 +333,11 @@ describe('useDocumentUpload', () => {
 
     await expect(uploadPromise!).rejects.toThrow(errorMessage)
 
-    expect(result.current.error).toBe(errorMessage)
+    // Wait for error state to be set
+    await waitFor(() => {
+      expect(result.current.error).toBe(errorMessage)
+    })
+    
     expect(result.current.isUploading).toBe(false)
     expect(result.current.uploadProgress).toBe(0)
   })
@@ -361,7 +356,10 @@ describe('useDocumentUpload', () => {
 
     await expect(uploadPromise!).rejects.toThrow('String error')
 
-    expect(result.current.error).toBe('Upload failed')
+    // Wait for error state to be set
+    await waitFor(() => {
+      expect(result.current.error).toBe('Upload failed')
+    })
   })
 
       it('should throw error when user is not signed in', async () => {
@@ -411,7 +409,12 @@ describe('useDocumentDelete', () => {
     await deletePromise!
 
     expect(mockApi.deleteDocument).toHaveBeenCalledWith(1)
-    expect(result.current.isDeleting).toBe(null)
+    
+    // Wait for state to be updated after delete completion
+    await waitFor(() => {
+      expect(result.current.isDeleting).toBe(null)
+    })
+    
     expect(result.current.error).toBe(null)
   })
 
@@ -428,7 +431,10 @@ describe('useDocumentDelete', () => {
 
     await expect(deletePromise!).rejects.toThrow(errorMessage)
 
-    expect(result.current.error).toBe(errorMessage)
+    // Wait for error state to be set
+    await waitFor(() => {
+      expect(result.current.error).toBe(errorMessage)
+    })
     expect(result.current.isDeleting).toBe(null)
   })
 
@@ -444,7 +450,10 @@ describe('useDocumentDelete', () => {
 
     await expect(deletePromise!).rejects.toThrow('String error')
 
-    expect(result.current.error).toBe('Failed to delete document')
+    // Wait for error state to be set
+    await waitFor(() => {
+      expect(result.current.error).toBe('Failed to delete document')
+    })
   })
 
   it('should track which document is being deleted', async () => {

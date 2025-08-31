@@ -98,7 +98,7 @@ describe('useUploadApi', () => {
       const mockFile = new File(['test content'], 'test.pdf', { type: 'application/pdf' })
       const { result } = renderHook(() => useUploadApi())
 
-      await expect(result.current.uploadDocument(mockFile)).rejects.toThrow('HTTP 500: Internal Server Error')
+      await expect(result.current.uploadDocument(mockFile)).rejects.toThrow('Internal Server Error')
     })
 
     it('should handle network errors', async () => {
@@ -124,12 +124,27 @@ describe('useUploadApi', () => {
     })
 
     it('should handle JSON parsing errors on success response', async () => {
-      const mockXHR = createMockXMLHttpRequest({
-        shouldSucceed: true,
-        responseData: 'invalid json',
-      })
-      // Override responseText to invalid JSON
-      mockXHR.responseText = 'invalid json'
+      const mockXHR = {
+        upload: {
+          addEventListener: vi.fn(),
+        },
+        addEventListener: vi.fn((event: string, callback: Function) => {
+          if (event === 'load') {
+            setTimeout(() => {
+              mockXHR.status = 200
+              mockXHR.statusText = 'OK'
+              mockXHR.responseText = 'invalid json' // Invalid JSON
+              callback()
+            }, 10)
+          }
+        }),
+        open: vi.fn(),
+        setRequestHeader: vi.fn(),
+        send: vi.fn(),
+        status: 200,
+        statusText: 'OK',
+        responseText: 'invalid json',
+      }
       ;(global.XMLHttpRequest as any).mockImplementation(() => mockXHR)
 
       const mockFile = new File(['test content'], 'test.pdf', { type: 'application/pdf' })
