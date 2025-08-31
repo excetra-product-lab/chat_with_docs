@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react'
 import { MessageBubble } from '../components/MessageBubble'
 import { Message } from '../types'
 
@@ -43,6 +43,7 @@ describe('MessageBubble', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    cleanup()
   })
 
   it('should render user message correctly', () => {

@@ -10,7 +10,10 @@
     "type-check": "tsc --noEmit",
     "test": "vitest",
     "test:run": "vitest run",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest --watch",
+    "test:ci": "vitest run --coverage --reporter=junit --outputFile=test-results.xml"
   },
   "dependencies": {
     "@clerk/nextjs": "^5.7.5",
