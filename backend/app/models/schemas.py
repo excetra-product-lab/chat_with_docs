@@ -20,11 +20,6 @@ class Token(BaseModel):
     token_type: str
 
 
-# Document schemas
-class DocumentCreate(BaseModel):
-    filename: str
-
-
 class Document(BaseModel):
     id: int  # Changed from str to int to match database model
     filename: str
