@@ -182,7 +182,7 @@ async def upload_document(
     """
     try:
         user_id = current_user["id"]
-        # user_id = 2
+        # user_id = "2"
 
         if not file.filename:
             raise HTTPException(
@@ -347,7 +347,7 @@ async def list_documents(current_user: dict = Depends(get_current_user)):
             document = Document(
                 id=int(db_doc.id),  # Explicitly cast to int to match schema
                 filename=str(db_doc.filename),
-                user_id=int(db_doc.user_id),
+                user_id=str(db_doc.user_id),
                 status=str(db_doc.status),
                 storage_key=str(db_doc.storage_key) if db_doc.storage_key else None,
                 created_at=db_doc.created_at,  # type: ignore[arg-type]

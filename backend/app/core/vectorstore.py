@@ -81,7 +81,7 @@ async def store_chunks_with_embeddings(
         ) from e
 
 
-async def similarity_search(query: str, user_id: int, k: int = 5) -> list[dict]:
+async def similarity_search(query: str, user_id: str, k: int = 5) -> list[dict]:
     """
     Perform similarity search in pgvector to find relevant chunks.
 
@@ -112,7 +112,7 @@ async def similarity_search(query: str, user_id: int, k: int = 5) -> list[dict]:
         ) from e
 
 
-async def search_vectors(embedding: list[float], user_id: int, k: int) -> list[dict]:
+async def search_vectors(embedding: list[float], user_id: str, k: int) -> list[dict]:
     """
     Search for similar vectors in database using pgvector cosine similarity.
 

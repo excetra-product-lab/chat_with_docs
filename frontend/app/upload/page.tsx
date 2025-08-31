@@ -1,12 +1,14 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useAuth } from '@clerk/nextjs'
 import { DocumentUpload } from '../../src/components/DocumentUpload'
 import { DocumentTable } from '../../src/components/DocumentTable'
 import { useDocuments, useDocumentUpload, useDocumentDelete } from '../../src/hooks/useDocuments'
-import { AlertCircle, CheckCircle } from 'lucide-react'
+import { AlertCircle, CheckCircle, UserCheck } from 'lucide-react'
 
 export default function UploadPage() {
+  const { isSignedIn, isLoaded } = useAuth()
   const { documents, isLoading, error, refetch } = useDocuments()
   const { uploadDocument, isUploading, uploadProgress, error: uploadError } = useDocumentUpload()
   const { deleteDocument, isDeleting, error: deleteError } = useDocumentDelete()
@@ -18,13 +20,13 @@ export default function UploadPage() {
       setUploadSuccess(null)
       const newDocument = await uploadDocument(file)
 
-      // Simulate adding to the documents list (in real app, refetch would get this)
       setUploadSuccess(`Successfully uploaded: ${file.name}`)
 
       // Refetch documents to get updated list
       setTimeout(() => {
         refetch()
-      }, 1000)
+        setUploadSuccess(null) // Clear success message after showing
+      }, 2000)
 
     } catch (error) {
       console.error('Upload failed:', error)
@@ -39,6 +41,39 @@ export default function UploadPage() {
     } catch (error) {
       console.error('Delete failed:', error)
     }
+  }
+
+  // Show loading state while Clerk is initializing
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen px-6 py-6 flex items-center justify-center">
+        <div className="text-slate-400">Loading...</div>
+      </div>
+    )
+  }
+
+  // Show sign-in prompt for unauthenticated users
+  if (!isSignedIn) {
+    return (
+      <div className="min-h-screen px-6 py-6 flex items-center justify-center">
+        <div className="max-w-md mx-auto text-center">
+          <div className="w-16 h-16 bg-gradient-to-br from-violet-600 to-electric-600 rounded-full flex items-center justify-center mx-auto mb-6">
+            <UserCheck className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="text-2xl font-bold text-slate-100 mb-4">Sign In Required</h1>
+          <p className="text-slate-400 mb-8">
+            Please sign in to upload and manage your legal documents. Your documents are securely stored and only accessible to you.
+          </p>
+          <div className="space-y-4">
+            <div className="text-sm text-slate-500">
+              <p>✓ Secure document storage</p>
+              <p>✓ AI-powered analysis</p>
+              <p>✓ Precise citations</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

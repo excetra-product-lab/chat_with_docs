@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react'
-
+import {useCallback, useEffect, useState} from 'react'
+import {useUploadApi} from '../services/uploadApi'
 // Import Document type to ensure consistency
 import { Document } from '../types'
 
@@ -8,7 +8,7 @@ const mockDocuments: Document[] = [
   {
     id: 1,
     filename: 'Contract_Analysis_2024.pdf',
-    user_id: 1,
+    user_id: "1",
     status: 'ready',
     created_at: '2024-12-27T10:30:00Z',
     file_size: 2547829,
@@ -18,7 +18,7 @@ const mockDocuments: Document[] = [
   {
     id: 2,
     filename: 'Legal_Brief_Summary.docx',
-    user_id: 1,
+    user_id: "1",
     status: 'processing',
     created_at: '2024-12-27T11:15:00Z',
     file_size: 1024000,
@@ -29,7 +29,7 @@ const mockDocuments: Document[] = [
   {
     id: 3,
     filename: 'Case_Notes.txt',
-    user_id: 1,
+    user_id: 'user1',
     status: 'ready',
     created_at: '2024-12-27T09:45:00Z',
     file_size: 54000,
@@ -100,46 +100,33 @@ export const useDocumentUpload = () => {
   const [uploadProgress, setUploadProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
 
-  // Mock POST /api/documents/upload
-  const uploadDocument = useCallback(async (file: File): Promise<Document> => {
+  const { uploadDocument, isSignedIn } = useUploadApi()
+
+  const upload = useCallback(async (file: File): Promise<Document> => {
+    if (!isSignedIn) {
+      throw new Error('You must be signed in to upload documents')
+    }
+
     setIsUploading(true)
     setUploadProgress(0)
     setError(null)
 
     try {
-      // Simulate upload progress
-      for (let progress = 0; progress <= 100; progress += 20) {
-        await delay(200)
-        setUploadProgress(progress)
-      }
-
-      await delay(500) // Final processing delay
-
-      // Create mock uploaded document
-      const newDocument: Document = {
-        id: Date.now(), // Use number instead of string
-        filename: file.name,
-        user_id: 1, // Use number instead of string
-        status: 'processing',
-        created_at: new Date().toISOString(),
-        file_size: file.size,
-        file_type: file.type,
-        pages: Math.floor(file.size / 2000), // Mock page calculation
-        upload_progress: 0,
-      }
-
-      return newDocument
+        return await uploadDocument(file, (progress) => {
+          setUploadProgress(progress)
+      })
     } catch (err) {
-      setError('Upload failed')
+      const errorMessage = err instanceof Error ? err.message : 'Upload failed'
+      setError(errorMessage)
       throw err
     } finally {
       setIsUploading(false)
       setUploadProgress(0)
     }
-  }, [])
+  }, [uploadDocument, isSignedIn])
 
   return {
-    uploadDocument,
+    uploadDocument: upload,
     isUploading,
     uploadProgress,
     error,
