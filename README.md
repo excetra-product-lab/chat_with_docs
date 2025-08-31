@@ -64,7 +64,26 @@ A sophisticated RAG (Retrieval-Augmented Generation) system designed specificall
 
    ```bash
    cp .env.example .env
-   # Edit .env with database, Azure OpenAI, etc.
+   ```
+
+   Update your `backend/.env` with:
+
+   ```bash
+   # Database Configuration
+   DATABASE_URL=postgresql://chatwithdocs:password@localhost:5432/chatwithdocs
+
+   # Azure OpenAI (Required)
+   AZURE_OPENAI_API_KEY=your-api-key-here
+   AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
+   AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4o
+   AZURE_OPENAI_EMBEDDING_DEPLOYMENT=text-embedding-ada-002
+
+   # Clerk Authentication (Get from https://dashboard.clerk.com)
+   CLERK_SECRET_KEY=sk_your-clerk-secret-key-here
+   CLERK_PUBLISHABLE_KEY=pk_your-clerk-publishable-key-here
+
+   # Security
+   SECRET_KEY=your-secret-key-here
    ```
 
 5. **Start the dev server**
@@ -82,11 +101,31 @@ A sophisticated RAG (Retrieval-Augmented Generation) system designed specificall
    npm install
    ```
 
-2. **Copy and customize the environment file:**
+2. **Create and configure the environment file:**
 
    ```bash
-   cp .env.local.example .env.local
-   # Edit .env.local with your Clerk keys
+   # Create .env.local file (gitignored by default)
+   touch .env.local
+   ```
+
+   Add the following environment variables to `frontend/.env.local`:
+
+   ```bash
+   # API Configuration
+   NEXT_PUBLIC_API_URL=http://localhost:8000
+
+   # Clerk Authentication (Get from https://dashboard.clerk.com)
+   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_your-clerk-publishable-key-here
+   CLERK_SECRET_KEY=sk_test_your-clerk-secret-key-here
+
+   # Optional: Clerk Additional Configuration
+   CLERK_SIGN_IN_URL=/sign-in
+   CLERK_SIGN_UP_URL=/sign-up
+   CLERK_AFTER_SIGN_IN_URL=/
+   CLERK_AFTER_SIGN_UP_URL=/
+
+   # Development Mode
+   NODE_ENV=development
    ```
 
 3. **Start the development server:**
@@ -102,6 +141,71 @@ Both servers should now be running:
 * 🚀 **Backend API**: [http://localhost:8000](http://localhost:8000)
 * 🖥️ **Frontend**: [http://localhost:3000](http://localhost:3000)
 * 📚 **API docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
+
+## 🔧 Environment Variables Reference
+
+### Backend Environment Variables
+
+Create `backend/.env` with the following variables:
+
+| Variable | Required | Description | Example |
+|----------|----------|-------------|---------|
+| `DATABASE_URL` | ✅ | PostgreSQL connection string with pgvector | `postgresql://chatwithdocs:password@localhost:5432/chatwithdocs` |
+| `AZURE_OPENAI_API_KEY` | ✅ | Azure OpenAI API key for embeddings and chat | `your-azure-openai-key` |
+| `AZURE_OPENAI_ENDPOINT` | ✅ | Azure OpenAI service endpoint | `https://your-resource.openai.azure.com/` |
+| `AZURE_OPENAI_DEPLOYMENT_NAME` | ✅ | GPT model deployment name | `gpt-4o` |
+| `AZURE_OPENAI_EMBEDDING_DEPLOYMENT` | ✅ | Embedding model deployment name | `text-embedding-ada-002` |
+| `CLERK_SECRET_KEY` | ✅ | Clerk secret key for JWT verification | `sk_test_your-clerk-secret-key` |
+| `CLERK_PUBLISHABLE_KEY` | ✅ | Clerk publishable key | `pk_test_your-clerk-publishable-key` |
+| `SECRET_KEY` | ✅ | FastAPI secret key for security | Generate with `openssl rand -hex 32` |
+| `AZURE_OPENAI_API_VERSION` | ❌ | Azure OpenAI API version | `2023-05-15` |
+| `ALLOWED_ORIGINS` | ❌ | CORS allowed origins | `["http://localhost:3000"]` |
+
+### Frontend Environment Variables
+
+Create `frontend/.env.local` with the following variables:
+
+| Variable | Required | Description | Example |
+|----------|----------|-------------|---------|
+| `NEXT_PUBLIC_API_URL` | ✅ | Backend API URL | `http://localhost:8000` |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | ✅ | Clerk publishable key (must match backend) | `pk_test_your-clerk-publishable-key` |
+| `CLERK_SECRET_KEY` | ✅ | Clerk secret key (must match backend) | `sk_test_your-clerk-secret-key` |
+| `CLERK_SIGN_IN_URL` | ❌ | Custom sign-in page URL | `/sign-in` |
+| `CLERK_SIGN_UP_URL` | ❌ | Custom sign-up page URL | `/sign-up` |
+| `CLERK_AFTER_SIGN_IN_URL` | ❌ | Redirect after sign-in | `/` |
+| `CLERK_AFTER_SIGN_UP_URL` | ❌ | Redirect after sign-up | `/` |
+| `NODE_ENV` | ❌ | Environment mode | `development` |
+
+### Getting API Keys
+
+#### Azure OpenAI
+1. Go to [Azure Portal](https://portal.azure.com)
+2. Create an Azure OpenAI resource
+3. Deploy GPT-4o and text-embedding models
+4. Get your API key and endpoint from the resource
+
+#### Clerk Authentication
+1. Go to [Clerk Dashboard](https://dashboard.clerk.com)
+2. Create a new application
+3. Get your publishable and secret keys from the API Keys section
+4. Configure your application settings as needed
+
+### Database Setup
+
+The application requires PostgreSQL with the pgvector extension for vector similarity search. The `create_tables.py` script will:
+
+- Create all necessary tables (users, documents, chunks, etc.)
+- Enable the pgvector extension
+- Set up proper relationships and indexes
+
+**Table Structure:**
+- `users` - User authentication data
+- `documents` - Document metadata and status
+- `chunks` - Text chunks with vector embeddings  
+- `document_hierarchies` - Document structure information
+- `document_elements` - Individual document elements
+- `chunk_element_references` - Relationships between chunks and elements
+- `element_relationships` - Hierarchical element relationships
 
 ## Architecture
 

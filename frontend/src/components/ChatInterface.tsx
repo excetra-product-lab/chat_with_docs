@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, Loader2 } from 'lucide-react';
 import { Message } from '../types';
 import { MessageBubble } from './MessageBubble';
+import { MessageSkeleton, LoadingSpinner } from './Loading';
 
 interface ChatInterfaceProps {
   messages: Message[];
@@ -103,7 +104,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               <div className="flex justify-start">
                 <div className="flex items-center space-x-3">
                   <div className="w-8 h-8 bg-gradient-to-br from-violet-600 to-electric-600 rounded-full flex items-center justify-center shadow-glow">
-                    <Loader2 className="w-4 h-4 text-white animate-spin" />
+                    <LoadingSpinner size="small" color="white" />
                   </div>
                   <div className="glass-effect rounded-2xl p-4 border-violet-500/20">
                     <div className="flex space-x-1">
