@@ -4,32 +4,39 @@ import React, { useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { DocumentUpload } from '../../src/components/DocumentUpload'
 import { DocumentTable } from '../../src/components/DocumentTable'
-import { useDocuments, useDocumentUpload, useDocumentDelete } from '../../src/hooks/useDocuments'
+import { useDocumentUpload, useDocumentDelete } from '../../src/hooks/useDocuments'
+import { useAppContext } from '../../src/context/AppContext'
+import { DocumentErrorBoundary } from '../../src/components/ErrorBoundary'
+import { useToastWithErrorHandling } from '../../src/components/Toast'
 import { AlertCircle, CheckCircle, UserCheck } from 'lucide-react'
 
 export default function UploadPage() {
   const { isSignedIn, isLoaded } = useAuth()
-  const { documents, isLoading, error, refetch } = useDocuments()
+  const { documents, isDocumentsLoading: isLoading, documentsError: error, refetchDocuments: refetch } = useAppContext()
   const { uploadDocument, isUploading, uploadProgress, error: uploadError } = useDocumentUpload()
   const { deleteDocument, isDeleting, error: deleteError } = useDocumentDelete()
+  const toast = useToastWithErrorHandling()
 
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null)
 
   const handleFileUpload = async (file: File) => {
     try {
       setUploadSuccess(null)
-      const newDocument = await uploadDocument(file)
+      await uploadDocument(file)
 
-      setUploadSuccess(`Successfully uploaded: ${file.name}`)
+      toast.showSuccess(
+        'Document uploaded successfully',
+        `${file.name} is being processed and will be available for chat soon.`
+      )
 
       // Refetch documents to get updated list
       setTimeout(() => {
         refetch()
-        setUploadSuccess(null) // Clear success message after showing
       }, 2000)
 
     } catch (error) {
       console.error('Upload failed:', error)
+      toast.showApiError(error, 'Upload')
     }
   }
 
@@ -38,8 +45,14 @@ export default function UploadPage() {
       await deleteDocument(id)
       // Refetch documents to update the list
       refetch()
+      
+      toast.showSuccess(
+        'Document deleted',
+        'The document has been successfully removed.'
+      )
     } catch (error) {
       console.error('Delete failed:', error)
+      toast.showApiError(error, 'Delete')
     }
   }
 
@@ -87,31 +100,33 @@ export default function UploadPage() {
       {/* Upload Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Document Upload */}
-        <div className="glass-effect rounded-2xl p-4">
-          <h2 className="text-xl font-semibold text-slate-200 mb-3">Upload Documents</h2>
-          <DocumentUpload
-            onUpload={handleFileUpload}
-            isUploading={isUploading}
-            uploadProgress={uploadProgress}
-          />
+        <DocumentErrorBoundary>
+          <div className="glass-effect rounded-2xl p-4">
+            <h2 className="text-xl font-semibold text-slate-200 mb-3">Upload Documents</h2>
+            <DocumentUpload
+              onUpload={handleFileUpload}
+              isUploading={isUploading}
+              uploadProgress={uploadProgress}
+            />
 
-          {/* Upload Status Messages */}
-          <div className="mt-3 min-h-[50px]">
-            {uploadError && (
-              <div className="flex items-center space-x-2 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
-                <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
-                <span className="text-red-300 text-sm">{uploadError}</span>
-              </div>
-            )}
+            {/* Upload Status Messages */}
+            <div className="mt-3 min-h-[50px]">
+              {uploadError && (
+                <div className="flex items-center space-x-2 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                  <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+                  <span className="text-red-300 text-sm">{uploadError}</span>
+                </div>
+              )}
 
-            {uploadSuccess && (
-              <div className="flex items-center space-x-2 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
-                <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
-                <span className="text-green-300 text-sm">{uploadSuccess}</span>
-              </div>
-            )}
+              {uploadSuccess && (
+                <div className="flex items-center space-x-2 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+                  <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
+                  <span className="text-green-300 text-sm">{uploadSuccess}</span>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        </DocumentErrorBoundary>
 
         {/* Upload Guidelines */}
         <div className="glass-effect rounded-2xl p-4">
@@ -176,11 +191,14 @@ export default function UploadPage() {
         )}
 
         {/* Document Table */}
-        <DocumentTable
-          documents={documents}
-          onDelete={handleDeleteDocument}
-          isDeleting={isDeleting}
-        />
+        <DocumentErrorBoundary>
+          <DocumentTable
+            documents={documents}
+            onDelete={handleDeleteDocument}
+            isDeleting={isDeleting}
+            isLoading={isLoading}
+          />
+        </DocumentErrorBoundary>
       </div>
     </div>
   )

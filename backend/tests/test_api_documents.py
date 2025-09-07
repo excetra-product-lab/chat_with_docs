@@ -475,7 +475,7 @@ This is the conclusion section that summarizes everything."""
         assert response.status_code == 200
         data = response.json()
 
-        # Verify response structure matches new Document schema
+        # Verify response structure matches Document schema
         assert "id" in data
         assert data["filename"] == "test.txt"
         assert data["user_id"] == "user_test123"  # From mock_get_current_user

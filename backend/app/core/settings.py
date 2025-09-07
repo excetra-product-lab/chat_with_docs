@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     AZURE_OPENAI_DEPLOYMENT_NAME: str | None = None
     AZURE_OPENAI_EMBEDDING_DEPLOYMENT: str | None = None
     AZURE_OPENAI_API_VERSION: str | None = None
+    AZURE_OPENAI_EMBEDDING_API_VERSION: str | None = None
 
     # Azure OpenAI Model Configuration
     OPENAI_MODEL: str = "gpt-4o"  # Default deployment name
@@ -29,7 +30,7 @@ class Settings(BaseSettings):
     # Authentication
     SECRET_KEY: str = "dev-secret-key-change-in-production"  # pragma: allowlist secret
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours instead of 30 minutes
 
     # Clerk Authentication
     CLERK_SECRET_KEY: str | None = None

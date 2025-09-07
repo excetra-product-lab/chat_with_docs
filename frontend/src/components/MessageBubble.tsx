@@ -1,5 +1,5 @@
-import React from 'react';
-import { User, Bot, Copy, RotateCcw } from 'lucide-react';
+import React, { useState } from 'react';
+import { User, Bot, Copy, RotateCcw, FileText, ChevronDown, ChevronUp } from 'lucide-react';
 import { Message } from '../types';
 // Citation imports removed
 
@@ -14,6 +14,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   onCopy,
   onRegenerate
 }) => {
+  const [citationsExpanded, setCitationsExpanded] = useState(false);
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString('en-US', {
       hour: 'numeric',
@@ -56,7 +57,74 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
               <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
             </div>
 
-            {/* Citations section removed */}
+            {/* Confidence Score Display */}
+            {message.type === 'assistant' && message.confidence !== undefined && (
+              <div className="mt-3 pt-3 border-t border-orange-600/20">
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs text-stone-400">Confidence:</span>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-16 h-1.5 bg-stone-700 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full transition-all duration-300 ${
+                          message.confidence >= 0.8 ? 'bg-green-500' :
+                          message.confidence >= 0.6 ? 'bg-yellow-500' : 'bg-red-500'
+                        }`}
+                        style={{ width: `${(message.confidence * 100)}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-xs text-stone-300 font-medium">
+                      {Math.round(message.confidence * 100)}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Citations Display */}
+            {message.type === 'assistant' && message.citations && message.citations.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-orange-600/20">
+                <div className="space-y-2">
+                  <button
+                    onClick={() => setCitationsExpanded(!citationsExpanded)}
+                    className="flex items-center space-x-2 text-xs text-stone-400 hover:text-stone-300 transition-colors"
+                  >
+                    <FileText className="w-3 h-3" />
+                    <span>Sources ({message.citations.length})</span>
+                    {citationsExpanded ? (
+                      <ChevronUp className="w-3 h-3" />
+                    ) : (
+                      <ChevronDown className="w-3 h-3" />
+                    )}
+                  </button>
+
+                  {citationsExpanded && (
+                    <div className="space-y-2">
+                      {message.citations.map((citation, index) => (
+                        <div 
+                          key={index}
+                          className="p-2 bg-stone-900/50 rounded-lg border border-stone-700/50"
+                        >
+                          <div className="flex items-center space-x-2 mb-1">
+                            <FileText className="w-3 h-3 text-orange-400" />
+                            <span className="text-xs font-medium text-stone-300">
+                              {citation.document_name}
+                            </span>
+                            {citation.page_number && (
+                              <span className="text-xs text-stone-500">
+                                Page {citation.page_number}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-stone-400 leading-relaxed">
+                            "{citation.chunk_text}"
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className={`flex items-center mt-2 space-x-3 ${
