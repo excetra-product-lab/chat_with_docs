@@ -29,7 +29,9 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
   }, [])
 
   return (
-    <ClerkProvider>
+    <ClerkProvider
+      publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || ''}
+    >
       <ErrorProvider>
         <ToastProvider position="top-right">
           <AppProvider>

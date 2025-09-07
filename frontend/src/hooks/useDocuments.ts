@@ -10,24 +10,33 @@ export const useDocuments = () => {
   const [documents, setDocuments] = useState<Document[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [retryCount, setRetryCount] = useState(0)
   const api = useApi()
 
   // Real GET /api/documents
   const fetchDocuments = useCallback(async () => {
+    // Don't retry if we've already failed multiple times
+    if (retryCount >= 3) {
+      console.log('Max retries reached, skipping fetch')
+      return
+    }
+
     setIsLoading(true)
     setError(null)
 
     try {
       const fetchedDocuments = await api.getDocuments()
       setDocuments(fetchedDocuments)
+      setRetryCount(0) // Reset retry count on success
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch documents'
       setError(errorMessage)
-      console.error('Error fetching documents:', err)
+      setRetryCount(prev => prev + 1)
+      console.error('Error fetching documents (attempt', retryCount + 1, '):', err)
     } finally {
       setIsLoading(false)
     }
-  }, [api])
+  }, [api, retryCount])
 
   // Real-time status polling for processing documents
   useEffect(() => {
@@ -49,10 +58,10 @@ export const useDocuments = () => {
     }
   }, [documents, api])
 
-  // Initial fetch
+  // Initial fetch - only once on mount
   useEffect(() => {
     fetchDocuments()
-  }, [fetchDocuments])
+  }, []) // Remove fetchDocuments dependency to prevent infinite loop
 
   return {
     documents,

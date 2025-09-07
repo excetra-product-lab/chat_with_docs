@@ -65,6 +65,8 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
         return;
       }
       onUpload(file);
+      // Reset the file input after upload
+      e.target.value = '';
     }
   }, [onUpload]);
 

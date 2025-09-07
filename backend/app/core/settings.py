@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     # Authentication
     SECRET_KEY: str = "dev-secret-key-change-in-production"  # pragma: allowlist secret
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours instead of 30 minutes
 
     # Clerk Authentication
     CLERK_SECRET_KEY: str | None = None

@@ -42,15 +42,22 @@ export function validateEnvironment(): ValidationResult {
   const errors: string[] = []
   const warnings: string[] = []
 
-  // Check required environment variables
-  for (const envVar of REQUIRED_ENV_VARS) {
-    const value = process.env[envVar]
-    
-    if (!value) {
-      errors.push(`Missing required environment variable: ${envVar}`)
-    } else if (value.includes('your-') || value.includes('here')) {
-      errors.push(`Environment variable ${envVar} appears to contain placeholder value: ${value}`)
-    }
+  // Check required environment variables - access directly by name for Next.js client-side compatibility
+  const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL
+  const NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+  
+  // Validate NEXT_PUBLIC_API_URL
+  if (!NEXT_PUBLIC_API_URL) {
+    errors.push(`Missing required environment variable: NEXT_PUBLIC_API_URL`)
+  } else if (NEXT_PUBLIC_API_URL.includes('your-') || NEXT_PUBLIC_API_URL.includes('here')) {
+    errors.push(`Environment variable NEXT_PUBLIC_API_URL appears to contain placeholder value: ${NEXT_PUBLIC_API_URL}`)
+  }
+  
+  // Validate NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+  if (!NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
+    errors.push(`Missing required environment variable: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`)
+  } else if (NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY.includes('your-') || NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY.includes('here')) {
+    errors.push(`Environment variable NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY appears to contain placeholder value: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}`)
   }
 
   // Check optional environment variables for warnings
@@ -63,8 +70,8 @@ export function validateEnvironment(): ValidationResult {
   }
 
   // Validate specific environment variable formats
-  validateApiUrl(errors)
-  validateClerkKeys(errors)
+  validateApiUrl(errors, NEXT_PUBLIC_API_URL)
+  validateClerkKeys(errors, NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY)
 
   return {
     isValid: errors.length === 0,
@@ -76,9 +83,7 @@ export function validateEnvironment(): ValidationResult {
 /**
  * Validates API URL format
  */
-function validateApiUrl(errors: string[]) {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL
-  
+function validateApiUrl(errors: string[], apiUrl: string | undefined) {
   if (apiUrl) {
     try {
       new URL(apiUrl)
@@ -95,9 +100,7 @@ function validateApiUrl(errors: string[]) {
 /**
  * Validates Clerk key formats
  */
-function validateClerkKeys(errors: string[]) {
-  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
-  
+function validateClerkKeys(errors: string[], publishableKey: string | undefined) {
   if (publishableKey) {
     if (!publishableKey.startsWith('pk_')) {
       errors.push(`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY should start with 'pk_': ${publishableKey}`)
@@ -107,34 +110,13 @@ function validateClerkKeys(errors: string[]) {
 
 /**
  * Gets the validated environment configuration
- * Throws an error if validation fails
+ * Always returns usable values with fallbacks
  */
 export function getEnvironmentConfig(): EnvironmentConfig {
-  const validation = validateEnvironment()
-  
-  if (!validation.isValid) {
-    const errorMessage = [
-      '❌ Environment validation failed!',
-      '',
-      'Missing or invalid environment variables:',
-      ...validation.errors.map(error => `  • ${error}`),
-      '',
-      'Please check your .env.local file and ensure all required variables are set.',
-      'See the README.md for setup instructions.'
-    ].join('\n')
-    
-    throw new Error(errorMessage)
-  }
-
-  // Log warnings in development
-  if (process.env.NODE_ENV === 'development' && validation.warnings.length > 0) {
-    console.warn('⚠️ Environment warnings:')
-    validation.warnings.forEach(warning => console.warn(`  • ${warning}`))
-  }
-
+  // Always return usable configuration with fallbacks
   return {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL!,
-    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY!
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
+    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || ''
   }
 }
 

@@ -18,8 +18,9 @@ export const DocumentTable: React.FC<DocumentTableProps> = ({
 }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null)
 
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes'
+  const formatFileSize = (bytes: number | null | undefined): string => {
+    if (!bytes || bytes === 0) return '0 Bytes'
+    if (isNaN(bytes)) return 'Unknown size'
     const k = 1024
     const sizes = ['Bytes', 'KB', 'MB', 'GB']
     const i = Math.floor(Math.log(bytes) / Math.log(k))
