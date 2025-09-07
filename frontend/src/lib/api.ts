@@ -11,10 +11,14 @@ const API_URL = envConfig.NEXT_PUBLIC_API_URL
 
 // Hook for authenticated API calls
 export function useApi() {
-  const { getToken, isSignedIn } = useAuth()
+  const { getToken, isSignedIn, isLoaded } = useAuth()
 
   // Get authentication headers with Clerk Bearer token
   const getAuthHeaders = async (): Promise<Record<string, string>> => {
+    if (!isLoaded) {
+      throw new Error('Authentication is still loading')
+    }
+    
     if (!isSignedIn) {
       throw new Error('User must be signed in to make API calls')
     }

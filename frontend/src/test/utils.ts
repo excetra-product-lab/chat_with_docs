@@ -6,17 +6,26 @@ export const mockClerkAuth = {
   signedIn: {
     getToken: vi.fn(() => Promise.resolve('mock-token-123')),
     isSignedIn: true,
+    isLoaded: true,
     userId: 'user_123',
   },
   signedOut: {
     getToken: vi.fn(() => Promise.resolve(null)),
     isSignedIn: false,
+    isLoaded: true,
     userId: null,
   },
   expired: {
     getToken: vi.fn(() => Promise.reject(new Error('Token expired'))),
     isSignedIn: true,
+    isLoaded: true,
     userId: 'user_123',
+  },
+  loading: {
+    getToken: vi.fn(() => Promise.resolve(null)),
+    isSignedIn: false,
+    isLoaded: false,
+    userId: null,
   },
 }
 

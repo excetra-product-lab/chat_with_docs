@@ -3,6 +3,7 @@ import {useUploadApi} from '../services/uploadApi'
 // Import Document type to ensure consistency
 import { Document } from '../types'
 import { useApi } from '../lib/api'
+import { useAuth } from '@clerk/nextjs'
 
 
 
@@ -11,13 +12,13 @@ export const useDocuments = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [retryCount, setRetryCount] = useState(0)
+  const { isLoaded, isSignedIn } = useAuth()
   const api = useApi()
 
   // Real GET /api/documents
   const fetchDocuments = useCallback(async () => {
-    // Don't retry if we've already failed multiple times
-    if (retryCount >= 3) {
-      console.log('Max retries reached, skipping fetch')
+    // Don't fetch if Clerk is still loading or user is not signed in
+    if (!isLoaded || !isSignedIn) {
       return
     }
 
@@ -31,15 +32,20 @@ export const useDocuments = () => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch documents'
       setError(errorMessage)
-      setRetryCount(prev => prev + 1)
-      console.error('Error fetching documents (attempt', retryCount + 1, '):', err)
+      setRetryCount(prev => {
+        const newCount = prev + 1
+        console.error('Error fetching documents (attempt', newCount, '):', err)
+        return newCount
+      })
     } finally {
       setIsLoading(false)
     }
-  }, [api, retryCount])
+  }, [api, isLoaded, isSignedIn])
 
   // Real-time status polling for processing documents
   useEffect(() => {
+    if (!isLoaded || !isSignedIn) return
+
     const processingDocs = documents.filter(doc => doc.status === 'processing')
 
     if (processingDocs.length > 0) {
@@ -56,12 +62,15 @@ export const useDocuments = () => {
 
       return () => clearInterval(pollInterval)
     }
-  }, [documents, api])
+  }, [documents, api, isLoaded, isSignedIn])
 
-  // Initial fetch - only once on mount
+  // Initial fetch - wait for Clerk to load and user to be signed in
   useEffect(() => {
-    fetchDocuments()
-  }, []) // Remove fetchDocuments dependency to prevent infinite loop
+    if (isLoaded && isSignedIn) {
+      fetchDocuments()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoaded, isSignedIn])
 
   return {
     documents,

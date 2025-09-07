@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     AZURE_OPENAI_DEPLOYMENT_NAME: str | None = None
     AZURE_OPENAI_EMBEDDING_DEPLOYMENT: str | None = None
     AZURE_OPENAI_API_VERSION: str | None = None
+    AZURE_OPENAI_EMBEDDING_API_VERSION: str | None = None
 
     # Azure OpenAI Model Configuration
     OPENAI_MODEL: str = "gpt-4o"  # Default deployment name

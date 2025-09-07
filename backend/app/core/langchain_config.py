@@ -90,7 +90,7 @@ class LangchainConfig:
                             settings.AZURE_OPENAI_DEPLOYMENT_NAME
                             or settings.OPENAI_MODEL
                         ),
-                        api_version="2024-02-01",
+                        api_version=settings.AZURE_OPENAI_API_VERSION,
                         temperature=settings.OPENAI_TEMPERATURE,
                     )
                 except Exception as e:

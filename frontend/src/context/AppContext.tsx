@@ -1,9 +1,10 @@
 'use client'
 
-import React, { createContext, useContext, useState, ReactNode } from 'react'
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react'
 
 // Import types from existing type definitions
 import { Document, Message } from '../types'
+import { useDocuments } from '../hooks/useDocuments'
 
 // Extend the existing types for our context
 export interface DocumentWithProgress extends Document {
@@ -26,14 +27,27 @@ interface AppContextType {
   // UI state
   isLoading: boolean
   setIsLoading: (loading: boolean) => void
+  
+  // Document loading state
+  isDocumentsLoading: boolean
+  documentsError: string | null
+  refetchDocuments: () => void
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
 
 export function AppProvider({ children }: { children: ReactNode }) {
+  // Use the existing useDocuments hook to get real data
+  const { documents: fetchedDocuments, isLoading: isDocumentsLoading, error: documentsError, refetch: refetchDocuments } = useDocuments()
+  
   const [documents, setDocuments] = useState<DocumentWithProgress[]>([])
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  
+  // Sync fetched documents with local state
+  useEffect(() => {
+    setDocuments(fetchedDocuments)
+  }, [fetchedDocuments])
 
   const addDocument = (document: DocumentWithProgress) => {
     setDocuments(prev => [...prev, document])
@@ -70,6 +84,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // UI state
     isLoading,
     setIsLoading,
+    
+    // Document loading state
+    isDocumentsLoading,
+    documentsError,
+    refetchDocuments,
   }
 
   return (

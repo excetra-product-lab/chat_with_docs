@@ -114,12 +114,18 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
               </p>
             </div>
 
-            <label htmlFor="file-upload" className="cursor-pointer inline-block">
+            <div
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent the parent onClick from firing
+                !isUploading && document.getElementById('file-upload')?.click();
+              }}
+              className="cursor-pointer inline-block"
+            >
               <div className="inline-flex items-center px-4 py-2 bg-slate-700/50 hover:bg-slate-600/50 text-slate-200 rounded-lg transition-colors font-medium text-sm">
                 <Plus className="w-4 h-4 mr-2" />
                 Choose Files
               </div>
-            </label>
+            </div>
 
             <input
               id="file-upload"

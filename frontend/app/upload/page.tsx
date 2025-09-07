@@ -4,14 +4,15 @@ import React, { useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { DocumentUpload } from '../../src/components/DocumentUpload'
 import { DocumentTable } from '../../src/components/DocumentTable'
-import { useDocuments, useDocumentUpload, useDocumentDelete } from '../../src/hooks/useDocuments'
+import { useDocumentUpload, useDocumentDelete } from '../../src/hooks/useDocuments'
+import { useAppContext } from '../../src/context/AppContext'
 import { DocumentErrorBoundary } from '../../src/components/ErrorBoundary'
 import { useToastWithErrorHandling } from '../../src/components/Toast'
 import { AlertCircle, CheckCircle, UserCheck } from 'lucide-react'
 
 export default function UploadPage() {
   const { isSignedIn, isLoaded } = useAuth()
-  const { documents, isLoading, error, refetch } = useDocuments()
+  const { documents, isDocumentsLoading: isLoading, documentsError: error, refetchDocuments: refetch } = useAppContext()
   const { uploadDocument, isUploading, uploadProgress, error: uploadError } = useDocumentUpload()
   const { deleteDocument, isDeleting, error: deleteError } = useDocumentDelete()
   const toast = useToastWithErrorHandling()
@@ -21,7 +22,7 @@ export default function UploadPage() {
   const handleFileUpload = async (file: File) => {
     try {
       setUploadSuccess(null)
-      const newDocument = await uploadDocument(file)
+      await uploadDocument(file)
 
       toast.showSuccess(
         'Document uploaded successfully',

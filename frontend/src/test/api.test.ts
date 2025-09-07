@@ -289,6 +289,7 @@ describe('useApi', () => {
       mockUseAuth.mockReturnValue({
         getToken: vi.fn().mockResolvedValue(null),
         isSignedIn: true,
+        isLoaded: true,
         userId: 'user_123',
       })
     })

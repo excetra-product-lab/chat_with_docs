@@ -40,6 +40,7 @@ describe('useDocuments', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockUseApi.mockReturnValue(mockApi)
+    mockUseAuth.mockReturnValue(mockClerkAuth.signedIn)
   })
 
   afterEach(() => {
@@ -389,6 +390,7 @@ describe('useDocumentDelete', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockUseApi.mockReturnValue(mockApi)
+    mockUseAuth.mockReturnValue(mockClerkAuth.signedIn)
   })
 
   it('should delete document successfully', async () => {
