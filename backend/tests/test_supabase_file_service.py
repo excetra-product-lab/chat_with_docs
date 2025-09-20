@@ -228,8 +228,8 @@ class TestSupabaseFileService:
             file_options={"content-type": "application/pdf", "upsert": False},
         )
 
-        # Check return value
-        assert result == "test-bucket/doc123.pdf"
+        # Check return value - now returns (storage_key, file_size_bytes)
+        assert result == ("test-bucket/doc123.pdf", 17)
 
     @pytest.mark.asyncio
     async def test_upload_file_no_content_type(
@@ -322,7 +322,7 @@ class TestSupabaseFileService:
         result = await service.upload_file(mock_file, document_id)
 
         # Should convert to lowercase and use document ID
-        assert result == "test-bucket/doc-456.pdf"
+        assert result == ("test-bucket/doc-456.pdf", 7)
 
         # Check upload was called with correct path
         mock_bucket = mock_supabase_client.storage.from_.return_value
@@ -352,7 +352,7 @@ class TestSupabaseFileService:
 
             result = await service.upload_file(mock_file, document_id)
 
-            assert result == f"test-bucket/doc123{expected_ext}"
+            assert result == (f"test-bucket/doc123{expected_ext}", 7)
 
             # Reset mock for next iteration
             mock_supabase_client.storage.from_.return_value.upload.reset_mock()

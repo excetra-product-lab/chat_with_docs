@@ -31,6 +31,7 @@ class Document(BaseModel):
     user_id: str
     status: str
     storage_key: str | None = None
+    file_size: int | None = None
     created_at: datetime
     chunk_count: int | None = None
 
