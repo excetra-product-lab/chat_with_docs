@@ -211,7 +211,9 @@ async def upload_document(
             db.close()
 
         # Upload the file using the same document ID
-        storage_key = await storage_service.upload_file(file, str(document_id))
+        storage_key, file_size_bytes = await storage_service.upload_file(
+            file, str(document_id)
+        )
 
         # Reset file pointer for processing
         await file.seek(0)
@@ -295,6 +297,7 @@ async def upload_document(
             )
             if document_to_update is not None:
                 document_to_update.storage_key = storage_key  # type: ignore[assignment]
+                document_to_update.file_size_bytes = file_size_bytes  # type: ignore[assignment]
                 document_to_update.status = "processed"  # type: ignore[assignment]
                 document_to_update.updated_at = datetime.utcnow()  # type: ignore[assignment]
                 db.commit()
@@ -312,6 +315,7 @@ async def upload_document(
             user_id=user_id,
             status="processed",
             storage_key=storage_key,
+            file_size=file_size_bytes,
             created_at=datetime.now(),
             chunk_count=chunk_count,
         )
@@ -350,6 +354,7 @@ async def list_documents(current_user: dict = Depends(get_current_user)):
                 user_id=str(db_doc.user_id),
                 status=str(db_doc.status),
                 storage_key=str(db_doc.storage_key) if db_doc.storage_key else None,
+                file_size=int(db_doc.file_size_bytes),
                 created_at=db_doc.created_at,  # type: ignore[arg-type]
                 chunk_count=chunk_count,
             )

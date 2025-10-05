@@ -28,6 +28,7 @@ MANIFEST
 
 # Exception for frontend lib directories
 !frontend/lib/
+!frontend/src/lib/
 !new-frontend/src/lib/
 
 # PyInstaller
@@ -227,3 +228,5 @@ data/
 
 # clerk configuration (can include secrets)
 frontend/.clerk/
+
+local.md

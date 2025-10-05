@@ -6,12 +6,16 @@ import type { Document } from '../types'
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
 
 export function useUploadApi() {
-  const { getToken, isSignedIn } = useAuth()
+  const { getToken, isSignedIn, isLoaded } = useAuth()
 
   const uploadDocument = async (
     file: File,
     onProgress?: (progress: number) => void
   ): Promise<Document> => {
+    if (!isLoaded) {
+      throw new Error('Authentication is still loading, please wait')
+    }
+    
     if (!isSignedIn) {
       throw new Error('You must be signed in to upload documents')
     }

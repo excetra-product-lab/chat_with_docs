@@ -15,21 +15,23 @@ class EmbeddingService:
 
     def __init__(self) -> None:
         """Initialize the embedding service with Azure OpenAI client."""
-        if not settings.AZURE_OPENAI_API_KEY or not settings.AZURE_OPENAI_ENDPOINT:
+        if (
+            not settings.AZURE_OPENAI_API_KEY
+            or not settings.AZURE_OPENAI_EMBEDDING_DEPLOYMENT
+        ):
             raise ValueError(
-                "AZURE_OPENAI_API_KEY and AZURE_OPENAI_ENDPOINT must be configured"
+                "AZURE_OPENAI_API_KEY and AZURE_OPENAI_EMBEDDING_DEPLOYMENT must be configured"
             )
 
         self.client = AsyncAzureOpenAI(
             api_key=settings.AZURE_OPENAI_API_KEY,
-            azure_endpoint=settings.AZURE_OPENAI_ENDPOINT,
-            api_version=settings.AZURE_OPENAI_API_VERSION,
+            azure_endpoint=settings.AZURE_OPENAI_EMBEDDING_DEPLOYMENT,
+            api_version=settings.AZURE_OPENAI_EMBEDDING_API_VERSION,
         )
 
         # Use embedding deployment name or fallback to embedding model name
-        self.embedding_deployment = (
-            settings.AZURE_OPENAI_EMBEDDING_DEPLOYMENT or settings.EMBEDDING_MODEL
-        )
+        # todo: change this to env variable
+        self.embedding_deployment = "text-embedding-3-small"
 
         logger.info(
             f"Initialized Azure OpenAI embedding service with deployment: {self.embedding_deployment}"

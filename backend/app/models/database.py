@@ -51,6 +51,7 @@ class Document(Base):
     user_id = Column(String, ForeignKey("users.id"))
     status = Column(String, default="processing")
     storage_key = Column(String, nullable=True)
+    file_size_bytes = Column(Integer, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     chunks = relationship("Chunk", back_populates="document")
