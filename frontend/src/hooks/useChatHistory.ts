@@ -7,6 +7,7 @@ const MAX_SESSIONS = 20; // Limit number of stored sessions
 export function useChatHistory() {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   // Load chat history from localStorage on mount
   useEffect(() => {
@@ -33,17 +34,21 @@ export function useChatHistory() {
       }
     } catch (error) {
       console.error('Failed to load chat history:', error);
+    } finally {
+      setIsLoaded(true);
     }
   }, []);
 
-  // Save to localStorage whenever sessions change
+  // Save to localStorage whenever sessions change (but only after initial load)
   useEffect(() => {
+    if (!isLoaded) return; // Don't save until we've loaded from localStorage
+
     try {
       localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(sessions));
     } catch (error) {
       console.error('Failed to save chat history:', error);
     }
-  }, [sessions]);
+  }, [sessions, isLoaded]);
 
   const generateSessionTitle = (firstMessage: string): string => {
     // Generate a title from the first user message (truncated)
@@ -125,12 +130,12 @@ export function useChatHistory() {
     return session ? session.messages : [];
   }, [getCurrentSession]);
 
-  // Auto-create first session if none exist
+  // Auto-create first session if none exist (only after loading from localStorage)
   useEffect(() => {
-    if (sessions.length === 0 && !currentSessionId) {
+    if (isLoaded && sessions.length === 0 && !currentSessionId) {
       createNewSession();
     }
-  }, [sessions.length, currentSessionId, createNewSession]);
+  }, [isLoaded, sessions.length, currentSessionId, createNewSession]);
 
   return {
     sessions,

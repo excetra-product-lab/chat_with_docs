@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { User, Bot, Copy, RotateCcw, FileText, ChevronDown, ChevronUp } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -35,9 +36,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       <div className={`flex max-w-4xl ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
         <div className={`flex-shrink-0 ${message.type === 'user' ? 'ml-3' : 'mr-3'}`}>
           {message.type === 'user' && message.userImageUrl ? (
-            <img
+            <Image
               src={message.userImageUrl}
               alt="User profile"
+              width={32}
+              height={32}
               className="w-8 h-8 rounded-full shadow-lg object-cover ring-2 ring-blue-500/30"
             />
           ) : (

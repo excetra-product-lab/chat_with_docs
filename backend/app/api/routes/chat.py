@@ -54,7 +54,7 @@ Please provide a detailed answer based on the information in the documents:"""
 
     # Extract answer text based on response type
     if hasattr(response, 'content'):
-        answer_text = response.content
+        answer_text = str(response.content)
     else:
         answer_text = str(response)
 

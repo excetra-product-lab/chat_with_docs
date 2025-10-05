@@ -77,7 +77,7 @@ export const ChatHistory: React.FC<ChatHistoryProps> = ({
       </div>
 
       {/* Sessions List */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-600 hover:scrollbar-thumb-slate-500">
         {sessions.length === 0 ? (
           <div className="p-4 text-center text-slate-500">
             <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />

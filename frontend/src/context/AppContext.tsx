@@ -68,7 +68,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Keep legacy messages in sync with current chat session for backwards compatibility
   useEffect(() => {
     setMessages(chatHistory.getCurrentMessages())
-  }, [chatHistory.getCurrentMessages])
+  }, [chatHistory.currentSessionId, chatHistory.sessions, chatHistory])
 
   const addDocument = (document: DocumentWithProgress) => {
     setDocuments(prev => [...prev, document])
