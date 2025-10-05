@@ -227,3 +227,4 @@ data/
 
 # clerk configuration (can include secrets)
 frontend/.clerk/
+local.md
