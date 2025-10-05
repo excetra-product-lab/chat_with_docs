@@ -34,10 +34,20 @@ export interface Message {
   timestamp: Date;
   confidence?: number; // For assistant messages from RAG API
   citations?: Citation[]; // Source document references
+  userImageUrl?: string; // For user messages - Clerk profile picture
+}
+
+export interface ChatSession {
+  id: string;
+  title: string;
+  messages: Message[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface ChatState {
-  messages: Message[];
+  sessions: ChatSession[];
+  currentSessionId: string | null;
   isLoading: boolean;
   error?: string;
 }

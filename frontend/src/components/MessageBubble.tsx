@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { User, Bot, Copy, RotateCcw, FileText, ChevronDown, ChevronUp } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Message } from '../types';
 // Citation imports removed
 
@@ -32,17 +34,25 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     <div className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'} mb-6`}>
       <div className={`flex max-w-4xl ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
         <div className={`flex-shrink-0 ${message.type === 'user' ? 'ml-3' : 'mr-3'}`}>
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center shadow-lg ${
-            message.type === 'user'
-              ? 'bg-gradient-to-br from-blue-600 to-blue-700'
-              : 'bg-gradient-to-br from-orange-600 to-red-700'
-          }`}>
-            {message.type === 'user' ? (
-              <User className="w-4 h-4 text-white" />
-            ) : (
-              <Bot className="w-4 h-4 text-white" />
-            )}
-          </div>
+          {message.type === 'user' && message.userImageUrl ? (
+            <img
+              src={message.userImageUrl}
+              alt="User profile"
+              className="w-8 h-8 rounded-full shadow-lg object-cover ring-2 ring-blue-500/30"
+            />
+          ) : (
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center shadow-lg ${
+              message.type === 'user'
+                ? 'bg-gradient-to-br from-blue-600 to-blue-700'
+                : 'bg-gradient-to-br from-orange-600 to-red-700'
+            }`}>
+              {message.type === 'user' ? (
+                <User className="w-4 h-4 text-white" />
+              ) : (
+                <Bot className="w-4 h-4 text-white" />
+              )}
+            </div>
+          )}
         </div>
 
         <div className={`flex-1 ${message.type === 'user' ? 'text-right' : 'text-left'}`}>
@@ -53,8 +63,30 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 : 'bg-stone-800 text-stone-100 border border-orange-600/20'
             }`}
           >
-            <div className="prose prose-sm max-w-none">
-              <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+            <div className="prose prose-sm max-w-none prose-invert">
+              {message.type === 'assistant' ? (
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    p: ({ children }) => <p className="mb-3 last:mb-0 leading-relaxed">{children}</p>,
+                    ul: ({ children }) => <ul className="mb-3 ml-4 list-disc space-y-1">{children}</ul>,
+                    ol: ({ children }) => <ol className="mb-3 ml-4 list-decimal space-y-1">{children}</ol>,
+                    li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+                    strong: ({ children }) => <strong className="font-semibold text-orange-300">{children}</strong>,
+                    em: ({ children }) => <em className="italic text-stone-200">{children}</em>,
+                    code: ({ children }) => <code className="px-1.5 py-0.5 bg-stone-900/60 text-orange-300 rounded text-sm font-mono border border-stone-700/50">{children}</code>,
+                    pre: ({ children }) => <pre className="bg-stone-900/60 p-3 rounded-lg overflow-x-auto border border-stone-700/50 mb-3">{children}</pre>,
+                    blockquote: ({ children }) => <blockquote className="border-l-3 border-orange-600/50 pl-4 my-3 italic text-stone-300">{children}</blockquote>,
+                    h1: ({ children }) => <h1 className="text-xl font-bold text-orange-300 mb-3 mt-4 first:mt-0">{children}</h1>,
+                    h2: ({ children }) => <h2 className="text-lg font-semibold text-orange-300 mb-2 mt-3 first:mt-0">{children}</h2>,
+                    h3: ({ children }) => <h3 className="text-base font-semibold text-orange-300 mb-2 mt-3 first:mt-0">{children}</h3>,
+                  }}
+                >
+                  {message.content}
+                </ReactMarkdown>
+              ) : (
+                <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+              )}
             </div>
 
             {/* Confidence Score Display */}
