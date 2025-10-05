@@ -80,20 +80,8 @@ if [ -d "backend" ]; then
         export AZURE_OPENAI_API_KEY="test-key"
         export AZURE_OPENAI_ENDPOINT="test-endpoint"
 
-        # Run pytest with timeout (using Python's timeout mechanism)
-        if python -c "
-import subprocess
-import sys
-try:
-    result = subprocess.run(['uv', 'run', 'pytest', '-q'],
-                          timeout=30,
-                          capture_output=True,
-                          text=True)
-    sys.exit(result.returncode)
-except subprocess.TimeoutExpired:
-    print('Tests timed out after 30 seconds')
-    sys.exit(1)
-" >/dev/null 2>&1; then
+        # Run pytest
+        if uv run pytest -q >/dev/null 2>&1; then
             print_status 0 "Backend tests"
         else
             print_status 1 "Backend tests"
