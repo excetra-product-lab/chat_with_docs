@@ -63,10 +63,10 @@ class SupabaseFileService:
                 ),
             )
 
-    async def upload_file(self, file: UploadFile, document_id: str) -> str:
+    async def upload_file(self, file: UploadFile, document_id: str) -> tuple[str, int]:
         """
         Upload file to Supabase Storage with validation.
-        Returns storage_key
+        Returns (storage_key, file_size_bytes)
         """
         # Validate file type
         await self._validate_file_metadata(file)
@@ -83,6 +83,7 @@ class SupabaseFileService:
         try:
             # Read file content as bytes to fix SpooledTemporaryFile issue
             file_content = await file.read()
+            file_size_bytes = len(file_content)
 
             # Upload file content to Supabase
             self.supabase.storage.from_(self.bucket_name).upload(
@@ -94,8 +95,8 @@ class SupabaseFileService:
                 },
             )
 
-            # Return the storage key
-            return file_path
+            # Return the storage key and file size
+            return file_path, file_size_bytes
 
         except Exception as e:
             raise HTTPException(

@@ -21,11 +21,18 @@ def mock_get_current_user():
 class MockStorageService:
     """Mock implementation of SupabaseFileService for testing."""
 
-    async def upload_file(self, file, document_id: str) -> str:
-        """Mock file upload that returns a fake storage key."""
+    async def upload_file(self, file, document_id: str) -> tuple[str, int]:
+        """Mock file upload that returns a fake storage key and file size."""
         # Return a fake storage key based on document ID and file extension
         file_extension = file.filename.split(".")[-1] if "." in file.filename else "txt"
-        return f"test-bucket/{document_id}.{file_extension}"
+        storage_key = f"test-bucket/{document_id}.{file_extension}"
+
+        # Read file content to get size
+        file_content = await file.read()
+        file_size_bytes = len(file_content)
+        await file.seek(0)  # Reset file pointer for any subsequent reads
+
+        return storage_key, file_size_bytes
 
 
 # Mock database document
@@ -475,12 +482,15 @@ This is the conclusion section that summarizes everything."""
         assert response.status_code == 200
         data = response.json()
 
-        # Verify response structure matches new Document schema
+        # Verify response structure matches Document schema
         assert "id" in data
         assert data["filename"] == "test.txt"
         assert data["user_id"] == "user_test123"  # From mock_get_current_user
         assert data["status"] == "processed"
         assert "storage_key" in data
+        assert "file_size" in data
+        assert isinstance(data["file_size"], int)
+        assert data["file_size"] > 0
         assert "created_at" in data
         assert "chunk_count" in data
         assert isinstance(data["chunk_count"], int)

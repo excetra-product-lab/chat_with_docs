@@ -1,22 +1,26 @@
 import React, { useState } from 'react'
 import { FileText, Trash2, Clock, CheckCircle, AlertCircle } from 'lucide-react'
 import { Document } from '../types'
+import { LoadingSpinner, TableRowSkeleton } from './Loading'
 
 interface DocumentTableProps {
   documents: Document[]
   onDelete: (id: number) => Promise<void>
   isDeleting?: number | null
+  isLoading?: boolean
 }
 
 export const DocumentTable: React.FC<DocumentTableProps> = ({
   documents,
   onDelete,
-  isDeleting
+  isDeleting,
+  isLoading = false
 }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null)
 
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes'
+  const formatFileSize = (bytes: number | null | undefined): string => {
+    if (!bytes || bytes === 0) return '0 Bytes'
+    if (isNaN(bytes)) return 'Unknown size'
     const k = 1024
     const sizes = ['Bytes', 'KB', 'MB', 'GB']
     const i = Math.floor(Math.log(bytes) / Math.log(k))
@@ -36,7 +40,7 @@ export const DocumentTable: React.FC<DocumentTableProps> = ({
 
   const getStatusIcon = (status: Document['status'], progress?: number) => {
     switch (status) {
-      case 'ready':
+      case 'processed':
         return <CheckCircle className="w-4 h-4 text-green-400" />
       case 'processing':
         return <Clock className="w-4 h-4 text-amber-400" />
@@ -49,7 +53,7 @@ export const DocumentTable: React.FC<DocumentTableProps> = ({
 
   const getStatusText = (status: Document['status'], progress?: number) => {
     switch (status) {
-      case 'ready':
+      case 'processed':
         return 'Ready'
       case 'processing':
         return progress ? `Processing ${progress}%` : 'Processing'
@@ -75,6 +79,31 @@ export const DocumentTable: React.FC<DocumentTableProps> = ({
 
   const handleDeleteCancel = () => {
     setShowDeleteConfirm(null)
+  }
+
+  if (isLoading) {
+    return (
+      <div className="glass-effect rounded-2xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-slate-700/50 bg-slate-800/30">
+                <th className="text-left px-6 py-4 text-sm font-medium text-slate-300">Document</th>
+                <th className="text-left px-6 py-4 text-sm font-medium text-slate-300">Upload Date</th>
+                <th className="text-left px-6 py-4 text-sm font-medium text-slate-300">Size</th>
+                <th className="text-left px-6 py-4 text-sm font-medium text-slate-300">Status</th>
+                <th className="text-right px-6 py-4 text-sm font-medium text-slate-300">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: 3 }).map((_, index) => (
+                <TableRowSkeleton key={index} columns={5} />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )
   }
 
   if (documents.length === 0) {
@@ -153,9 +182,10 @@ export const DocumentTable: React.FC<DocumentTableProps> = ({
                       <button
                         onClick={() => handleDeleteConfirm(doc.id)}
                         disabled={isDeleting === doc.id}
-                        className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded-lg transition-colors disabled:opacity-50"
+                        className="flex items-center space-x-1 px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded-lg transition-colors disabled:opacity-50"
                       >
-                        {isDeleting === doc.id ? 'Deleting...' : 'Confirm'}
+                        {isDeleting === doc.id && <LoadingSpinner size="small" color="white" />}
+                        <span>{isDeleting === doc.id ? 'Deleting...' : 'Confirm'}</span>
                       </button>
                       <button
                         onClick={handleDeleteCancel}
