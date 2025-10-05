@@ -2,8 +2,10 @@ from fastapi import APIRouter, Depends
 
 from app.api.dependencies import get_current_user
 from app.core.langchain_config import langchain_config
-from app.services.enhanced_vectorstore import EnhancedVectorStore, create_langchain_retriever
 from app.models.schemas import Answer, Query
+from app.services.enhanced_vectorstore import (
+    EnhancedVectorStore,
+)
 
 router = APIRouter()
 
@@ -21,11 +23,13 @@ async def chat_query(query: Query, current_user: dict = Depends(get_current_user
         query=query.question,
         user_id=current_user["id"],  # Use string user_id as stored in database
         k=5,
-        confidence_threshold=0.1
+        confidence_threshold=0.1,
     )
 
     if not search_results:
-        return Answer(answer="No relevant documents found for your question.", confidence=0.0)
+        return Answer(
+            answer="No relevant documents found for your question.", confidence=0.0
+        )
 
     # Build context using existing pattern from test_local_rag_run.py
     context_parts = []
@@ -47,19 +51,21 @@ Document Excerpts:
 Please provide a detailed answer based on the information in the documents:"""
 
     # Use existing LLM
-    if hasattr(llm, 'ainvoke'):
+    if hasattr(llm, "ainvoke"):
         response = await llm.ainvoke(prompt)
     else:
         response = llm.invoke(prompt)
 
     # Extract answer text based on response type
-    if hasattr(response, 'content'):
+    if hasattr(response, "content"):
         answer_text = str(response.content)
     else:
         answer_text = str(response)
 
     # Calculate confidence using existing pattern from test_local_rag_run.py
-    avg_similarity = sum(r.get('similarity', 0) for r in search_results) / len(search_results)
+    avg_similarity = sum(r.get("similarity", 0) for r in search_results) / len(
+        search_results
+    )
     confidence = min(avg_similarity * 1.2, 0.95)  # Boost and cap at 95%
 
     return Answer(answer=answer_text, confidence=confidence)
