@@ -58,7 +58,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         <p className="text-slate-400 font-light">Ask questions about your uploaded documents</p>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-600 hover:scrollbar-thumb-slate-500">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
             {hasDocuments ? (

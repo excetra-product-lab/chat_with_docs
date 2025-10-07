@@ -46,38 +46,29 @@ if [ -d "backend" ]; then
         echo "Installing dependencies..."
         uv sync
 
-        # Black formatting check
-        echo -n "Running Black formatter check... "
-        if uv run black --check app tests >/dev/null 2>&1; then
-            print_status 0 "Black formatting"
+        # Ruff linting check
+        echo -n "Running Ruff linter... "
+        if uv run ruff check app tests >/dev/null 2>&1; then
+            print_status 0 "Ruff linting"
         else
-            print_status 1 "Black formatting (run: uv run black app tests)"
+            print_status 1 "Ruff linting (run: uv run ruff check app tests --fix)"
         fi
 
-        # isort import sorting check
-        echo -n "Running isort import check... "
-        if uv run isort --check-only app tests >/dev/null 2>&1; then
-            print_status 0 "Import sorting"
+        # Ruff formatting check
+        echo -n "Running Ruff formatter check... "
+        if uv run ruff format --check app tests >/dev/null 2>&1; then
+            print_status 0 "Ruff formatting"
         else
-            print_status 1 "Import sorting (run: uv run isort app tests)"
-        fi
-
-        # Flake8 linting
-        echo -n "Running Flake8 linter... "
-        if uv run flake8 app tests --max-line-length=100 --extend-ignore=E203,W503 >/dev/null 2>&1; then
-            print_status 0 "Flake8 linting"
-        else
-            print_status 1 "Flake8 linting"
-            echo "  Run: uv run flake8 app tests --max-line-length=100 --extend-ignore=E203,W503"
+            print_status 1 "Ruff formatting (run: uv run ruff format app tests)"
         fi
 
         # MyPy type checking
         echo -n "Running MyPy type checker... "
-        if uv run mypy app --ignore-missing-imports >/dev/null 2>&1; then
+        if uv run mypy app --ignore-missing-imports --explicit-package-bases >/dev/null 2>&1; then
             print_status 0 "MyPy type checking"
         else
             print_status 1 "MyPy type checking"
-            echo "  Run: uv run mypy app --ignore-missing-imports"
+            echo "  Run: uv run mypy app --ignore-missing-imports --explicit-package-bases"
         fi
 
         # Run tests
@@ -89,20 +80,8 @@ if [ -d "backend" ]; then
         export AZURE_OPENAI_API_KEY="test-key"
         export AZURE_OPENAI_ENDPOINT="test-endpoint"
 
-        # Run pytest with timeout (using Python's timeout mechanism)
-        if python -c "
-import subprocess
-import sys
-try:
-    result = subprocess.run(['uv', 'run', 'pytest', '-q'],
-                          timeout=30,
-                          capture_output=True,
-                          text=True)
-    sys.exit(result.returncode)
-except subprocess.TimeoutExpired:
-    print('Tests timed out after 30 seconds')
-    sys.exit(1)
-" >/dev/null 2>&1; then
+        # Run pytest
+        if uv run pytest -q >/dev/null 2>&1; then
             print_status 0 "Backend tests"
         else
             print_status 1 "Backend tests"
@@ -194,7 +173,7 @@ else
     echo "You can use the suggested commands to fix most issues automatically."
     echo ""
     echo "For a quick fix of formatting issues, run:"
-    echo "  cd backend && uv run black app tests && uv run isort app tests"
+    echo "  cd backend && uv run ruff check app tests --fix && uv run ruff format app tests"
     echo "  cd frontend && npm run lint -- --fix"
 fi
 

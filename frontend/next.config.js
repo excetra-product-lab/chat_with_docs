@@ -13,7 +13,11 @@ const nextConfig = {
     ignoreDuringBuilds: false,
   },
   images: {
-    domains: ['localhost'],
+    domains: [
+      'localhost',
+      'img.clerk.com',
+      'images.clerk.dev'
+    ],
   },
 }
 

@@ -1,14 +1,17 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useUser } from '@clerk/nextjs'
 import { ChatInterface } from '../../src/components/ChatInterface'
+import { ChatHistory } from '../../src/components/ChatHistory'
 import { useAppContext } from '../../src/context/AppContext'
 import { useApi } from '../../src/lib/api'
 import { ChatErrorBoundary } from '../../src/components/ErrorBoundary'
 import { useToastWithErrorHandling } from '../../src/components/Toast'
 
 export default function ChatPage() {
-  const { messages, isLoading, addMessage, documents } = useAppContext()
+  const { user } = useUser()
+  const { messages, isLoading, addMessage, documents, chatHistory } = useAppContext()
   const [isSending, setIsSending] = useState(false)
   const api = useApi()
   const toast = useToastWithErrorHandling()
@@ -22,6 +25,7 @@ export default function ChatPage() {
       type: 'user' as const,
       content,
       timestamp: new Date(),
+      userImageUrl: user?.imageUrl,
     }
     addMessage(userMessage)
 
@@ -92,15 +96,30 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="h-screen px-6">
-      <ChatErrorBoundary>
-        <ChatInterface
-          messages={messages}
-          isLoading={isLoading || isSending}
-          onSendMessage={sendMessage}
-          hasDocuments={hasReadyDocuments}
+    <div className="h-screen flex">
+      {/* Chat History Sidebar */}
+      <div className="w-80 flex-shrink-0">
+        <ChatHistory
+          sessions={chatHistory.sessions}
+          currentSessionId={chatHistory.currentSessionId}
+          onCreateNewSession={chatHistory.createNewSession}
+          onSwitchSession={chatHistory.switchToSession}
+          onDeleteSession={chatHistory.deleteSession}
+          onClearAll={chatHistory.clearAllHistory}
         />
-      </ChatErrorBoundary>
+      </div>
+
+      {/* Main Chat Interface */}
+      <div className="flex-1">
+        <ChatErrorBoundary>
+          <ChatInterface
+            messages={messages}
+            isLoading={isLoading || isSending}
+            onSendMessage={sendMessage}
+            hasDocuments={hasReadyDocuments}
+          />
+        </ChatErrorBoundary>
+      </div>
     </div>
   )
 }

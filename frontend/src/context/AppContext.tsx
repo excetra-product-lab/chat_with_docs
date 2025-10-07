@@ -5,6 +5,7 @@ import React, { createContext, useContext, useState, ReactNode, useEffect } from
 // Import types from existing type definitions
 import { Document, Message } from '../types'
 import { useDocuments } from '../hooks/useDocuments'
+import { useChatHistory } from '../hooks/useChatHistory'
 
 // Extend the existing types for our context
 export interface DocumentWithProgress extends Document {
@@ -19,15 +20,27 @@ interface AppContextType {
   updateDocument: (id: number, updates: Partial<DocumentWithProgress>) => void
   deleteDocument: (id: number) => void
 
-  // Chat state
+  // Chat state (legacy - maintained for backwards compatibility)
   messages: Message[]
   setMessages: (messages: Message[]) => void
   addMessage: (message: Message) => void
 
+  // Chat history state
+  chatHistory: {
+    sessions: any[]
+    currentSessionId: string | null
+    getCurrentMessages: () => Message[]
+    createNewSession: () => string
+    addMessageToSession: (sessionId: string, message: Message) => void
+    deleteSession: (sessionId: string) => void
+    switchToSession: (sessionId: string) => void
+    clearAllHistory: () => void
+  }
+
   // UI state
   isLoading: boolean
   setIsLoading: (loading: boolean) => void
-  
+
   // Document loading state
   isDocumentsLoading: boolean
   documentsError: string | null
@@ -39,7 +52,10 @@ const AppContext = createContext<AppContextType | undefined>(undefined)
 export function AppProvider({ children }: { children: ReactNode }) {
   // Use the existing useDocuments hook to get real data
   const { documents: fetchedDocuments, isLoading: isDocumentsLoading, error: documentsError, refetch: refetchDocuments } = useDocuments()
-  
+
+  // Use the new chat history hook
+  const chatHistory = useChatHistory()
+
   const [documents, setDocuments] = useState<DocumentWithProgress[]>([])
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -48,6 +64,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setDocuments(fetchedDocuments)
   }, [fetchedDocuments])
+
+  // Keep legacy messages in sync with current chat session for backwards compatibility
+  useEffect(() => {
+    setMessages(chatHistory.getCurrentMessages())
+  }, [chatHistory.currentSessionId, chatHistory.sessions, chatHistory])
 
   const addDocument = (document: DocumentWithProgress) => {
     setDocuments(prev => [...prev, document])
@@ -65,7 +86,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   const addMessage = (message: Message) => {
+    // Add to legacy state for backwards compatibility
     setMessages(prev => [...prev, message])
+
+    // Add to current chat session (or create new session if none exists)
+    if (chatHistory.currentSessionId) {
+      chatHistory.addMessageToSession(chatHistory.currentSessionId, message)
+    } else {
+      const newSessionId = chatHistory.createNewSession()
+      chatHistory.addMessageToSession(newSessionId, message)
+    }
   }
 
   const value: AppContextType = {
@@ -76,15 +106,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     updateDocument,
     deleteDocument,
 
-    // Chat state
+    // Chat state (legacy - maintained for backwards compatibility)
     messages,
     setMessages,
     addMessage,
 
+    // Chat history state
+    chatHistory,
+
     // UI state
     isLoading,
     setIsLoading,
-    
+
     // Document loading state
     isDocumentsLoading,
     documentsError,
